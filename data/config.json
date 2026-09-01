@@ -4,7 +4,7 @@
   "admin": "afanasev-igor",
   "noindex": true,
   "scoring": {
-    "n": 0,
+    "n": 35,
     "formula": "max(n - solvers, 1)"
   },
   "repo": {
