@@ -2533,7 +2533,7 @@
     var card = el("div", "card");
     list.forEach(function (st) { card.appendChild(studentRow(st)); });
     if (!list.length) {
-      card.appendChild(el("div", "summary", "Пока никого."));
+      card.appendChild(el("div", "block-none", "Пока никого."));
     }
     host.appendChild(card);
 
@@ -2617,7 +2617,7 @@
     var list = zachetList();
     var card = el("div", "card");
     list.forEach(function (it) { card.appendChild(zachetRow(it)); });
-    if (!list.length) card.appendChild(el("div", "summary", "Пока пусто."));
+    if (!list.length) card.appendChild(el("div", "block-none", "Пока пусто."));
     host.appendChild(card);
 
     var sh = el("div", "section-head");
