@@ -1,8 +1,4 @@
 {
-  "pdf": {
-    "file": "grobariy.pdf",
-    "size": 124035
-  },
   "problems": [
     {
       "id": "Г1",
@@ -11,8 +7,8 @@
     },
     {
       "id": "Г2",
-      "type": "geometry",
-      "sub": "stereometry"
+      "type": "comb",
+      "sub": "kg"
     },
     {
       "id": "Г3",
@@ -46,8 +42,8 @@
     },
     {
       "id": "Г9",
-      "type": "geometry",
-      "sub": "geomneravenstva"
+      "type": "comb",
+      "sub": "kg"
     },
     {
       "id": "Г10",
