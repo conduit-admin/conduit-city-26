@@ -47,7 +47,7 @@
      быть виден, иначе не поймёшь, из чего доля */
   --meter-off: #c9c6b7;
 
-  --admin: #a1245e;
+  --admin: #7b3fd6;
   /* Корона — заливка, а не текст, поэтому золото берём чистое и тёплое.
      Прежний #9a7000 на светлом читался болотным: слишком мало красного. */
   --leader: #c9891c;
@@ -97,7 +97,7 @@
     --cell-ink: #16150f;
     --meter-off: #454440;
 
-    --admin: #f08fb8;
+    --admin: #c48cff;
     --leader: #f0c34c;
     --accent-hi: #e3b23c;
     --accent-wash: rgba(227, 178, 60, 0.12);
@@ -1872,4 +1872,25 @@ body.is-editor .brand::after {
   letter-spacing: 0.02em;
   color: var(--ink-muted);
   vertical-align: 1px;
+}
+
+/* Имя ученика правится на месте, поэтому это поле ввода, а выглядеть должно
+   строкой списка: рамка появляется только при касании. */
+.input.flat {
+  border-color: transparent;
+  background: none;
+  padding-left: 0;
+  min-height: 34px;
+}
+
+.input.flat:focus { border-color: var(--border-strong); padding-left: 10px; }
+.name-edit { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.name-edit .input { flex: 1; min-width: 0; }
+
+/* «не был» рядом с номером серии: не ошибка и не тревога, просто факт. */
+.dblock-miss {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-muted);
 }

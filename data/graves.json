@@ -1,4 +1,64 @@
 {
-  "problems": [],
+  "pdf": {
+    "file": "grobariy.pdf",
+    "size": 124035
+  },
+  "problems": [
+    {
+      "id": "Г1",
+      "type": "geometry",
+      "sub": "planimetry"
+    },
+    {
+      "id": "Г2",
+      "type": "geometry",
+      "sub": "stereometry"
+    },
+    {
+      "id": "Г3",
+      "type": "comb",
+      "sub": "podschet"
+    },
+    {
+      "id": "Г4",
+      "type": "comb",
+      "sub": "graphs"
+    },
+    {
+      "id": "Г5",
+      "type": "geometry",
+      "sub": "planimetry"
+    },
+    {
+      "id": "Г6",
+      "type": "algebra",
+      "sub": "mnogochleny"
+    },
+    {
+      "id": "Г7",
+      "type": "geometry",
+      "sub": "planimetry"
+    },
+    {
+      "id": "Г8",
+      "type": "numbers",
+      "sub": "klassika-2"
+    },
+    {
+      "id": "Г9",
+      "type": "geometry",
+      "sub": "geomneravenstva"
+    },
+    {
+      "id": "Г10",
+      "type": "comb",
+      "sub": "cells"
+    },
+    {
+      "id": "Г11",
+      "type": "comb",
+      "sub": "graphs"
+    }
+  ],
   "solutions": []
 }

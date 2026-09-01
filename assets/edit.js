@@ -389,7 +389,9 @@
   function copyDay(s) {
     var d = JSON.parse(JSON.stringify({
       n: s.n, series: seriesNo(s), date: s.date,
-      problems: s.problems || [], solved: s.solved || {}
+      problems: s.problems || [], solved: s.solved || {},
+      present: Array.isArray(s.present) ? s.present : undefined,
+      pdf: s.pdf || undefined
     }));
     roster().forEach(function (st) {
       if (!d.solved[st.id]) d.solved[st.id] = [];
@@ -557,6 +559,23 @@
     state.series.problems.splice(i === -1 ? state.series.problems.length : i + 1, 0, item);
   }
 
+  /* Посещаемость ведётся по желанию: пока список не заведён, серия просто не
+     знает, кто был, — и такие серии в счёт посещений не идут. Заводится он
+     сразу со всеми, потому что отмечать проще отсутствующих. */
+  function attendanceOn(d) { return Array.isArray(d && d.present); }
+
+  function startAttendance(d) {
+    d.present = roster().map(function (s) { return s.id; });
+    touch();
+  }
+
+  function togglePresent(d, id) {
+    if (!attendanceOn(d)) return;
+    var i = d.present.indexOf(id);
+    if (i === -1) d.present.push(id); else d.present.splice(i, 1);
+    touch();
+  }
+
   function validate(d) {
     d = d || state.series;
     if (!d) return "нечего сохранять";
@@ -599,6 +618,17 @@
       }),
       solved: {}
     };
+    /* Посещаемость пишем только если её вели: пустой список значил бы «никто
+       не пришёл», а это совсем другое утверждение. */
+    if (attendanceOn(d)) {
+      payload.present = roster().filter(function (s) {
+        return d.present.indexOf(s.id) !== -1;
+      }).map(function (s) { return s.id; });
+    }
+    if (d.pdf && d.pdf.file) {
+      payload.pdf = { file: d.pdf.file, size: d.pdf.size };
+    }
+
     /* Пишем весь список и вдобавок чужие непустые отметки: ученика могли убрать
        из списка, и стирать заодно его плюсы — не дело записи одной серии. Они
        не считаются нигде, но лежат на месте и вернутся вместе с человеком. */
@@ -674,22 +704,18 @@
     var days = dirtyDays();
     var gone = removedNumbers();
     var jobs = [];
-    // список учеников уходит первым: на него ссылается всё остальное
+    /* Файлы идут раньше всех записей, которые на них ссылаются. Удаления
+       раньше загрузок: имя нового файла делается из названия и может совпасть
+       с только что убранным — иначе новый лёг бы и тут же был стёрт. */
+    goneBlobs().slice().forEach(function (path) { jobs.push(dropBlobFile(path)); });
+    stagedBlobs().slice().forEach(function (b) { jobs.push(putBlobFile(b)); });
+    // список учеников уходит следом: на него ссылается всё остальное
     if (rosterDirty()) jobs.push(putStudentsFile);
     if (typesDirty()) jobs.push(putTypesFile);
     days.forEach(function (d) { jobs.push(putDayFile(d)); });
     gone.forEach(function (n) { jobs.push(dropDayFile(n)); });
     if (gravesDirty()) jobs.push(putGravesFile);
     if (configDirty()) jobs.push(putConfigFile);
-    /* Зачёт: сначала удаления, потом новые файлы, и только потом список.
-       Удаления идут первыми, потому что имя нового файла делается из названия и
-       может совпасть с только что убранным — иначе запись легла бы и тут же
-       была бы стёрта. Список последним: он не должен ссылаться на то, чего ещё
-       нет в репозитории. */
-    (state.zachetGone || []).forEach(function (name) {
-      jobs.push(dropZachetBlob(name));
-    });
-    zachetAdded().forEach(function (it) { jobs.push(putZachetBlob(it)); });
     if (zachetDirty()) jobs.push(putZachetFile);
     if (!jobs.length) return;
 
@@ -924,78 +950,49 @@
     }).then(function () { SAVED.roster = JSON.stringify(payload); });
   }
 
-  // ── зачёт ───────────────────────────────────────────────
+  // ── приложенные файлы ───────────────────────────────────
 
-  /* Приложенные pdf: список в data/zachet.json, сами файлы в data/zachet/.
-     Со счётом они не связаны — это просто раздаточный материал.
+  /* Один склад на все pdf: листки серий, гробарий и зачёт. Выбранный файл
+     лежит здесь с содержимым, пока не нажато «Сохранить», — как и всякая
+     правка в редакторе.
 
-     Пока не нажато «Сохранить», выбранный файл живёт в памяти страницы вместе
-     с содержимым (поле data). Уедет он тем же нажатием, что и всё остальное. */
-  var ZACHET_MAX = 8 * 1024 * 1024;   // больше телефон и не отдаст по-человечески
+     Записи в json ссылаются на файл по имени, поэтому сами файлы уезжают
+     раньше: сначала удаления, потом загрузки, и только потом списки. */
+  var PDF_MAX = 8 * 1024 * 1024;    // больше телефон и не отдаст по-человечески
 
-  function zachetList() {
-    if (!state.zachet) {
-      state.zachet = JSON.parse(JSON.stringify(
-        (DATA.zachet && DATA.zachet.items) || []));
-    }
-    return state.zachet;
+  function stagedBlobs() { return state.blobs || (state.blobs = []); }
+  function goneBlobs() { return state.blobsGone || (state.blobsGone = []); }
+
+  function stageBlob(path, data, size, title) {
+    unstageBlob(path);
+    stagedBlobs().push({ path: path, data: data, size: size, title: title });
+    // файл вернули на то же имя — значит, удалять его уже не надо
+    state.blobsGone = goneBlobs().filter(function (x) { return x !== path; });
   }
 
-  // в файл уходит только описание: содержимое нового файла — дело загрузки
-  function zachetPayload(list) {
-    return (list || []).map(function (it) {
-      return { title: it.title, file: it.file, size: it.size, at: it.at };
-    });
+  function unstageBlob(path) {
+    state.blobs = stagedBlobs().filter(function (b) { return b.path !== path; });
   }
 
-  function zachetDirty() {
-    if (!state.zachet) return false;
-    var was = SAVED.zachet ||
-      JSON.stringify(zachetPayload((DATA.zachet && DATA.zachet.items) || []));
-    return JSON.stringify(zachetPayload(state.zachet)) !== was ||
-      zachetAdded().length > 0 || (state.zachetGone || []).length > 0;
+  function stagedBlob(path) {
+    return stagedBlobs().filter(function (b) { return b.path === path; })[0] || null;
   }
 
-  function zachetAdded() {
-    return zachetList().filter(function (it) { return !!it.data; });
+  // файл, который ещё не уезжал, удалять из репозитория незачем
+  function dropBlob(path) {
+    if (stagedBlob(path)) return unstageBlob(path);
+    if (goneBlobs().indexOf(path) === -1) goneBlobs().push(path);
   }
+
+  function blobsDirty() { return stagedBlobs().length + goneBlobs().length; }
 
   /* Имя файла в репозитории делаем сами: телефон отдаёт что угодно, вплоть до
      пробелов и кириллицы, а это имя попадёт в ссылку. */
-  function zachetFileName(title, taken) {
-    var base = translit(title) || "zachet";
+  function pdfName(title, taken, fallback) {
+    var base = translit(title) || fallback || "file";
     var name = base + ".pdf", i = 2;
     while (taken.indexOf(name) !== -1) { name = base + "-" + i + ".pdf"; i += 1; }
     return name;
-  }
-
-  function addZachet(title, file, data) {
-    var taken = zachetList().map(function (it) { return it.file; });
-    zachetList().push({
-      title: title,
-      file: zachetFileName(title, taken),
-      size: file.size,
-      at: todayISO(),
-      data: data
-    });
-    touchZachet();
-  }
-
-  function removeZachet(name) {
-    var list = zachetList();
-    var it = list.filter(function (x) { return x.file === name; })[0];
-    state.zachet = list.filter(function (x) { return x.file !== name; });
-    // файл, который ещё не уезжал, удалять из репозитория незачем
-    if (it && !it.data) {
-      state.zachetGone = (state.zachetGone || []).concat([name]);
-    }
-    state.confirmFile = null;
-    touchZachet();
-  }
-
-  function touchZachet() {
-    state.note = "";
-    state.noteKind = "";
   }
 
   /* Двоичный файл уходит тем же путём, что и текстовый: base64 в теле запроса.
@@ -1010,43 +1007,170 @@
     return btoa(out);
   }
 
-  function putZachetBlob(it) {
+  /* Читаем выбранный файл и отдаём его дальше. Проверки здесь же: pdf ли это и
+     не великоват ли — телефон отдаст что угодно, вплоть до видео. */
+  function readPdf(f, then) {
+    if (!f) return;
+    if (!/\.pdf$/i.test(f.name)) {
+      state.note = "Нужен pdf";
+      state.noteKind = "bad";
+      return render();
+    }
+    if (f.size > PDF_MAX) {
+      state.note = "Файл больше " + fileSize(PDF_MAX) + " — столько не уедет";
+      state.noteKind = "bad";
+      return render();
+    }
+    var reader = new FileReader();
+    reader.onload = function () { then(b64FromBytes(reader.result), f); };
+    reader.onerror = function () {
+      state.note = "Файл не прочитался";
+      state.noteKind = "bad";
+      render();
+    };
+    reader.readAsArrayBuffer(f);
+  }
+
+  function putBlobFile(b) {
     return function () {
-      var path = "data/zachet/" + it.file;
-      return statFile(path).then(function (cur) {
+      return statFile(b.path).then(function (cur) {
         /* Тот же файл уже на месте — значит, прошлая отправка успела пройти, а
            сорвалось что-то следующее. Повтор не должен спотыкаться об это.
            Чужой файл того же имени переписывать нельзя: имя выдаётся по
            названию, и совпасть может с чем угодно. */
-        if (cur && cur.size === it.size) return null;
+        if (cur && cur.size === b.size) return null;
         if (cur) {
-          throw new Error("файл " + it.file + " уже есть в репозитории — " +
-            "переименуй запись");
+          throw new Error("файл " + b.path.split("/").pop() +
+            " уже есть в репозитории — переименуй запись");
         }
-        return putFile(path, null, "Зачёт: " + it.title, null, it.data);
-      }).then(function () { delete it.data; });
+        return putFile(b.path, null, "Файл: " + (b.title || b.path), null, b.data);
+      }).then(function () { unstageBlob(b.path); });
     };
   }
 
-  function dropZachetBlob(name) {
+  function dropBlobFile(path) {
     return function () {
-      var path = "data/zachet/" + name;
-      return getFile(path).then(function (cur) {
+      return statFile(path).then(function (cur) {
         if (!cur) return null;
         return api("/contents/" + path, {
           method: "DELETE",
           body: JSON.stringify({
-            message: "Зачёт: " + name + " удалён",
+            message: "Файл удалён: " + path.split("/").pop(),
             sha: cur.sha,
             branch: repo().branch || "main"
           })
         });
       }).then(function () {
-        state.zachetGone = (state.zachetGone || []).filter(function (x) {
-          return x !== name;
-        });
+        state.blobsGone = goneBlobs().filter(function (x) { return x !== path; });
       });
     };
+  }
+
+  /* Размер словами: килобайты до мегабайта, дальше мегабайты с десятой. Точный
+     байт никому не нужен — важно понять, уедет ли это с телефона. */
+  function fileSize(n) {
+    if (typeof n !== "number" || !isFinite(n) || n <= 0) return "";
+    if (n < 1024 * 1024) return Math.max(1, Math.round(n / 1024)) + " КБ";
+    return (n / 1024 / 1024).toFixed(1).replace(".", ",") + " МБ";
+  }
+
+  /* Карточка «приложенный pdf»: выбрать, показать, убрать. Одна на серию,
+     гробарий и любую другую запись с файлом. */
+  function pdfCard(current, opts) {
+    var card = el("div", "card");
+    var name = opts.label || "Листок";
+
+    if (current && current.file) {
+      var line = el("div", "subline wide");
+      var main = el("span", "subline-name", current.file);
+      if (stagedBlob(opts.dir + current.file)) {
+        main.appendChild(el("i", "badge", "новый"));
+      }
+      line.appendChild(main);
+      line.appendChild(el("span", "subline-val muted", fileSize(current.size)));
+      line.appendChild(deleteCell(state.confirmFile === opts.dir + current.file,
+        function () {
+          state.confirmFile = opts.dir + current.file;
+          render();
+        }, function () {
+          dropBlob(opts.dir + current.file);
+          opts.onDrop();
+          state.confirmFile = null;
+          render();
+        }));
+      card.appendChild(line);
+      return card;
+    }
+
+    var file = el("input");
+    file.type = "file";
+    file.accept = "application/pdf,.pdf";
+    file.className = "hidden-file";
+    file.addEventListener("change", function () {
+      readPdf(file.files && file.files[0], function (data, f) {
+        var fname = opts.name(f);
+        stageBlob(opts.dir + fname, data, f.size, name);
+        opts.onPick({ file: fname, size: f.size });
+        render();
+      });
+    });
+
+    var row = el("div", "frow gap");
+    row.appendChild(button("Выбрать pdf", "ghost-btn", function () { file.click(); }));
+    row.appendChild(file);
+    card.appendChild(row);
+    card.appendChild(el("div", "savecard-note",
+      "pdf до " + fileSize(PDF_MAX) + "; уедет по кнопке сохранения"));
+    return card;
+  }
+
+  // ── зачёт ───────────────────────────────────────────────
+
+  /* Приложенные pdf: список в data/zachet.json, сами файлы в data/zachet/.
+     Со счётом они не связаны — это просто раздаточный материал. */
+  var ZACHET_DIR = "data/zachet/";
+
+  function zachetList() {
+    if (!state.zachet) {
+      state.zachet = JSON.parse(JSON.stringify(
+        (DATA.zachet && DATA.zachet.items) || []));
+    }
+    return state.zachet;
+  }
+
+  function zachetPayload(list) {
+    return (list || []).map(function (it) {
+      return { title: it.title, file: it.file, size: it.size, at: it.at };
+    });
+  }
+
+  function zachetDirty() {
+    if (!state.zachet) return false;
+    var was = SAVED.zachet ||
+      JSON.stringify(zachetPayload((DATA.zachet && DATA.zachet.items) || []));
+    return JSON.stringify(zachetPayload(state.zachet)) !== was;
+  }
+
+  function addZachet(title, f, data) {
+    var taken = zachetList().map(function (it) { return it.file; });
+    var name = pdfName(title, taken, "zachet");
+    stageBlob(ZACHET_DIR + name, data, f.size, title);
+    zachetList().push({
+      title: title, file: name, size: f.size, at: todayISO()
+    });
+    touchZachet();
+  }
+
+  function removeZachet(name) {
+    dropBlob(ZACHET_DIR + name);
+    state.zachet = zachetList().filter(function (x) { return x.file !== name; });
+    state.confirmFile = null;
+    touchZachet();
+  }
+
+  function touchZachet() {
+    state.note = "";
+    state.noteKind = "";
   }
 
   function putZachetFile() {
@@ -1082,6 +1206,7 @@
   function ensureGraves() {
     if (!state.graves) {
       state.graves = {
+        pdf: (DATA.graves || {}).pdf || undefined,
         problems: JSON.parse(JSON.stringify((DATA.graves || {}).problems || [])),
         solutions: readSolutions(DATA.graves)
       };
@@ -1165,7 +1290,7 @@
           .localeCompare(String(name[b.student] || b.student), "ru");
     });
 
-    return {
+    var out = {
       problems: (((g && g.problems) || [])).map(function (p) {
         var out = { id: p.id, type: p.type, sub: p.sub || null };
         var w = customWeight(p);
@@ -1174,6 +1299,10 @@
       }),
       solutions: list
     };
+    if (g && g.pdf && g.pdf.file) {
+      out.pdf = { file: g.pdf.file, size: g.pdf.size };
+    }
+    return out;
   }
 
   function gravesDirty() {
@@ -1346,6 +1475,17 @@
     actions.appendChild(gpart);
     card.appendChild(actions);
     host.appendChild(card);
+
+    var shp = el("div", "section-head");
+    shp.appendChild(el("span", "section-title", "Листок"));
+    host.appendChild(shp);
+    host.appendChild(pdfCard(g.pdf, {
+      dir: PDF_DIR,
+      label: "Гробарий",
+      name: function () { return "grobariy.pdf"; },
+      onPick: function (info) { g.pdf = info; touchGraves(); },
+      onDrop: function () { delete g.pdf; touchGraves(); }
+    }));
 
     var sh = el("div", "section-head");
     sh.appendChild(el("span", "section-title", "Кто решил"));
@@ -1926,7 +2066,97 @@
       host.appendChild(conduitGrid(state.series.problems, state.series.solved, touch));
     }
 
+    var sh3 = el("div", "section-head");
+    sh3.appendChild(el("span", "section-title", "Листок"));
+    host.appendChild(sh3);
+    host.appendChild(seriesPdfCard(state.series));
+
+    var sh4 = el("div", "section-head");
+    sh4.appendChild(el("span", "section-title", "Кто был"));
+    host.appendChild(sh4);
+    host.appendChild(attendanceCard(state.series));
+
     host.appendChild(deleteBar());
+  }
+
+  var PDF_DIR = "data/pdf/";
+
+  // листок серии: pdf с условиями, ссылка на него стоит на сайте у серии
+  function seriesPdfCard(d) {
+    return pdfCard(d.pdf, {
+      dir: PDF_DIR,
+      label: "Листок серии " + seriesNo(d),
+      name: function () {
+        var taken = allDays().map(function (x) {
+          var day = state.days[x.n] || dayBySlot(x.n);
+          return (day && day.pdf && day.pdf.file) || "";
+        });
+        return pdfName("seriya-" + seriesNo(d), taken, "seriya");
+      },
+      onPick: function (info) { d.pdf = info; touch(); },
+      onDrop: function () { delete d.pdf; touch(); }
+    });
+  }
+
+  /* Кто был. Пока список не заведён, серия про посещаемость ничего не
+     утверждает — это честнее, чем считать всех пришедшими. */
+  function attendanceCard(d) {
+    var card = el("div", "card");
+    if (!attendanceOn(d)) {
+      var row = el("div", "frow gap");
+      row.appendChild(button("Отметить посещаемость", "ghost-btn", function () {
+        startAttendance(d);
+        render();
+      }));
+      card.appendChild(row);
+      card.appendChild(el("div", "savecard-note",
+        "отметятся все, дальше снимаешь тех, кого не было"));
+      return card;
+    }
+
+    var head = el("div", "filter-head");
+    head.appendChild(el("span", "filter-title",
+      withNum(d.present.length, "был", "было", "было") + " из " + roster().length));
+    head.appendChild(mini("все", function () {
+      d.present = roster().map(function (s) { return s.id; });
+      touch();
+      render();
+    }));
+    head.appendChild(mini("никого", function () {
+      d.present = [];
+      touch();
+      render();
+    }));
+    head.appendChild(mini("не вести", function () {
+      delete d.present;
+      touch();
+      render();
+    }));
+    card.appendChild(head);
+
+    var chips = el("div", "chips");
+    roster().slice().sort(function (a, b) {
+      return a.name.localeCompare(b.name, "ru");
+    }).forEach(function (st) {
+      var on = d.present.indexOf(st.id) !== -1;
+      var b = el("button", "chip pick", st.name);
+      b.type = "button";
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.addEventListener("click", function () {
+        togglePresent(d, st.id);
+        render();
+      });
+      chips.appendChild(b);
+    });
+    card.appendChild(chips);
+    return card;
+  }
+
+  function mini(text, fn) {
+    var b = el("button", "mini-btn", text);
+    b.type = "button";
+    b.addEventListener("click", fn);
+    return b;
   }
 
   // вычеркнутая серия возвращается повторным касанием — тупика быть не должно
@@ -2585,9 +2815,34 @@
     var asking = state.confirmStudent === st.id;
     var line = el("div", "subline wide");
 
-    var name = el("span", "subline-name", st.name);
-    if (DATA.config.admin === st.id) name.appendChild(el("i", "badge-admin", "◆"));
-    line.appendChild(name);
+    /* Имя правится на месте: id при этом не меняется, иначе все плюсы этого
+       человека отвязались бы. Ошибку в фамилии так можно исправить, ничего не
+       потеряв. */
+    var name = el("input");
+    name.className = "input flat";
+    name.value = st.name;
+    name.addEventListener("change", function () {
+      var v = String(name.value).trim();
+      var busy = editRoster().some(function (x) {
+        return x !== st && x.name === v;
+      });
+      if (!v || busy) {
+        name.value = st.name;
+        if (busy) {
+          state.note = "Такой ученик уже есть";
+          state.noteKind = "bad";
+          render();
+        }
+        return;
+      }
+      var mine = editRoster().filter(function (x) { return x.id === st.id; })[0];
+      if (mine) mine.name = v;
+      render();
+    });
+    var box = el("span", "name-edit");
+    box.appendChild(name);
+    if (DATA.config.admin === st.id) box.appendChild(el("i", "badge-admin", "◆"));
+    line.appendChild(box);
 
     var n = studentPluses(st.id);
     line.appendChild(el("span", "subline-val" + (n ? "" : " muted"),
@@ -2635,83 +2890,49 @@
     });
     add.appendChild(field("Название", titleIn));
 
-    /* Своя кнопка вместо системного поля: у него подпись «файл не выбран» на
+    /* Своя кнопка вместо системного поля: у того подпись «файл не выбран» на
        чужом языке и вид, который не подчинить. Настоящее поле спрятано. */
     var file = el("input");
     file.type = "file";
     file.accept = "application/pdf,.pdf";
     file.className = "hidden-file";
+    file.addEventListener("change", function () {
+      readPdf(file.files && file.files[0], function (data, f) {
+        addZachet(String(state.zachetTitle || "").trim() ||
+          f.name.replace(/\.pdf$/i, ""), f, data);
+        state.zachetTitle = "";
+        render();
+      });
+    });
 
     var row = el("div", "frow gap");
-    var pick = button(state.zachetName || "Выбрать pdf", "ghost-btn", function () {
-      file.click();
-    });
-    row.appendChild(pick);
-
-    file.addEventListener("change", function () {
-      var f = file.files && file.files[0];
-      if (!f) return;
-      if (!/\.pdf$/i.test(f.name)) {
-        state.note = "Нужен pdf";
-        state.noteKind = "bad";
-        return render();
-      }
-      if (f.size > ZACHET_MAX) {
-        state.note = "Файл больше " + fileSize(ZACHET_MAX) + " — столько не уедет";
-        state.noteKind = "bad";
-        return render();
-      }
-      var title = String(state.zachetTitle || "").trim() ||
-        f.name.replace(/\.pdf$/i, "");
-      var reader = new FileReader();
-      reader.onload = function () {
-        addZachet(title, f, b64FromBytes(reader.result));
-        state.zachetTitle = "";
-        state.zachetName = "";
-        render();
-      };
-      reader.onerror = function () {
-        state.note = "Файл не прочитался";
-        state.noteKind = "bad";
-        render();
-      };
-      reader.readAsArrayBuffer(f);
-    });
-
+    row.appendChild(button("Выбрать pdf", "ghost-btn", function () { file.click(); }));
     row.appendChild(file);
     add.appendChild(row);
     add.appendChild(el("div", "savecard-note",
-      "pdf до " + fileSize(ZACHET_MAX) + "; уедет по кнопке сохранения"));
+      "pdf до " + fileSize(PDF_MAX) + "; уедет по кнопке сохранения"));
     host.appendChild(add);
   }
 
   function zachetRow(it) {
-    var asking = state.confirmFile === it.file;
+    var path = ZACHET_DIR + it.file;
     var line = el("div", "subline wide");
 
     var main = el("span", "subline-name");
     main.appendChild(document.createTextNode(it.title));
-    if (it.data) main.appendChild(el("i", "badge", "новый"));
+    if (stagedBlob(path)) main.appendChild(el("i", "badge", "новый"));
     line.appendChild(main);
 
     line.appendChild(el("span", "subline-val muted", fileSize(it.size)));
 
-    line.appendChild(deleteCell(asking, function () {
-      state.confirmFile = it.file;
+    line.appendChild(deleteCell(state.confirmFile === path, function () {
+      state.confirmFile = path;
       render();
     }, function () {
       removeZachet(it.file);
       render();
     }));
     return line;
-  }
-
-  /* Размер словами: килобайты до мегабайта, дальше мегабайты с десятой. Точный
-     байт никому не нужен — важно понять, уедет ли это с телефона. */
-  function fileSize(n) {
-    if (typeof n !== "number" || !isFinite(n) || n <= 0) return "";
-    if (n < 1024 * 1024) return Math.max(1, Math.round(n / 1024)) + " КБ";
-    return (n / 1024 / 1024).toFixed(1).replace(".", ",") + " МБ";
   }
 
   // ── вид: сохранение ─────────────────────────────────────
@@ -2791,7 +3012,8 @@
     SAVED.roster = null;
     state.zachet = null;
     SAVED.zachet = null;
-    state.zachetGone = [];
+    state.blobs = [];
+    state.blobsGone = [];
     state.zachetTitle = "";
     state.sig = null;
     SAVED.sig = null;
@@ -3187,7 +3409,7 @@
         state.roster = null;
         SAVED.roster = null;
       }
-      if (state.zachet && !zachetAdded().length && !(state.zachetGone || []).length &&
+      if (state.zachet && !blobsDirty() &&
           JSON.stringify(zachetPayload(state.zachet)) ===
           JSON.stringify(zachetPayload(DATA.zachet.items))) {
         state.zachet = null;

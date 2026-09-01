@@ -91,6 +91,38 @@
 
   function hasTasks(s) { return (s.problems || []).length > 0; }
 
+  /* Посещаемость ведётся по желанию: у серии либо есть список пришедших, либо
+     она про это ничего не говорит. Считаем только по тем, где список есть. */
+  function attended(s) { return Array.isArray(s.present); }
+
+  function wasThere(s, id) {
+    return attended(s) && s.present.indexOf(id) !== -1;
+  }
+
+  function attendance(id) {
+    var was = 0, of = 0;
+    DATA.series.forEach(function (s) {
+      if (!attended(s)) return;
+      of += 1;
+      if (wasThere(s, id)) was += 1;
+    });
+    return { was: was, of: of };
+  }
+
+  // строка «скачать pdf»: одна и та же у листка серии, гробария и зачёта
+  function pdfRow(file, title, size) {
+    var row = el("a", "lik-row");
+    row.href = "data/pdf/" + encodeURIComponent(file);
+    row.setAttribute("download", title + ".pdf");
+    var main = el("span", "lik-main");
+    main.appendChild(el("span", "lik-title", title));
+    main.appendChild(el("span", "lik-meta",
+      "PDF" + (fileSize(size) ? " · " + fileSize(size) : "")));
+    row.appendChild(main);
+    row.appendChild(el("span", "lik-get", "скачать"));
+    return row;
+  }
+
   function realSeries() { return DATA.series.filter(hasTasks); }
 
   var MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня",
@@ -739,8 +771,16 @@
 
     var sh = el("div", "section-head");
     sh.appendChild(el("span", "section-title", "Серия " + seriesNo(s)));
-    sh.appendChild(el("span", "section-note", prettyDate(s.date)));
+    var note = prettyDate(s.date);
+    if (attended(s)) note += " · был " + s.present.length + " из " + DATA.students.length;
+    sh.appendChild(el("span", "section-note", note));
     host.appendChild(sh);
+
+    if (s.pdf && s.pdf.file) {
+      var pcard = el("div", "card");
+      pcard.appendChild(pdfRow(s.pdf.file, "Листок серии " + seriesNo(s), s.pdf.size));
+      host.appendChild(pcard);
+    }
 
     // в пустой серии показывать нечего — одна шапка с датой
     if (!s.problems.length) return;
@@ -790,6 +830,13 @@
     var sh = el("div", "section-head");
     sh.appendChild(el("span", "section-title", "Гробарий"));
     host.appendChild(sh);
+
+    var gpdf = DATA.graves && DATA.graves.pdf;
+    if (gpdf && gpdf.file) {
+      var gcard = el("div", "card");
+      gcard.appendChild(pdfRow(gpdf.file, "Гробарий", gpdf.size));
+      host.appendChild(gcard);
+    }
 
     var card = el("div", "card");
     list.slice().sort(function (a, b) {
@@ -858,18 +905,9 @@
 
     var card = el("div", "card");
     items.forEach(function (it) {
-      var row = el("a", "lik-row");
+      var row = pdfRow(it.file, it.title, it.size);
+      // зачёт лежит своей папкой: сборной свалки файлов лучше не заводить
       row.href = "data/zachet/" + encodeURIComponent(it.file);
-      // без этого телефон открывает pdf во вкладке, а его просили скачать
-      row.setAttribute("download", it.title + ".pdf");
-
-      var main = el("span", "lik-main");
-      main.appendChild(el("span", "lik-title", it.title));
-      main.appendChild(el("span", "lik-meta",
-        "PDF" + (fileSize(it.size) ? " · " + fileSize(it.size) : "")));
-      row.appendChild(main);
-
-      row.appendChild(el("span", "lik-get", "скачать"));
       card.appendChild(row);
     });
     host.appendChild(card);
@@ -899,6 +937,12 @@
     var pctTile = tile("Процент", pct(share), null);
     if (share >= 0.5) pctTile.className = "tile hi";
     tiles.appendChild(pctTile);
+
+    var att = attendance(id);
+    if (att.of) {
+      tiles.appendChild(tile("Занятия", att.was + " / " + att.of,
+        att.was === att.of ? "ни одного пропуска" : null));
+    }
 
     var best = bestProblem(id);
     tiles.appendChild(tile("Самый ценный плюс", best ? "+" + best.value : "—",
@@ -1007,6 +1051,10 @@
       var head = el("div", "dblock-head");
       var name = el("span", "dblock-name", "Серия " + seriesNo(s));
       name.appendChild(el("span", "dblock-date", prettyDate(s.date, true)));
+      // пропуск отмечаем, приход — нет: он и так виден по плюсам
+      if (attended(s) && !wasThere(s, id)) {
+        name.appendChild(el("span", "dblock-miss", "не был"));
+      }
       head.appendChild(name);
       head.appendChild(el("span", "dblock-val",
         mine.length + " / " + total + " · " + num(score) + " / " + num(ceiling)));
