@@ -1,0 +1,1875 @@
+/* Кондуит — оформление.
+   Палитра типов задач — проверенный категориальный набор (8 слотов),
+   светлая и тёмная темы заданы отдельными шагами, а не автоматической инверсией. */
+
+:root {
+  color-scheme: light dark;
+
+  --surface: #fcfcfb;
+  --plane: #f9f9f7;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --ink-muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --border-strong: rgba(11, 11, 11, 0.18);
+  --wash: rgba(11, 11, 11, 0.04);
+  --good: #006300;
+  --bad: #d03b3b;
+
+  /* Цвета тем различаются прежде всего тоном, а не яркостью: тон переживает
+     любое затемнение, яркость — нет. Фиолетовый уведён от синего подальше:
+     прежний #4a3aa7 был почти той же тёмной синевой, и под фильтром
+     принудительной тёмной темы они сливались. */
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s3: #1baf7a;
+  --s4: #eda100;
+  --s5: #e87ba4;
+  --s6: #008300;
+  --s7: #8e3fd6;
+  --s8: #e34948;
+
+  /* Разрыв между «решено» и «нет» намеренно большой: часть браузеров на
+     телефонах затемняет крупные заливки по-своему, и слабую разницу такое
+     затемнение стирает совсем. */
+  /* Клетка кондуита. Пустая — заметная заливка с обводкой, решённая — плотная
+     заливка обратной яркости со знаком поверх. В каждой теме пара «пустая /
+     решённая» строится одинаково, только в разные стороны: в светлой решённая
+     темнее фона, в тёмной — светлее. */
+  --cell-on: #3d3b33;
+  --cell-off: #e6e3d4;
+  --cell-edge: #cbc7b3;
+  --cell-ink: #fcfcfb;
+  /* пустой квадрат шкалы — свой цвет, а не цвет пустой клетки кондуита:
+     в кондуите он почти сливается с подложкой намеренно, в шкале должен
+     быть виден, иначе не поймёшь, из чего доля */
+  --meter-off: #c9c6b7;
+
+  --admin: #a1245e;
+  /* Корона — заливка, а не текст, поэтому золото берём чистое и тёплое.
+     Прежний #9a7000 на светлом читался болотным: слишком мало красного. */
+  --leader: #c9891c;
+  --accent-hi: #8a6400;
+  --accent-wash: rgba(138, 100, 0, 0.07);
+
+  /* Два радиуса на весь интерфейс: крупный для карточек и панелей, мелкий для
+     полей, клеток и квадратных кнопок. Круглые кнопки — отдельно, 999px. */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --tap: 44px;
+}
+
+/* Тёмная тема — свой набор шагов под тёмную подложку, а не инверсия светлой.
+   Пока страница объявляла «только светлая», браузер затемнял её сам и портил
+   цвета; со своим набором мы решаем это сами. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #1a1a19;
+    --plane: #0d0d0d;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --ink-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.24);
+    --wash: rgba(255, 255, 255, 0.07);
+    --good: #0ca30c;
+    --bad: #e66767;
+
+    /* На тёмной подложке цвет должен быть светлее, чем на светлой, а не темнее.
+       Прежний набор был темнее светлого — отсюда «цвета тем слишком тёмные и
+       сливаются». Все восемь дают против подложки не меньше 7:1. */
+    --s1: #66b2ff;
+    --s2: #ff9e57;
+    --s3: #3fd6a0;
+    --s4: #f3c53f;
+    --s5: #ff92b8;
+    --s6: #85dc5e;
+    --s7: #c48cff;
+    --s8: #ff8585;
+
+    --cell-on: #ccc6a9;
+    --cell-off: #45443f;
+    --cell-edge: #605e55;
+    --cell-ink: #16150f;
+    --meter-off: #454440;
+
+    --admin: #f08fb8;
+    --leader: #f0c34c;
+    --accent-hi: #e3b23c;
+    --accent-wash: rgba(227, 178, 60, 0.12);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+html {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  /* Место под полосу прокрутки держим всегда. Без этого на короткой вкладке
+     («Темы») полоса пропадает, окно становится шире на её толщину, и вся
+     страница дёргается вбок при каждом переключении. */
+  scrollbar-gutter: stable;
+}
+
+/* Синий прямоугольник при касании складывается из двух вещей: подсветки самого
+   касания и выделения текста внутри кнопки. Гасим обе, но оставляем видимую
+   рамку для клавиатуры. */
+button, .chip, .tab, .mark, .cal-day, .picker-btn, a.ghost-btn {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+:focus:not(:focus-visible) { outline: none; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--plane);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 16px 64px;
+}
+
+/* ── шапка ─────────────────────────────────────────────── */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0 16px;
+}
+
+/* Название набрано крупно и плотно, подпись под ним — мелко и вразрядку.
+   Контраст двух наборов и делает шапку заметной, без цветных полос и теней. */
+.brand {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.brand-sub {
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  margin-top: 3px;
+}
+
+.spacer { flex: 1; }
+
+.ghost-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  cursor: pointer;
+  min-height: 32px;
+}
+
+.ghost-btn:hover { background: var(--wash); }
+.ghost-btn:disabled { opacity: .4; cursor: default; }
+.ghost-btn:disabled:hover { background: var(--surface); }
+
+/* Поле числа без стрелок-крутилок: номер дня вводят с клавиатуры, а на узком
+   поле крутилки съедают половину ширины. */
+input[type="number"] { -moz-appearance: textfield; }
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--grid);
+  margin-bottom: 18px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar { display: none; }
+
+/* Вес шрифта у выбранной вкладки не меняется: от смены веса меняется ширина,
+   и соседние вкладки съезжают при каждом переключении. Выбранная опознаётся
+   цветом и подчёркиванием, ширина остаётся той же. */
+.tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 9px 12px;
+  margin-bottom: -1px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .16s ease, border-bottom-color .16s ease;
+}
+
+.tab:hover { color: var(--ink-2); }
+.tab:focus { outline: none; }
+
+.tab:focus-visible {
+  outline: 2px solid var(--s1);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+.tab[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+/* ── карточки и фильтры ────────────────────────────────── */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+/* карточка-предупреждение: данные не потеряны, но и не считаются */
+.card.warn { border-color: var(--accent-hi); background: var(--accent-wash); }
+
+.warn-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-hi);
+  margin-bottom: 6px;
+}
+
+.warn-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  padding: 3px 0;
+}
+
+.warn-where { color: var(--ink-2); }
+.warn-ids { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.filters { margin-bottom: 14px; }
+
+.filter-row + .filter-row {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--grid);
+}
+
+.filter-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.filter-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* Не голубая ссылка, а маленькая кнопка: голубой в этом интерфейсе занят под
+   цвет темы «Алгебра», и надпись читалась как ещё один ярлык темы. */
+.mini-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+
+.mini-btn:hover {
+  background: var(--wash);
+  border-color: var(--border-strong);
+  color: var(--ink);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+.chip:hover { background: var(--wash); }
+
+.chip[aria-pressed="false"] {
+  color: var(--ink-muted);
+  border-style: dashed;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.chip[aria-pressed="false"] .dot { opacity: .28; }
+
+/* Выбор одного из вариантов — не фильтр: невыбранное здесь не «исключено»,
+   поэтому не зачёркивается. Выбранное обводится жирнее. */
+.chip.pick[aria-pressed="false"] {
+  color: var(--ink-2);
+  border-style: solid;
+  text-decoration: none;
+}
+
+.chip.pick[aria-pressed="false"] .dot,
+.chip.sub.pick[aria-pressed="false"]::before { opacity: 1; }
+
+.chip.pick[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--wash);
+  color: var(--ink);
+}
+
+/* кнопка серии: номер и дата. Серий за год набирается много, поэтому кнопка
+   плотная — иначе выбор занимает пол-экрана. */
+.chip.day {
+  flex-direction: column;
+  gap: 0;
+  min-width: 44px;
+  padding: 4px 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* гробарий — одиночная кнопка, дата ему не нужна */
+.chip.day.wide { flex-direction: row; padding: 8px 16px; }
+.chip.day.wide b { font-size: 13.5px; }
+
+.chip.day b { font-size: 13px; font-weight: 620; line-height: 1.2; }
+.chip.day small { font-size: 9.5px; line-height: 1.15; opacity: .72; letter-spacing: -0.02em; }
+
+.chip[aria-pressed="true"].day {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.chip.day[aria-pressed="false"] {
+  text-decoration: none;
+  border-style: dashed;
+  color: var(--ink-muted);
+}
+
+/* На кнопке серии номер сверху, дата подписью снизу. */
+.chip.day b { color: var(--ink); }
+
+/* У выбранного дня подложка тёмная, и цвет буквы на ней теряется. Ничего не
+   пропадает: буква и есть пометка, цвет к ней только добавка. */
+.chip[aria-pressed="true"].day b { color: inherit; }
+
+/* темы: раздел и его подразделы */
+.tgroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 8px;
+}
+
+.chip.cat { font-weight: 560; }
+.chip.cat.partial { border-style: dashed; }
+
+.chip-count {
+  font-size: 11px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.chip[aria-pressed="true"].cat .chip-count { color: var(--ink-muted); }
+
+.subs { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.chip.sub {
+  font-size: 12.5px;
+  padding: 5px 10px 5px 9px;
+  border-color: var(--border);
+}
+
+.chip.sub::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--accent);
+}
+
+.chip.sub[aria-pressed="true"] { color: var(--ink); }
+.chip.sub[aria-pressed="false"]::before { opacity: .28; }
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.summary {
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--grid);
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.summary b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* ── плитки ────────────────────────────────────────────── */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
+.tile-label {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+
+.tile-value {
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.tile-note {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+
+/* плитка, отмечающая достижение: половина задач и выше */
+.tile.hi {
+  border-color: var(--accent-hi);
+  background: var(--accent-wash);
+}
+
+.tile.hi .tile-value { color: var(--accent-hi); }
+.tile.hi .tile-label { color: var(--accent-hi); opacity: .85; }
+
+/* ── таблицы ───────────────────────────────────────────── */
+
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Колонки с числами закреплены по ширине, имя забирает остаток. При обычной
+   раскладке ширина столбца зависит от самого длинного числа в нём, и таблица
+   переезжала при каждом переключении фильтра. */
+table.data.fixed { table-layout: fixed; }
+table.data.fixed th.rank { width: 38px; }
+table.data.fixed th.c-score { width: 74px; }
+table.data.fixed th.c-tasks { width: 66px; }
+table.data.fixed th.c-avg { width: 82px; }
+
+table.data.fixed td.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+table.data th {
+  text-align: right;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--grid);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 2;
+}
+
+table.data th.left, table.data td.left { text-align: left; }
+
+table.data td {
+  text-align: right;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--grid);
+  white-space: nowrap;
+}
+
+table.data tbody tr:last-child td { border-bottom: 0; }
+
+table.data tfoot td {
+  border-top: 1px solid var(--axis);
+  border-bottom: 0;
+  color: var(--ink-2);
+  font-weight: 560;
+}
+
+table.data tfoot .name { color: var(--ink-muted); font-weight: 600; }
+table.data tbody tr:hover td { background: var(--wash); }
+table.data tr.clickable { cursor: pointer; }
+
+.rank {
+  width: 1%;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.rank-top { color: var(--ink); font-weight: 600; }
+
+.name { font-weight: 500; }
+
+.score { font-weight: 620; font-size: 16px; }
+
+.muted { color: var(--ink-muted); }
+
+/* подпись в самом низу карточки — тем же шрифтом, что и всё остальное */
+.egg {
+  margin: 26px 0 8px;
+  text-align: center;
+  font-size: 13.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  opacity: 0.5;
+}
+
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+  justify-content: flex-end;
+}
+
+.delta.up { color: var(--good); }
+.delta.down { color: var(--bad); }
+.delta.same { color: var(--ink-muted); }
+
+/* Все цветные заливки — чистым цветом, без картинок-градиентов. Градиент здесь
+   пробовался как защита от принудительной тёмной темы и дал обратный эффект:
+   в Samsung Internet тускнеет именно он, а плоский цвет остаётся как задан. */
+
+/* ── кондуит ───────────────────────────────────────────── */
+
+/* Кондуит — две таблицы бок о бок: фамилии не прокручиваются, клетки
+   прокручиваются. Высоты строк заданы жёстко, иначе половинки разъедутся. */
+.conduit-split {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+table.conduit.names {
+  flex: none;
+  border-right: 1px solid var(--grid);
+}
+
+.conduit-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+table.conduit thead th { height: 40px; }
+table.conduit tbody td { height: 38px; }
+table.conduit tfoot td { height: 26px; }
+
+table.conduit {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+table.conduit th, table.conduit td {
+  padding: 0;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+table.conduit th.pname, table.conduit td.pname {
+  background: var(--surface);
+  text-align: left;
+  padding: 0 12px 0 14px;
+  white-space: nowrap;
+  font-size: 15px;
+  min-width: 176px;
+  max-width: 176px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* столбец фамилий оформлен как в рейтинге: тот же кегль, вес и отбивка */
+table.conduit tbody td.pname {
+  height: 32px;
+  font-weight: 500;
+  color: var(--ink);
+  padding: 0 14px;
+}
+
+table.conduit thead th.pname,
+table.conduit tfoot td.pname {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* Имя со значками: сам текст ужимается, значки — никогда. Оба значка могут
+   стоять рядом, если админ вышел на первое место. */
+.name-box {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.name-box .nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge-admin {
+  flex: none;
+  font-style: normal;
+  font-size: 0.82em;
+  line-height: 1;
+  color: var(--admin);
+}
+
+/* Корона нарисована обрезкой прямоугольника, а не взята символом: символьные
+   короны есть не во всех телефонных шрифтах и выпадают в пустой квадрат.
+   Силуэт простой — пять зубцов, читается на 9 пикселях. */
+.badge-leader {
+  flex: none;
+  width: 11px;
+  height: 9px;
+  background: var(--leader);
+  clip-path: polygon(0 100%, 0 20%, 25% 52%, 50% 0, 75% 52%, 100% 20%, 100% 100%);
+}
+
+table.conduit thead th {
+  background: var(--surface);
+  border-bottom: 1px solid var(--grid);
+  height: 40px;
+  vertical-align: bottom;
+}
+
+.phead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding-bottom: 6px;
+  width: 38px;
+}
+
+.phead-id {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  letter-spacing: -0.02em;
+}
+
+/* задача без темы: номер приглушён, полоска под ним серая */
+.phead-id.untyped { color: var(--ink-muted); }
+
+.phead-rule {
+  width: 20px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+/* Клетка одинакова на сайте и в редакторе: размер выбран под палец, но и
+   читается на просмотре лучше мелкой. min-width обязателен — без него браузер
+   сжимает столбцы, когда таблица шире экрана. */
+td.cell {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  text-align: center;
+  position: relative;
+  z-index: 0;
+}
+
+/* Клетка кондуита. Плюс — настоящий знак, а не белая полоска поверх тёмного
+   квадрата: браузеры с принудительной тёмной темой инвертируют цвета сами, и
+   конструкция «фон плюс накладка» под инверсией теряет контраст. Текст же
+   инвертируется вместе с фоном, поэтому знак виден в любой теме.
+
+   Обводка пустой клетки задана внутренней тенью, а не рамкой: рамка меняет
+   размер коробки, и клетка дёргалась бы при простановке плюса. */
+.mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  margin: 0 auto;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1;
+  color: transparent;
+  background: var(--cell-off);
+  box-shadow: inset 0 0 0 1px var(--cell-edge);
+}
+
+.mark.on {
+  background: var(--cell-on);
+  color: var(--cell-ink);
+  box-shadow: none;
+}
+
+/* Кондуит смотрят, а не трогают: имена не выделяются и не отзываются нигде,
+   клетки — везде, кроме редактора. Прокрутка вбок остаётся: касание достаётся
+   прокручиваемой обёртке, а не таблице внутри неё. */
+.conduit-split {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  cursor: default;
+}
+
+table.conduit.names,
+table.conduit.cells:not(.edit) { pointer-events: none; }
+
+table.conduit tfoot td {
+  border-top: 1px solid var(--grid);
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 11px;
+  height: 24px;
+}
+
+table.conduit tfoot td.pname {
+  text-align: left;
+  color: var(--ink-muted);
+  font-size: 11.5px;
+}
+
+table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
+
+/* ── прочее ────────────────────────────────────────────── */
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 22px 0 10px;
+}
+
+.section-title { font-size: 16px; font-weight: 600; white-space: nowrap; }
+
+.section-note { font-size: 12.5px; color: var(--ink-muted); }
+
+.type-name { display: inline-flex; align-items: center; gap: 9px; }
+.type-name b { font-weight: 620; }
+.tblock { padding-bottom: 4px; }
+
+/* блок темы: заголовок, полоса, строки подразделов */
+.tblock { padding: 11px 0; border-bottom: 1px solid var(--grid); }
+.tblock:first-child { padding-top: 2px; }
+.tblock:last-child { border-bottom: 0; padding-bottom: 2px; }
+
+/* Вкладка тем — единственное место, где текст мелким быть не должен: по нему
+   тыкают пальцем и по нему же сверяют разметку задач. */
+.tblock-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  min-height: 34px;   /* с кнопкой удаления и без неё — одна высота */
+  font-size: 17px;
+}
+
+.subline {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 0;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.subline-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.subline-val { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.mini-btn.danger { color: var(--bad); border-color: var(--bad); }
+
+/* Шкала решаемости — ряд мелких блоков вместо одной широкой заливки: крупную
+   плоскую заливку принудительная тёмная тема телефона гасит, мелкую оставляет.
+   Незакрашенные блоки заодно показывают, из чего доля считается. */
+.meter {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+/* Размер квадрата задан жёстко, а не долей ширины: шкалы должны быть одной
+   длины во всех строках, иначе их не сравнить взглядом. */
+.meter > i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--meter-off);
+}
+
+/* шкала подтемы мельче шкалы раздела, но делений столько же */
+.meter.small > i { width: 7px; height: 7px; }
+
+/* Строка «название — шкала — счёт». Шкала и счёт имеют жёсткую ширину, имя
+   забирает остаток — поэтому шкала стоит на одном месте во всех строках, как
+   бы ни звалась тема. Отступ подтемы сделан внутри её колонки имени, а не
+   отступом строки: иначе он сдвинул бы и шкалу. */
+.pline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 108px 54px;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  max-width: 430px;
+}
+
+.pline.sub .pline-name { padding-left: 14px; }
+
+.pline-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 560;
+}
+
+.pline.sub .pline-name {
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.pline-val {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+td .date { margin-left: 8px; font-size: 12px; }
+
+.type-val {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.series-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.smini {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 9px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.smini b { color: var(--ink); font-weight: 600; }
+
+.tip {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 6px 9px;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
+  max-width: 220px;
+  opacity: 0;
+  transition: opacity .1s;
+}
+
+.tip.show { opacity: 1; }
+
+.foot {
+  margin-top: 26px;
+  padding-top: 14px;
+  border-top: 1px solid var(--grid);
+  color: var(--ink-muted);
+  font-size: 12.5px;
+}
+
+/* ── движение ───────────────────────────────────────────
+   Анимируется только смена раздела и отклик на касание. Перерисовка от
+   фильтра ничего не анимирует: таблица мигала бы на каждый чип. */
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.view-enter > * { animation: rise .24s cubic-bezier(.2, .7, .3, 1) both; }
+.view-enter > *:nth-child(2) { animation-delay: .04s; }
+.view-enter > *:nth-child(3) { animation-delay: .07s; }
+.view-enter > *:nth-child(n+4) { animation-delay: .09s; }
+
+/* строки таблиц набегают по очереди — но только первые полтора десятка,
+   дальше задержка перестаёт читаться и превращается в ожидание */
+.view-enter table.data tbody tr,
+.view-enter table.conduit tbody tr { animation: fade .3s ease-out both; }
+
+.view-enter tbody tr:nth-child(1) { animation-delay: .06s; }
+.view-enter tbody tr:nth-child(2) { animation-delay: .08s; }
+.view-enter tbody tr:nth-child(3) { animation-delay: .1s; }
+.view-enter tbody tr:nth-child(4) { animation-delay: .12s; }
+.view-enter tbody tr:nth-child(5) { animation-delay: .14s; }
+.view-enter tbody tr:nth-child(6) { animation-delay: .16s; }
+.view-enter tbody tr:nth-child(7) { animation-delay: .18s; }
+.view-enter tbody tr:nth-child(8) { animation-delay: .2s; }
+.view-enter tbody tr:nth-child(9) { animation-delay: .22s; }
+.view-enter tbody tr:nth-child(10) { animation-delay: .24s; }
+.view-enter tbody tr:nth-child(n+11) { animation-delay: .26s; }
+
+.view-enter .tile { animation: rise .28s cubic-bezier(.2, .7, .3, 1) both; }
+.view-enter .chips > * { animation: fade .3s ease-out both; }
+
+.banner { animation: rise .2s ease-out both; }
+
+/* Плитки и плашки в статистике ученика — данные, а не кнопки: ни отклика на
+   касание, ни подъёма под курсором, чтобы не звали нажать. */
+.card { transition: border-color .16s ease; }
+.delta { transition: color .16s ease; }
+
+/* Отклик на касание. На телефоне подсветка касания погашена нарочно, поэтому
+   без этого кнопки кажутся мёртвыми: нажал — и ничего. Сжатие берём
+   преобразованием, оно не трогает разметку и ничего не сдвигает вокруг. */
+.chip, .ghost-btn, .primary-btn, .icon-btn, .mini-btn,
+.tab, .cal-day, .cal-nav, .banner-close, .picker-btn,
+.step-btn, .step-val, .wchip {
+  transition: background-color .14s ease, color .14s ease,
+              border-color .14s ease, opacity .14s ease;
+}
+
+/* Класс ставится на нажатие из скрипта, анимация доигрывает сама. Через
+   :active на телефоне это не работает: браузер придерживает состояние, пока
+   не убедится, что палец не поехал прокручивать. */
+@keyframes tap {
+  0% { transform: scale(.92); }
+  100% { transform: scale(1); }
+}
+
+@keyframes tapRow {
+  0% { background: var(--wash); }
+  100% { background: transparent; }
+}
+
+/* Класс продублирован нарочно: иначе первые полсекунды после смены раздела
+   отклик глушился бы анимацией входа, у которой вес селектора выше. */
+.tap.tap { animation: tap .19s cubic-bezier(.2, .8, .3, 1); }
+
+/* строку рейтинга не сжимаем — по ширине экрана это выглядит рывком; вместо
+   этого она отзывается подсветкой */
+tr.clickable.tap.tap { animation: none; }
+tr.clickable.tap td { animation: tapRow .4s ease-out; }
+
+table.conduit.edit .mark { transition: background-color .14s ease; }
+
+
+table.data tbody tr { transition: background-color .12s ease; }
+.mark { transition: background-color .14s ease; }
+.bar { transition: width .25s cubic-bezier(.2, .7, .3, 1); }
+.meter > i { transition: background-color .16s ease; }
+
+.tip { animation: fade .12s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ── редактор ───────────────────────────────────────────── */
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+
+.field-label {
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.input {
+  appearance: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  min-height: 40px;
+  min-width: 0;
+}
+
+.input:focus { outline: 2px solid var(--s1); outline-offset: -1px; }
+.input.short { max-width: 120px; }
+/* Узкое поле — номер: ширина задаётся классом, а не местом в строке. По месту
+   было нельзя: у выходного и матбоя номера нет, и 110 пикселей доставались
+   дате — она переносилась на три строки. */
+.frow.top > .field.narrow { flex: 0 0 110px; }
+.input.tiny { width: 62px; text-align: center; font-variant-numeric: tabular-nums; }
+select.input { padding-right: 6px; }
+
+.frow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.frow.gap { margin-top: 10px; align-items: center; }
+
+/* когда в строке раскрыт календарь, соседние поля не должны прилипать к его низу */
+.frow.top { align-items: flex-start; }
+.frow.top > .field { flex: 1 1 190px; }
+
+.primary-btn {
+  appearance: none;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 560;
+  padding: 9px 18px;
+  min-height: 40px;
+  cursor: pointer;
+}
+
+.primary-btn:disabled { opacity: .45; cursor: default; }
+
+.primary-btn.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+.ghost-btn.danger { color: var(--bad); border-color: var(--bad); }
+
+.icon-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-muted);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+  width: 34px;
+  min-height: 34px;
+  cursor: pointer;
+}
+
+.icon-btn:hover { color: var(--bad); border-color: var(--bad); }
+
+/* Кнопки удаления залиты красным целиком — как «Удалить день». На телефоне
+   наведения нет вовсе, поэтому цвет должен быть виден сразу, до нажатия. */
+.icon-btn.del, .icon-btn.danger {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+}
+
+.icon-btn.del:hover, .icon-btn.danger:hover {
+  color: #fff;
+  filter: brightness(1.08);
+}
+
+/* «передумал» — стрелка нарисована в svg, а не рамками и не символом:
+   и рамочная, и шрифтовая на части телефонов не показывались вовсе */
+.icon-btn.back { color: var(--ink-2); }
+.icon-btn.back:hover { color: var(--ink); border-color: var(--border-strong); }
+.icon-btn svg { display: block; margin: 0 auto; }
+
+/* кнопка добавления — плюс тем же боксом, что и крестик */
+.icon-btn.add { color: var(--ink-2); font-size: 19px; }
+.icon-btn.add:hover { color: var(--ink); border-color: var(--border-strong); }
+
+/* поле ввода занимает строку, кнопка стоит с краю */
+.frow.gap > .input { flex: 1; min-width: 0; }
+
+.prow-wrap { padding: 7px 0; border-bottom: 1px solid var(--grid); }
+
+.prow {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto 34px;
+  align-items: center;
+  gap: 8px;
+}
+
+.chip.day.has-draft { position: relative; }
+
+.chip.day.has-draft::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--s2);
+}
+
+/* у гроба правится только число, буква Г — подпись слева от поля, буква
+   пункта — справа, поэтому колонка шире, чем у задачи серии */
+.prow.grave { grid-template-columns: 80px minmax(0, 1fr) auto 34px; }
+.prow.grave.part { grid-template-columns: 92px minmax(0, 1fr) auto 34px; }
+
+/* спрошено удаление: на месте крестика два бокса — «удалить» и «передумал» */
+.prow.asking { grid-template-columns: 62px minmax(0, 1fr) auto 76px; }
+.prow.grave.asking { grid-template-columns: 80px minmax(0, 1fr) auto 76px; }
+.prow.grave.part.asking { grid-template-columns: 92px minmax(0, 1fr) auto 76px; }
+
+.grave-id {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.grave-pre {
+  font-size: 15px;
+  font-weight: 560;
+  color: var(--ink-2);
+}
+
+/* буква пункта — подпись, а не поле: её правят через «+ пункт», не руками */
+.grave-post {
+  font-size: 15px;
+  font-weight: 560;
+  color: var(--ink-2);
+}
+
+.chip.day.new { border-style: dashed; }
+
+/* день заведён здесь и на сайт ещё не уехал */
+.chip.day.local { border-style: dashed; border-color: var(--accent-hi); }
+.chip.day.local b { color: var(--accent-hi); }
+
+/* день помечен к удалению: уедет с ближайшим сохранением, касание возвращает */
+.chip.day.gone { border-color: var(--bad); border-style: dashed; }
+.chip.day.gone b { color: var(--bad); text-decoration: line-through; }
+.chip.day.gone small { color: var(--bad); opacity: 1; }
+
+.ghost-btn.danger:hover { background: var(--wash); }
+.chip.day.new b { font-size: 15px; }
+
+table.conduit thead th:not(.pname):not(.pcount) {
+  width: 38px;
+  min-width: 38px;
+}
+
+/* В редакторе клетка — кнопка. Сжатие при нажатии безопасно: фамилии живут в
+   отдельной таблице, наехать на них клетке нечем. */
+table.conduit.edit .mark {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Простановка плюса: короткое сжатие с лёгким перелётом обратно. Одна
+   величина, одно свойство — этого хватает, чтобы касание чувствовалось. */
+@keyframes markOn {
+  0% { transform: scale(.7); }
+  55% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes markOff {
+  0% { transform: scale(.86); }
+  100% { transform: scale(1); }
+}
+
+table.conduit.edit .mark.pop { animation: markOn .22s cubic-bezier(.2, .8, .3, 1); }
+table.conduit.edit .mark.drop { animation: markOff .16s ease-out; }
+
+table.conduit .pcount {
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-muted);
+  padding: 0 8px;
+  border-left: 1px solid var(--grid);
+  font-variant-numeric: tabular-nums;
+}
+
+table.conduit tbody .pcount { font-size: 12px; }
+table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
+
+/* Режим редактора помечен у заголовка тем же знаком и цветом, что и админ. */
+body.is-editor .brand::after {
+  content: "◆";
+  margin-left: 8px;
+  font-size: 0.8em;
+  color: var(--admin);
+}
+
+/* карточка сохранения */
+.savecard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* Карточка не должна менять размер, когда одна кнопка сменяется двумя: обычная
+   кнопка ниже основной на восемь пикселей, и от этого карточка подпрыгивала. */
+.savecard.center {
+  justify-content: center;
+  flex-wrap: wrap;
+  min-height: 68px;
+}
+
+.savecard.center .ghost-btn {
+  min-height: 40px;
+  padding: 9px 18px;
+  font-size: 14px;
+}
+.savecard-main { flex: 1; min-width: 0; }
+.savecard-title { font-size: 14px; }
+.savecard-note { font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
+
+/* переключатель в подвале редактора: незаметен, пока не включён */
+.footrow { display: flex; justify-content: flex-end; margin-top: 18px; }
+
+.egg-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--axis);
+  border-radius: 999px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color .16s ease, border-color .16s ease;
+}
+
+.egg-btn[aria-pressed="true"] { color: var(--ink); border-color: var(--border-strong); }
+.egg-btn svg { display: block; }
+
+/* свои выпадающие меню вместо системных */
+.picker-btn {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .14s ease, background-color .14s ease;
+}
+
+.picker-btn.open { border-color: var(--ink); }
+.picker-btn:active { transform: scale(.99); }
+
+.picker-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-caret { color: var(--ink-muted); font-size: 11px; flex: none; }
+
+.chooser {
+  margin: 8px 0 2px;
+  padding: 10px;
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  background: var(--plane);
+  animation: rise .16s ease-out both;
+}
+
+.chooser .subs-row { margin-top: 8px; }
+
+.datefield { position: relative; min-width: 190px; }
+
+.calendar {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  background: var(--plane);
+  animation: rise .16s ease-out both;
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cal-title { font-size: 14px; font-weight: 560; }
+
+.cal-nav {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cal-wd {
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-muted);
+  padding-bottom: 2px;
+}
+
+.cal-empty { height: 36px; }
+
+.cal-day {
+  appearance: none;
+  border: 1px solid transparent;
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  height: 36px;
+  cursor: pointer;
+  transition: background-color .12s ease, color .12s ease;
+}
+
+.cal-day:hover { background: var(--wash); }
+.cal-day.today { border-color: var(--border-strong); }
+
+.cal-day.sel {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+  font-weight: 600;
+}
+
+.cal-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--grid);
+}
+
+.color-chip { padding: 8px 12px; }
+
+.banner {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  font-size: 13.5px;
+  margin-bottom: 14px;
+}
+
+.banner.good { border-color: var(--good); color: var(--ink); }
+.banner.bad { border-color: var(--bad); color: var(--ink); }
+.banner > span { flex: 1; min-width: 0; }
+
+.banner-close {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+/* День, который ждёт: только что сохранённый или только что удалённый. Сайт
+   переразворачивается около минуты, и до тех пор правка по нему ушла бы мимо
+   данных — поэтому кнопка заперта и приглушена целиком, включая букву. */
+.chip.day.pending {
+  border-style: dotted;
+  color: var(--ink-muted);
+}
+
+.chip.day.pending b { color: var(--ink-muted); }
+
+/* ── цена задачи ───────────────────────────────────────── */
+
+/* Цена в строке задачи. Приглушённая — считается формулой, плотная и в рамке
+   цвета отличия — задана вручную: разницу видно, не открывая панель. */
+.wchip {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-muted);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 38px;
+  min-height: 34px;
+  padding: 0 6px;
+  cursor: pointer;
+}
+
+.wchip:hover { background: var(--wash); border-color: var(--border-strong); }
+
+.wchip.on {
+  color: var(--accent-hi);
+  border-color: var(--accent-hi);
+  background: var(--accent-wash);
+}
+
+/* Ряд кнопок: по десять по краям, по одному внутри, число посередине. Числа
+   на телефоне не набирают, а дотянуться до любой разумной цены хватает. */
+.wrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.step-btn.wide { width: auto; padding: 0 10px; font-size: 14px; }
+
+.wfoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--grid);
+}
+
+.wnote { font-size: 12.5px; color: var(--ink-muted); }
+
+.mini-btn:disabled { opacity: .4; cursor: default; }
+
+.mini-btn:disabled:hover {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink-2);
+}
+
+/* ── гроборешения ──────────────────────────────────────── */
+
+/* Счётчик надбавки вместо поля ввода: числового поля здесь нет вовсе.
+   Системное привело бы с собой клавиатуру на пол-экрана и крутилки, а
+   надбавку всё равно ставят по одному баллу — двух кнопок довольно. */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.step-btn {
+  appearance: none;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 19px;
+  line-height: 1;
+  width: 34px;
+  min-height: 34px;
+  cursor: pointer;
+}
+
+.step-btn:hover { color: var(--ink); border-color: var(--ink); }
+.step-btn:disabled { opacity: .35; cursor: default; }
+
+.step-btn:disabled:hover {
+  color: var(--ink-2);
+  border-color: var(--border-strong);
+}
+
+/* Показание, а не кнопка: нажимать на само число некуда. Ноль приглушён,
+   поставленное — нет, так с одного взгляда видно, кому баллы уже дописаны. */
+.step-val {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-muted);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+  min-width: 56px;
+  min-height: 34px;
+  padding: 0 8px;
+}
+
+.step-val.on { color: var(--ink); border-color: var(--border-strong); }
+
+/* Цена решения забирает остаток строки, поэтому крестик стоит у правого края
+   на одном месте во всех блоках. */
+.solution-price {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.price-label {
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.price-val {
+  font-size: 16px;
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Слагаемые набраны мельче и приглушены: итог должен читаться первым. */
+.price-sum {
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+/* ── гробарий на сайте ─────────────────────────────────── */
+
+/* Гроб и под ним те, кто его взял. Номер отбит от темы, как в кондуите номер
+   задачи от полоски: сначала опознают гроб, потом читают, чей он. */
+.grave-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 6px;
+}
+
+.grave-num {
+  font-size: 15px;
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+}
+
+.grave-theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+/* Имя ужимается, цена — никогда: по ней и сравнивают строки между собой. */
+.grave-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 0 4px 14px;
+}
+
+.grave-who { min-width: 0; font-size: 15px; font-weight: 500; }
+
+.grave-val {
+  font-variant-numeric: tabular-nums;
+  font-weight: 620;
+  white-space: nowrap;
+}
+
+.grave-sum {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+
+/* «пока никто», «ни одной» — держим отступ строки с именем, чтобы пустой блок
+   не выглядел короче взятого и список не рвался. */
+.block-none {
+  padding: 4px 0 4px 14px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* ── ликбезы ───────────────────────────────────────────── */
+
+/* Вся строка — кнопка скачивания: на телефоне целиться в маленькую ссылку
+   рядом с названием неудобно, а другого действия у строки и нет. */
+.lik-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--tap);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--grid);
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lik-row:last-child { border-bottom: 0; }
+.lik-row:hover { background: var(--wash); }
+
+.lik-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lik-title {
+  font-size: 15px;
+  font-weight: 560;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lik-meta { font-size: 12px; color: var(--ink-muted); }
+
+/* Слово, а не значок: значок пришлось бы рисовать, а места хватает. */
+.lik-get {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 560;
+  color: var(--ink-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+
+.lik-row:hover .lik-get { color: var(--ink); border-color: var(--ink); }
+
+/* ── плюсы по сериям ───────────────────────────────────── */
+
+/* Шапка серии: номер с датой слева, итоги справа. Итоги набраны мелко — они
+   подпись к списку, а не он сам. */
+.dblock-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.dblock-name { font-size: 15px; font-weight: 620; }
+
+.dblock-date {
+  margin-left: 8px;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+.dblock-val {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+
+@media (max-width: 560px) {
+  .prow { grid-template-columns: 48px minmax(0, 1fr) auto 32px; column-gap: 6px; }
+  .prow.grave { grid-template-columns: 66px minmax(0, 1fr) auto 32px; }
+  .prow.grave.part { grid-template-columns: 78px minmax(0, 1fr) auto 32px; }
+  .prow.asking { grid-template-columns: 48px minmax(0, 1fr) auto 76px; }
+  .prow.grave.asking { grid-template-columns: 66px minmax(0, 1fr) auto 76px; }
+  .prow.grave.part.asking { grid-template-columns: 78px minmax(0, 1fr) auto 76px; }
+  /* на телефоне чип цены ужимаем: место нужнее названию темы */
+  .wchip { min-width: 32px; padding: 0 4px; font-size: 12.5px; }
+  .input.tiny { width: 48px; }
+  .datefield { min-width: 0; }
+  .step-val { min-width: 48px; }
+}
+
+@media (max-width: 560px) {
+  .wrap { padding: 0 12px 48px; }
+  .brand { font-size: 24px; }
+  .tile-value { font-size: 23px; }
+  table.data td, table.data th { padding: 9px 6px; }
+
+  /* На телефоне числовым колонкам оставляем ровно столько, сколько нужно их
+     заголовкам и значениям, остальное отдаём имени: обрезанная фамилия хуже
+     тесной колонки с числом. */
+  table.data.fixed th { font-size: 10.5px; }
+  table.data.fixed th.rank { width: 26px; }
+  table.data.fixed th.c-score { width: 56px; }
+  table.data.fixed th.c-tasks { width: 52px; }
+  table.data.fixed th.c-avg { width: 64px; }
+  table.data.fixed td.name { font-size: 13.5px; }
+  .pline { gap: 8px; }
+  table.conduit th.pname, table.conduit td.pname {
+    min-width: 118px;
+    font-size: 13px;
+    padding: 0 8px 0 10px;
+  }
+}
+
+/* Строка с числом посередине: имя — сколько плюсов — крестик. Обычная строка
+   подраздела двухколоночная, здесь колонок три. */
+.subline.wide { grid-template-columns: 1fr auto auto; }
+.subline.wide .subline-val { color: var(--ink-2); font-size: 13.5px; }
+.subline .badge { margin-left: 8px; }
+
+/* Системное поле выбора файла спрятано: у него чужая подпись и вид, который не
+   подчинить. Нажимает его наша кнопка. */
+.hidden-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Мелкая пометка у названия: «упр.» у упражнения, «новый» у ещё не уехавшего
+   файла. Не кнопка и не ссылка — просто подпись, поэтому без рамки. */
+.badge {
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--ink-muted);
+  vertical-align: 1px;
+}

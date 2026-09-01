@@ -1,0 +1,94 @@
+[
+  {
+    "id": "algebra",
+    "name": "Алгебра",
+    "slot": 1,
+    "subs": [
+      {
+        "id": "inequalities",
+        "name": "Неравенства"
+      },
+      {
+        "id": "mnogochleny",
+        "name": "Многочлены"
+      },
+      {
+        "id": "posledovatelnosti",
+        "name": "Последовательности"
+      },
+      {
+        "id": "matan",
+        "name": "Матан"
+      },
+      {
+        "id": "linal",
+        "name": "Линал"
+      },
+      {
+        "id": "fur",
+        "name": "ФУР"
+      }
+    ]
+  },
+  {
+    "id": "geometry",
+    "name": "Геометрия",
+    "slot": 2,
+    "subs": [
+      {
+        "id": "planimetry",
+        "name": "Планиметрия"
+      },
+      {
+        "id": "stereometry",
+        "name": "Стереометрия"
+      },
+      {
+        "id": "geomneravenstva",
+        "name": "Геомнеравенства"
+      }
+    ]
+  },
+  {
+    "id": "comb",
+    "name": "Комбинаторика",
+    "slot": 3,
+    "subs": [
+      {
+        "id": "games",
+        "name": "Игры"
+      },
+      {
+        "id": "graphs",
+        "name": "Графы"
+      },
+      {
+        "id": "cells",
+        "name": "Клетчатые задачи"
+      },
+      {
+        "id": "kg",
+        "name": "КГ"
+      },
+      {
+        "id": "podschet",
+        "name": "Подсчёт"
+      },
+      {
+        "id": "veroyatnosti",
+        "name": "Вероятности"
+      }
+    ]
+  },
+  {
+    "id": "numbers",
+    "name": "Теория чисел",
+    "slot": 7,
+    "subs": [
+      {
+        "id": "klassika-2",
+        "name": "Классика"
+      }
+    ]
+  }
+]
