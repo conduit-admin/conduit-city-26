@@ -56,9 +56,37 @@
 
   /* Два радиуса на весь интерфейс: крупный для карточек и панелей, мелкий для
      полей, клеток и квадратных кнопок. Круглые кнопки — отдельно, 999px. */
-  --radius: 12px;
+  --radius: 14px;
   --radius-sm: 8px;
   --tap: 44px;
+
+  /* Две ступени высоты. Тень мягкая и широкая, без чёрного: карточка должна
+     лежать на подложке, а не висеть с обводкой. */
+  --shadow-1: 0 1px 2px rgba(11, 11, 11, .04), 0 6px 16px -10px rgba(11, 11, 11, .18);
+  --shadow-2: 0 2px 6px rgba(11, 11, 11, .06), 0 20px 44px -22px rgba(11, 11, 11, .30);
+
+  /* Стекло — только для полосы вкладок и плавающих панелей: под ними проезжает
+     содержимое, там эффект и виден. На карточках и в кондуите его нет — размытие
+     под длинной таблицей стоит плавности прокрутки, а текст на нём теряется. */
+  --glass: rgba(252, 252, 251, .74);
+  --glass-edge: rgba(255, 255, 255, .8);
+
+  /* Линия тетрадной клетки на подложке. Держим её почти невидимой: она задаёт
+     масштаб и материал, а не рисунок. */
+  --paper: rgba(11, 11, 11, .05);
+  --paper-step: 28px;
+
+  /* Заголовок сезона — единственный вывернутый блок на странице. На светлой теме
+     он тёмный и работает как якорь для взгляда; на тёмной — чуть светлее
+     подложки, потому что белое пятно во весь экран вечером бьёт по глазам.
+     Заливка плоская: то, что переживает любую принудительную тёмную тему. */
+  --hero-bg: #16150f;
+  --hero-ink: #fcfcfb;
+  --hero-dim: rgba(252, 252, 251, .62);
+  --hero-edge: rgba(255, 255, 255, .10);
+
+  /* Полоска доли в строке рейтинга. */
+  --bar: rgba(11, 11, 11, .085);
 }
 
 /* Тёмная тема — свой набор шагов под тёмную подложку, а не инверсия светлой.
@@ -101,6 +129,19 @@
     --leader: #f0c34c;
     --accent-hi: #e3b23c;
     --accent-wash: rgba(227, 178, 60, 0.12);
+
+    /* На тёмном тень работает слабее, поэтому она глубже, а грань стекла —
+       светлая: именно она и читается как толщина. */
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, .5), 0 6px 18px -10px rgba(0, 0, 0, .7);
+    --shadow-2: 0 2px 8px rgba(0, 0, 0, .55), 0 22px 48px -22px rgba(0, 0, 0, .85);
+    --glass: rgba(26, 26, 25, .72);
+    --glass-edge: rgba(255, 255, 255, .10);
+    --paper: rgba(255, 255, 255, .045);
+    --hero-bg: #2b2a23;
+    --hero-ink: #ffffff;
+    --hero-dim: rgba(255, 255, 255, .58);
+    --hero-edge: rgba(255, 255, 255, .07);
+    --bar: rgba(255, 255, 255, .11);
   }
 }
 
@@ -133,8 +174,17 @@ html, body {
   padding: 0;
 }
 
+/* Подложка — тетрадь в клетку: линии двумя градиентами поверх плоского цвета.
+   Цвет линии задан почти прозрачным нарочно — если браузер с принудительной
+   тёмной темой вздумает его вывернуть, из этого всё равно ничего не выйдет:
+   низкая прозрачность останется низкой. */
 body {
-  background: var(--plane);
+  background-color: var(--plane);
+  background-image:
+    linear-gradient(var(--paper) 1px, transparent 1px),
+    linear-gradient(90deg, var(--paper) 1px, transparent 1px);
+  background-size: var(--paper-step) var(--paper-step);
+  background-position: -1px -1px;
   color: var(--ink);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 15px;
@@ -160,10 +210,10 @@ body {
 /* Название набрано крупно и плотно, подпись под ним — мелко и вразрядку.
    Контраст двух наборов и делает шапку заметной, без цветных полос и теней. */
 .brand {
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
 }
 
 .brand-sub {
@@ -203,13 +253,32 @@ input[type="number"]::-webkit-inner-spin-button {
   margin: 0;
 }
 
+/* Полоса вкладок залипает наверху и сделана стеклом: под ней проезжает
+   содержимое — единственное место, где размытие и правда что-то показывает.
+   Во всю ширину экрана она выходит отрицательными полями, потому что обёртка
+   страницы имеет свои. Если backdrop-filter недоступен, ниже лежит плотная
+   заливка, и полоса просто перестаёт быть прозрачной. */
 .tabs {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid var(--grid);
-  margin-bottom: 18px;
+  margin: 0 -16px 18px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .tabs {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    backdrop-filter: blur(18px) saturate(180%);
+    box-shadow: inset 0 1px 0 var(--glass-edge);
+  }
 }
 
 .tabs::-webkit-scrollbar { display: none; }
@@ -254,6 +323,7 @@ input[type="number"]::-webkit-inner-spin-button {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 14px 16px;
+  box-shadow: var(--shadow-1);
 }
 
 /* карточка-предупреждение: данные не потеряны, но и не считаются */
@@ -478,6 +548,7 @@ input[type="number"]::-webkit-inner-spin-button {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 12px 14px;
+  box-shadow: var(--shadow-1);
 }
 
 .tile-label {
@@ -508,6 +579,78 @@ input[type="number"]::-webkit-inner-spin-button {
 .tile.hi .tile-value { color: var(--accent-hi); }
 .tile.hi .tile-label { color: var(--accent-hi); opacity: .85; }
 
+/* ── заголовок сезона ──────────────────────────────────── */
+
+/* Одна крупная величина и три подписи. Раньше страница начиналась с фильтров, и
+   зацепиться взгляду было не за что: весь сайт набран одним кеглем. */
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  padding: 18px 20px 16px;
+  margin-bottom: 14px;
+  border-radius: var(--radius);
+  background: var(--hero-bg);
+  color: var(--hero-ink);
+  /* Светлая грань поверху — тот же приём, что и у стеклянной полосы вкладок:
+     она и читается как толщина блока. */
+  box-shadow: var(--shadow-2), inset 0 1px 0 var(--hero-edge);
+}
+
+.hero-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--hero-dim);
+}
+
+.hero-name {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 3px;
+}
+
+.hero-score {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.hero-score b {
+  font-size: 54px;
+  font-weight: 700;
+  line-height: .95;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-of { font-size: 13px; color: var(--hero-dim); }
+
+.hero-score-none { margin-top: 10px; font-size: 14px; color: var(--hero-dim); }
+
+.hero-stats { display: flex; gap: 24px; }
+
+.hstat { display: flex; flex-direction: column; gap: 1px; }
+
+.hstat b {
+  font-size: 22px;
+  font-weight: 620;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.hstat span {
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--hero-dim);
+}
+
 /* ── таблицы ───────────────────────────────────────────── */
 
 .table-wrap {
@@ -515,6 +658,7 @@ input[type="number"]::-webkit-inner-spin-button {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow-x: auto;
+  box-shadow: var(--shadow-1);
 }
 
 table.data {
@@ -527,7 +671,7 @@ table.data {
    раскладке ширина столбца зависит от самого длинного числа в нём, и таблица
    переезжала при каждом переключении фильтра. */
 table.data.fixed { table-layout: fixed; }
-table.data.fixed th.rank { width: 38px; }
+table.data.fixed th.rank { width: 54px; }
 table.data.fixed th.c-score { width: 74px; }
 table.data.fixed th.c-tasks { width: 66px; }
 table.data.fixed th.c-avg { width: 82px; }
@@ -547,6 +691,8 @@ table.data th {
   padding: 10px 12px;
   border-bottom: 1px solid var(--grid);
   white-space: nowrap;
+  /* Липнет она внутри обёртки таблицы, а не к окну: у обёртки своя прокрутка.
+     Отступ здесь поэтому нулевой — иначе шапка съезжает на первую строку. */
   position: sticky;
   top: 0;
   background: var(--surface);
@@ -579,11 +725,33 @@ table.data tr.clickable { cursor: pointer; }
   width: 1%;
   color: var(--ink-muted);
   font-size: 13px;
+  white-space: nowrap;
 }
 
-.rank-top { color: var(--ink); font-weight: 600; }
+.rank-top .rank-num { color: var(--ink); font-weight: 700; }
+/* первое место — единственное золотое пятно в таблице */
+.rank-1 .rank-num { color: var(--leader); }
 
 .name { font-weight: 500; }
+
+/* Полоска доли: сколько человек взял от своего потолка. Плоская заливка под
+   именем, без градиента — он бы не пережил принудительную тёмную тему. */
+table.data td.name { position: relative; }
+
+.rowbar {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  bottom: 5px;
+  border-radius: 0 999px 999px 0;
+  background: var(--bar);
+  pointer-events: none;
+}
+
+/* У первого места полоска золотая — то же пятно, что и у его номера. */
+.rank-1 + td.name .rowbar { background: var(--accent-wash); }
+
+table.data td.name .name-box { position: relative; }
 
 .score { font-weight: 620; font-size: 16px; }
 
@@ -599,19 +767,31 @@ table.data tr.clickable { cursor: pointer; }
   opacity: 0.5;
 }
 
+/* Насколько человек поднялся или опустился после последней серии. Треугольник
+   собран рамками, а не знаком: нужного глифа в шрифте телефона может не быть,
+   а рамки есть всегда. */
 .delta {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-size: 12px;
+  margin-left: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  min-width: 34px;
-  justify-content: flex-end;
+}
+
+.delta::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 3.5px solid transparent;
+  border-right: 3.5px solid transparent;
 }
 
 .delta.up { color: var(--good); }
+.delta.up::before { border-bottom: 5px solid currentColor; }
 .delta.down { color: var(--bad); }
-.delta.same { color: var(--ink-muted); }
+.delta.down::before { border-top: 5px solid currentColor; }
 
 /* Все цветные заливки — чистым цветом, без картинок-градиентов. Градиент здесь
    пробовался как защита от принудительной тёмной темы и дал обратный эффект:
@@ -628,6 +808,7 @@ table.data tr.clickable { cursor: pointer; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  box-shadow: var(--shadow-1);
 }
 
 table.conduit.names {
@@ -831,6 +1012,14 @@ table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
 }
 
 .section-title { font-size: 16px; font-weight: 600; white-space: nowrap; }
+
+/* Имя ученика — заголовок его страницы, а не подпись к блоку. */
+.section-head.big { align-items: center; margin-top: 6px; }
+.section-head.big .section-title {
+  font-size: 26px;
+  font-weight: 680;
+  letter-spacing: -0.03em;
+}
 
 .section-note { font-size: 12.5px; color: var(--ink-muted); }
 
@@ -1827,15 +2016,22 @@ body.is-editor .brand::after {
 
 @media (max-width: 560px) {
   .wrap { padding: 0 12px 48px; }
-  .brand { font-size: 24px; }
+  .brand { font-size: 27px; }
   .tile-value { font-size: 23px; }
   table.data td, table.data th { padding: 9px 6px; }
+
+  /* На телефоне заголовок сезона встаёт в столбик, а подписи под цифрами
+     расходятся по всей ширине — так они читаются как строка итогов. */
+  .hero { padding: 16px 16px 14px; gap: 14px; }
+  .hero-score b { font-size: 46px; }
+  .hero-stats { width: 100%; justify-content: space-between; gap: 12px; }
+  .hstat b { font-size: 19px; }
 
   /* На телефоне числовым колонкам оставляем ровно столько, сколько нужно их
      заголовкам и значениям, остальное отдаём имени: обрезанная фамилия хуже
      тесной колонки с числом. */
   table.data.fixed th { font-size: 10.5px; }
-  table.data.fixed th.rank { width: 26px; }
+  table.data.fixed th.rank { width: 38px; }
   table.data.fixed th.c-score { width: 56px; }
   table.data.fixed th.c-tasks { width: 52px; }
   table.data.fixed th.c-avg { width: 64px; }
@@ -1913,3 +2109,51 @@ table.conduit .patt { border-left: 1px solid var(--grid); }
 /* Дата выдачи стоит рядом с номером серии, и места ей остаётся немного: своя
    основа ширины, иначе строка переносится и номер занимает её целиком. */
 .frow.top > .field.date { flex: 1 1 150px; }
+
+/* ── переходы между экранами ───────────────────────────── */
+
+/* Кадры перехода: старый уходит быстрее, чем приходит новый, и с меньшим
+   сдвигом — так переход читается как смена, а не как качание. Общая метка на
+   имени ученика заставляет его переехать из строки рейтинга в заголовок
+   карточки; это делает браузер сам, кода для этого нет. */
+@keyframes vt-out {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+
+@keyframes vt-in {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+::view-transition-old(root) { animation: vt-out .16s ease-in both; }
+::view-transition-new(root) { animation: vt-in .28s cubic-bezier(.2, .7, .3, 1) both; }
+
+/* Имя переезжает целиком, без проявления половинок друг сквозь друга. */
+::view-transition-old(who),
+::view-transition-new(who) {
+  animation: none;
+  mix-blend-mode: normal;
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
+
+/* Подсветка столбца в кондуите. Касание номера задачи гасит остальные: «кто
+   взял эту» — самый частый вопрос, а вести глазами по строке неудобно.
+   Гасим прозрачностью, а не цветом: цвет здесь занят под темы. */
+table.conduit.cells .phead-cell { cursor: pointer; }
+
+table.conduit.cells.has-hot td.cell:not(.hot) .mark,
+table.conduit.cells.has-hot th:not(.hot) .phead,
+table.conduit.cells.has-hot tfoot td:not(.hot) { opacity: .25; }
+
+table.conduit.cells .mark,
+table.conduit.cells .phead { transition: opacity .16s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  table.conduit.cells .mark,
+  table.conduit.cells .phead { transition: none; }
+}

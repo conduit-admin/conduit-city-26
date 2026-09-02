@@ -180,6 +180,14 @@
 
   function num(n) { return Number(n).toLocaleString("ru-RU"); }
 
+  function plural(n, one, few, many) {
+    var a = Math.abs(n) % 100, b = a % 10;
+    if (a > 10 && a < 20) return many;
+    if (b > 1 && b < 5) return few;
+    if (b === 1) return one;
+    return many;
+  }
+
   function prettyDate(iso, short) {
     var p = String(iso).split("-");
     if (p.length !== 3) return iso;
@@ -512,6 +520,75 @@
 
   function th(text, cls) { return el("th", cls, text); }
 
+  /* Заголовок сезона. Страница начиналась с фильтров, и глазу не за что было
+     зацепиться: дело не в отсутствии украшений, а в том, что весь сайт набран
+     одним кеглем. Здесь стоит единственная крупная величина — счёт первого — и
+     три подписи, которых нет в таблице.
+
+     Считается он по тому же отбору, что и таблица: иначе шапка говорила бы одно,
+     а строки под ней другое. */
+  function heroBlock(f) {
+    var box = el("section", "hero");
+    var top = f.rows[0];
+    var live = realSeries().filter(function (x) { return state.series.has(x.n); });
+
+    var main = el("div", "hero-main");
+    if (top && top.score > 0) {
+      main.appendChild(el("div", "hero-label", "Первый"));
+      var name = el("div", "hero-name");
+      name.appendChild(document.createTextNode(top.name));
+      main.appendChild(name);
+      var score = el("div", "hero-score");
+      var big = el("b");
+      countUp(big, "score", top.score);
+      score.appendChild(big);
+      score.appendChild(el("span", "hero-of", "из " + num(top.ceil + top.bonus)));
+      main.appendChild(score);
+    } else {
+      main.appendChild(el("div", "hero-label", "Счёт"));
+      main.appendChild(el("div", "hero-name", "Пока пусто"));
+      main.appendChild(el("div", "hero-score-none", "ни одного плюса по этому отбору"));
+    }
+    box.appendChild(main);
+
+    /* Доля взятого — по всем, а не по первому: она говорит, насколько серии
+       вообще давались группе. */
+    var got = 0, could = 0;
+    f.rows.forEach(function (r) { got += r.pluses; could += r.avail; });
+
+    var stats = el("div", "hero-stats");
+    stats.appendChild(hstat("live", live.length, "",
+      plural(live.length, "серия", "серии", "серий")));
+    stats.appendChild(hstat("tasks", f.available, "",
+      plural(f.available, "задача", "задачи", "задач")));
+    stats.appendChild(hstat("share",
+      Math.round((could ? got / could : 0) * 100), "%", "решено"));
+    box.appendChild(stats);
+    return box;
+  }
+
+  function hstat(key, value, suffix, label) {
+    var t = el("div", "hstat");
+    var b = el("b");
+    countUp(b, key, value, suffix);
+    t.appendChild(b);
+    t.appendChild(el("span", null, label));
+    return t;
+  }
+
+  /* Места без последней из выбранных серий — чтобы показать, кто на ней
+     поднялся, а кто опустился. Считается по тому же отбору: «прошлое» здесь
+     значит «то же самое, но без последнего занятия». Одна серия ни с чем не
+     сравнивается, и стрелок тогда нет вовсе. */
+  function prevPlaces() {
+    var live = realSeries().filter(function (x) { return state.series.has(x.n); });
+    if (live.length < 2) return null;
+    var without = new Set();
+    state.series.forEach(function (n) { without.add(n); });
+    without.delete(live[live.length - 1].n);
+    return computeRating(without, state.leaves, state.kinds).place;
+  }
+
   // ── фильтры ─────────────────────────────────────────────
 
   function renderFilters(host) {
@@ -647,7 +724,11 @@
   function viewRating(host) {
     if (!UNITS.length) return viewEmpty(host);
 
+    var early = filtered();
+    host.appendChild(heroBlock(early));
+
     var f = renderFilters(host);
+    var prev = prevPlaces();
 
     /* Ширины колонок закреплены: при автоматической раскладке они зависят от
        самого длинного числа в столбце, и таблица переезжала при каждом
@@ -668,13 +749,39 @@
     f.rows.forEach(function (r) {
       var tr = el("tr", "clickable");
       tr.addEventListener("click", function () {
+        /* Метку ставим прямо сейчас, до перерисовки: кадр «до» снимается с
+           нынешней страницы, и по метке браузер узнаёт, чему во что перетекать. */
+        vtWho = r.id;
+        nm.style.viewTransitionName = "who";
+        scrollUp = true;
         state.openStudent = r.id;
         render();
-        window.scrollTo(0, 0);
       });
 
-      tr.appendChild(el("td", "rank" + (r.rank <= 3 ? " rank-top" : ""), r.rank));
-      tr.appendChild(nameCell("td", "left name", r));
+      var rank = el("td", "rank" + (r.rank <= 3 ? " rank-top" : "") +
+        (r.rank === 1 ? " rank-1" : ""));
+      rank.appendChild(el("b", "rank-num", r.rank));
+      /* Стрелка рисуется рамкой, а не знаком: шрифт на телефоне может не знать
+         нужный глиф, а треугольник из рамок есть всегда. */
+      if (prev && prev[r.id]) {
+        var d = prev[r.id] - r.rank;
+        if (d) rank.appendChild(el("span", "delta " + (d > 0 ? "up" : "down"),
+          String(Math.abs(d))));
+      }
+      tr.appendChild(rank);
+
+      tr.dataset.id = r.id;
+
+      var nm = nameCell("td", "left name", r);
+      // Полоска доли: сколько человек взял от своего потолка. Плоская заливка.
+      var bar = el("span", "rowbar");
+      var share = (r.ceil + r.bonus) ? r.score / (r.ceil + r.bonus) : 0;
+      bar.style.width = Math.max(0, Math.min(100, Math.round(share * 100))) + "%";
+      nm.insertBefore(bar, nm.firstChild);
+      // имя перетекает в заголовок карточки — метка одна на обе стороны
+      if (vtWho === r.id) nm.style.viewTransitionName = "who";
+      tr.appendChild(nm);
+
       tr.appendChild(el("td", "score", num(r.score)));
       tr.appendChild(el("td", "muted", r.pluses));
       tr.appendChild(el("td", "muted", avgScore(r.score, r.pluses)));
@@ -736,9 +843,10 @@
 
     var thead = el("thead");
     var hr = el("tr");
-    problems.forEach(function (p) {
+    problems.forEach(function (p, i) {
       var leaf = LEAF[leafKey(p.type, p.sub)];
-      var cell = el("th");
+      var cell = el("th", "phead-cell");
+      cell.dataset.col = i;
       var box = el("div", "phead");
       box.appendChild(el("div", "phead-id" + (leaf ? "" : " untyped"), p.id));
       var rule = el("div", "phead-rule");
@@ -746,6 +854,9 @@
       rule.style.background = leaf ? "var(--s" + leaf.slot + ")" : "var(--axis)";
       box.appendChild(rule);
       cell.appendChild(box);
+      /* Касание номера задачи гасит остальные столбцы: «кто взял эту» — самый
+         частый вопрос к кондуиту, а глазами вести по строке неудобно. */
+      cell.addEventListener("click", function () { setHot(i); });
       hr.appendChild(cell);
     });
     hr.appendChild(el("th", "pcount", "всего"));
@@ -757,8 +868,9 @@
     var tbody = el("tbody");
     rows.forEach(function (r) {
       var tr = el("tr", "crow");
-      problems.forEach(function (p) {
+      problems.forEach(function (p, i) {
         var td = el("td", "cell");
+        td.dataset.col = i;
         td.appendChild(cellFor(p, r));
         tr.appendChild(td);
       });
@@ -781,10 +893,14 @@
     var tfoot = el("tfoot");
     var f1 = el("tr");
     var f2 = el("tr", "weights");
-    problems.forEach(function (p) {
+    problems.forEach(function (p, i) {
       var pair = footFor(p);
-      f1.appendChild(el("td", null, pair[0]));
-      f2.appendChild(el("td", null, pair[1]));
+      var c1 = el("td", null, pair[0]);
+      var c2 = el("td", null, pair[1]);
+      c1.dataset.col = i;
+      c2.dataset.col = i;
+      f1.appendChild(c1);
+      f2.appendChild(c2);
     });
     f1.appendChild(el("td", "pcount total", total));
     f2.appendChild(el("td", "pcount"));
@@ -798,6 +914,18 @@
 
     scroll.appendChild(cells);
     split.appendChild(scroll);
+
+    var hot = null;
+
+    function setHot(i) {
+      hot = hot === i ? null : i;
+      cells.classList.toggle("has-hot", hot !== null);
+      Array.prototype.forEach.call(cells.querySelectorAll("[data-col]"),
+        function (n) {
+          n.classList.toggle("hot", Number(n.dataset.col) === hot);
+        });
+    }
+
     return split;
   }
 
@@ -1039,8 +1167,10 @@
     var f = filtered();
     var row = f.rows.filter(function (r) { return r.id === id; })[0];
 
-    var sh = el("div", "section-head");
-    sh.appendChild(nameCell("span", "section-title", student));
+    var sh = el("div", "section-head big");
+    var who = nameCell("span", "section-title", student);
+    if (vtWho === id) who.style.viewTransitionName = "who";
+    sh.appendChild(who);
     host.appendChild(sh);
 
     var tiles = el("div", "tiles");
@@ -1249,8 +1379,50 @@
 
   var lastScene = null;
   var enterTimer = null;
+  var vtWho = null;      // чьё имя сейчас перетекает из строки в карточку
+  var scrollUp = false;  // прокрутить наверх внутри перехода, а не до него
 
+  // всё движение выключается системной настройкой — она не про красоту
+  function reduced() {
+    return !!(window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+
+  /* Смена экрана идёт переходом браузера: он снимает кадр «до», кадр «после» и
+     проявляет один в другой. Имя открываемого ученика помечено общей меткой и
+     поэтому переезжает из строки в заголовок карточки, а не мигает. Где такого
+     API нет, остаётся прежнее появление классом.
+
+     Смена отбора — не смена экрана: строки те же, у них меняются только места.
+     Их доигрываем сами, переход браузера тут был бы лишним. */
   function render() {
+    var scene = state.view + "/" + (state.openStudent || "");
+    var moved = scene !== lastScene;
+    lastScene = scene;
+
+    var before = (!moved && !state.openStudent && state.view === "rating")
+      ? rowTops() : null;
+
+    if (moved && !reduced() && document.startViewTransition) {
+      hush(document.startViewTransition(function () { paint(false); }));
+      return;
+    }
+
+    paint(moved && !reduced());
+    if (before) flipRows(before);
+  }
+
+  /* Переход может не состояться: страница свёрнута, предыдущий ещё идёт,
+     браузер решил его отменить. Само обновление при этом всё равно проходит,
+     поэтому отказы просто проглатываем — иначе они всплывают в консоль. */
+  function hush(t) {
+    if (!t) return;
+    ["ready", "finished", "updateCallbackDone"].forEach(function (k) {
+      if (t[k] && t[k].catch) t[k].catch(function () {});
+    });
+  }
+
+  function paint(animate) {
     var main = document.getElementById("main");
     clear(main);
 
@@ -1258,10 +1430,7 @@
       t.setAttribute("aria-selected", t.dataset.view === state.view ? "true" : "false");
     });
 
-    // анимируем только смену раздела или открытие ученика, но не пересчёт фильтра
-    var scene = state.view + "/" + (state.openStudent || "");
-    if (scene !== lastScene) {
-      lastScene = scene;
+    if (animate) {
       main.classList.add("view-enter");
       clearTimeout(enterTimer);
       enterTimer = setTimeout(function () { main.classList.remove("view-enter"); }, 450);
@@ -1272,6 +1441,57 @@
       else viewRating(main);
     } else if (state.view === "series") viewSeries(main);
     else if (state.view === "zachet") viewZachet(main);
+
+    /* Прокрутка наверх делается здесь, внутри перехода: сделанная до него, она
+       успела бы дёрнуть страницу раньше, чем браузер снимет кадр «до». */
+    if (scrollUp) {
+      window.scrollTo(0, 0);
+      scrollUp = false;
+    }
+  }
+
+  /* Где стояли строки до перерисовки. Приём известен как FLIP: запомнить
+     положение, перерисовать, сдвинуть обратно и отпустить — разница доигрывается
+     сама. Без этого работа фильтра не видна: места меняются подменой кадра. */
+  function rowTops() {
+    var map = {};
+    Array.prototype.forEach.call(
+      document.querySelectorAll("table.data tbody tr[data-id]"),
+      function (tr) { map[tr.dataset.id] = tr.getBoundingClientRect().top; });
+    return map;
+  }
+
+  function flipRows(before) {
+    if (reduced() || !document.body.animate) return;
+    Array.prototype.forEach.call(
+      document.querySelectorAll("table.data tbody tr[data-id]"),
+      function (tr) {
+        var was = before[tr.dataset.id];
+        if (was === undefined) return;
+        var dy = was - tr.getBoundingClientRect().top;
+        if (Math.abs(dy) < 1) return;
+        tr.animate(
+          [{ transform: "translateY(" + dy + "px)" }, { transform: "none" }],
+          { duration: 340, easing: "cubic-bezier(.2,.7,.3,1)" });
+      });
+  }
+
+  /* Крупные числа в шапке набегают, а не подменяются: при смене отбора видно,
+     что счёт пересчитался, и на что именно. */
+  var counted = {};
+
+  function countUp(node, key, value, suffix) {
+    var from = counted[key];
+    counted[key] = value;
+    node.textContent = num(value) + (suffix || "");
+    if (from === undefined || from === value || reduced()) return;
+    var t0 = performance.now();
+    requestAnimationFrame(function step(t) {
+      var k = Math.min(1, (t - t0) / 420);
+      var e = 1 - Math.pow(1 - k, 3);
+      node.textContent = num(Math.round(from + (value - from) * e)) + (suffix || "");
+      if (k < 1) requestAnimationFrame(step);
+    });
   }
 
   function setupChrome() {

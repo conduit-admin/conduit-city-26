@@ -3372,7 +3372,37 @@
   var lastScene = null;
   var enterTimer = null;
 
+  // всё движение выключается системной настройкой — она не про красоту
+  function reduced() {
+    return !!(window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+
+  /* Переходом браузера анимируется только смена вкладки — тем же, что и на
+     сайте. Всё прочее перерисовывается сразу: правка должна отзываться на
+     касание мгновенно, а не через кадр перехода. */
   function render() {
+    var moved = state.view !== lastScene;
+    lastScene = state.view;
+
+    if (moved && !reduced() && document.startViewTransition) {
+      hush(document.startViewTransition(function () { paint(false); }));
+      return;
+    }
+    paint(moved && !reduced());
+  }
+
+  /* Переход может не состояться: страница свёрнута, предыдущий ещё идёт,
+     браузер решил его отменить. Само обновление при этом всё равно проходит,
+     поэтому отказы просто проглатываем — иначе они всплывают в консоль. */
+  function hush(t) {
+    if (!t) return;
+    ["ready", "finished", "updateCallbackDone"].forEach(function (k) {
+      if (t[k] && t[k].catch) t[k].catch(function () {});
+    });
+  }
+
+  function paint(animate) {
     var main = document.getElementById("main");
     clear(main);
     clearInterval(cdTimer);
@@ -3382,11 +3412,7 @@
       t.setAttribute("aria-selected", t.dataset.view === state.view ? "true" : "false");
     });
 
-    /* Анимируется только переход на другую вкладку. Выбор серии её не трогает:
-       список остаётся на месте, оживает лишь то, что под ним. */
-    var scene = state.view;
-    if (scene !== lastScene) {
-      lastScene = scene;
+    if (animate) {
       main.classList.add("view-enter");
       clearTimeout(enterTimer);
       enterTimer = setTimeout(function () { main.classList.remove("view-enter"); }, 450);
