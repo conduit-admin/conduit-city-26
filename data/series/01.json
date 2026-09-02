@@ -3,7 +3,7 @@
   "series": 1,
   "given": "2026-09-01",
   "date": "2026-09-05",
-  "held": false,
+  "held": true,
   "title": "Серия 1",
   "roster": [
     "budyanskiy-mihail",
@@ -131,40 +131,117 @@
   ],
   "solved": {
     "budyanskiy-mihail": [],
-    "karev-denis": [],
-    "kovalev-artem": [],
-    "mahrov-aleksandr": [],
-    "strelkov-sergey": [],
-    "aksenova-elizaveta": [],
-    "andrienko-igor": [],
-    "arhipov-aleksandr": [],
-    "afanasev-igor": [],
-    "babain-yuriy": [],
-    "boyko-gleb": [],
-    "velichko-platon": [],
-    "gabov-mark": [],
+    "karev-denis": [
+      "7"
+    ],
+    "kovalev-artem": [
+      "1",
+      "3"
+    ],
+    "mahrov-aleksandr": [
+      "2"
+    ],
+    "strelkov-sergey": [
+      "6"
+    ],
+    "aksenova-elizaveta": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "andrienko-igor": [
+      "2",
+      "5"
+    ],
+    "arhipov-aleksandr": [
+      "2"
+    ],
+    "afanasev-igor": [
+      "1",
+      "6"
+    ],
+    "babain-yuriy": [
+      "3"
+    ],
+    "boyko-gleb": [
+      "5",
+      "7"
+    ],
+    "velichko-platon": [
+      "1",
+      "2",
+      "5"
+    ],
+    "gabov-mark": [
+      "4",
+      "6"
+    ],
     "gogin-timofey": [],
-    "gulev-maksim": [],
-    "zarechnyuk-georgiy": [],
-    "karonov-mihail": [],
+    "gulev-maksim": [
+      "2"
+    ],
+    "zarechnyuk-georgiy": [
+      "0",
+      "6"
+    ],
+    "karonov-mihail": [
+      "4"
+    ],
     "korsunov-bogdan": [],
-    "kostylev-konstantin": [],
-    "kuzichev-maksim": [],
-    "larionova-natalya": [],
+    "kostylev-konstantin": [
+      "1",
+      "3"
+    ],
+    "kuzichev-maksim": [
+      "4"
+    ],
+    "larionova-natalya": [
+      "6"
+    ],
     "lyubimov-slaven": [],
     "malyshev-saveliy": [],
     "novoselov-maksim": [],
-    "osipova-viktoriya": [],
-    "pogorelov-denis": [],
-    "ponomareva-eva": [],
-    "rudakova-vasilisa": [],
+    "osipova-viktoriya": [
+      "0"
+    ],
+    "pogorelov-denis": [
+      "0",
+      "2",
+      "5"
+    ],
+    "ponomareva-eva": [
+      "2"
+    ],
+    "rudakova-vasilisa": [
+      "0"
+    ],
     "saharov-kirill": [],
-    "titov-viktor": [],
-    "titov-dmitriy": [],
-    "ushakov-sevastyan": [],
-    "celikov-aleksandr": [],
-    "shipilov-andrey": [],
-    "shirtanova-valeriya": []
+    "titov-viktor": [
+      "1",
+      "4"
+    ],
+    "titov-dmitriy": [
+      "2"
+    ],
+    "ushakov-sevastyan": [
+      "4"
+    ],
+    "celikov-aleksandr": [
+      "1",
+      "5"
+    ],
+    "shipilov-andrey": [
+      "1",
+      "2"
+    ],
+    "shirtanova-valeriya": [
+      "0"
+    ]
   },
   "pdf": {
     "file": "seriya-01.pdf",
