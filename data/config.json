@@ -3,16 +3,12 @@
   "subtitle": "Математический кружок · 2026/27",
   "admin": "afanasev-igor",
   "noindex": true,
-  "scoring": {
-    "n": 35,
-    "formula": "max(n - solvers, 1)"
-  },
   "repo": {
     "owner": "conduit-admin",
     "name": "conduit-city-26",
     "branch": "main"
   },
-  "build": "202609011724",
+  "build": "202609021844",
   "signature": {
     "on": true,
     "student": "",

@@ -44,10 +44,9 @@
     confirmStudent: null,   // id ученика, у которого спрошено удаление
     confirmFile: null,      // имя файла зачёта, у которого спрошено удаление
     sig: null,              // переключатель подписи; null — не трогали
-    wn: null,               // n в формуле очков; null — не трогали
     pickTheme: null,    // id задачи, у которой открыт выбор темы
     pickWeight: null,   // id задачи, у которой открыта своя цена
-    pickDate: false,
+    pickDate: null,   // какая из двух дат правится: given | date
     pickSolver: null,   // номер гроборешения, у которого открыт выбор ученика
     pickGrave: null,    // то же для выбора гроба
     confirmSolution: null   // гроборешение, у которого спрошено удаление
@@ -57,7 +56,7 @@
      сравнивать правку с данными сайта нельзя — минуту после сохранения они
      ещё старые, и всё выглядело бы несохранённым. */
   var SAVED = {
-    types: null, graves: null, days: {}, sig: null, wn: null,
+    types: null, graves: null, days: {}, sig: null,
     roster: null, zachet: null
   };
 
@@ -65,15 +64,34 @@
   /* Список учеников правится в редакторе, поэтому всё внутри читает рабочую
      копию, а не то, что пришло с сайта: заведённый ученик должен появиться в
      кондуите сразу, не дожидаясь сохранения. */
-  function roster() { return state.roster || DATA.students; }
+  /* Весь список из файла, вместе с выбывшими: их имена нужны — они стоят в
+     кондуитах тех серий, где эти люди занимались. */
+  function fullRoster() { return state.roster || DATA.students; }
+
+  // список группы: выбывшие в него не входят
+  function roster() {
+    return fullRoster().filter(function (s) { return !s.out; });
+  }
+
+  function nameOf(id) {
+    var s = fullRoster().filter(function (x) { return x.id === id; })[0];
+    return s ? s.name : id;
+  }
 
   function editRoster() {
     if (!state.roster) state.roster = JSON.parse(JSON.stringify(DATA.students));
     return state.roster;
   }
 
+  /* Выбывший помечается, а не стирается: убрать строку значило бы потерять имя
+     во всех прошлых кондуитах, где оно стоит. Из общего списка и из рейтинга
+     он при этом уходит. */
   function rosterPayload(list) {
-    return (list || []).map(function (s) { return { id: s.id, name: s.name }; });
+    return (list || []).map(function (s) {
+      var out = { id: s.id, name: s.name };
+      if (s.out) out.out = true;
+      return out;
+    });
   }
 
   function rosterDirty() {
@@ -162,6 +180,12 @@
     var d = parseISO(iso);
     var wd = (d.getDay() + 6) % 7;
     return d.getDate() + " " + MONTHS[d.getMonth()] + ", " + WEEKDAYS_FULL[wd];
+  }
+
+  // без дня недели: для узкой кнопки, где полная запись не помещается
+  function dayMonth(iso) {
+    var d = parseISO(iso);
+    return d.getDate() + " " + MONTHS[d.getMonth()];
   }
 
   function todayISO() { return toISO(new Date()); }
@@ -377,25 +401,56 @@
     return max + 1;
   }
 
+  /* Список серии — кто по ней занимался. Заводится он с общего списка на тот
+     день, когда серию завели, и дальше живёт своей жизнью: часть кружка уезжает
+     на сборы, и занятие им не в пропуск — его у них просто не было. От длины
+     этого списка считается и цена задач.
+
+     У серии без своего списка он равен нынешнему общему — так читаются файлы,
+     записанные до того, как списки появились. */
+  function rosterIds(d) {
+    return Array.isArray(d.roster) ? d.roster
+      : roster().map(function (s) { return s.id; });
+  }
+
+  // пришедшие — всегда подмножество списка серии, иначе счёт разъедется
+  function presentIds(d) {
+    var ids = rosterIds(d);
+    if (!Array.isArray(d.present)) return ids.slice();
+    return ids.filter(function (id) { return d.present.indexOf(id) !== -1; });
+  }
+
+  // дата выдачи; у серий, заведённых до того, как дат стало две, её нет
+  function givenOf(d) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(d.given)) ? d.given : d.date;
+  }
+
+  /* Занятие по серии может быть ещё впереди: листок уже выдан, темы известны, а
+     кондуит пуст. Такую серию сайт не показывает и не считает. */
+  function isHeld(d) { return d.held !== false; }
+
   function blankDay(slot) {
+    var ids = roster().map(function (s) { return s.id; });
     var solved = {};
-    roster().forEach(function (st) { solved[st.id] = []; });
+    ids.forEach(function (id) { solved[id] = []; });
     return {
-      n: slot, series: nextSeriesNo(slot), date: todayISO(),
+      n: slot, series: nextSeriesNo(slot),
+      given: todayISO(), date: todayISO(), held: true,
+      roster: ids, present: ids.slice(),
       problems: [], solved: solved
     };
   }
 
   function copyDay(s) {
+    var ids = rosterIds(s);
     var d = JSON.parse(JSON.stringify({
       n: s.n, series: seriesNo(s), date: s.date,
+      given: givenOf(s), held: isHeld(s),
+      roster: ids, present: presentIds(s),
       problems: s.problems || [], solved: s.solved || {},
-      present: Array.isArray(s.present) ? s.present : undefined,
       pdf: s.pdf || undefined
     }));
-    roster().forEach(function (st) {
-      if (!d.solved[st.id]) d.solved[st.id] = [];
-    });
+    ids.forEach(function (id) { if (!d.solved[id]) d.solved[id] = []; });
     return d;
   }
 
@@ -416,7 +471,7 @@
     state.noteKind = "";
     state.pickTheme = null;
     state.pickWeight = null;
-    state.pickDate = false;
+    state.pickDate = null;
     state.confirmDelete = false;
     state.confirmProblem = null;
     render();
@@ -559,20 +614,41 @@
     state.series.problems.splice(i === -1 ? state.series.problems.length : i + 1, 0, item);
   }
 
-  /* Посещаемость ведётся по желанию: пока список не заведён, серия просто не
-     знает, кто был, — и такие серии в счёт посещений не идут. Заводится он
-     сразу со всеми, потому что отмечать проще отсутствующих. */
-  function attendanceOn(d) { return Array.isArray(d && d.present); }
+  /* Посещаемость стоит прямо в кондуите последним столбцом: отмечать её удобнее
+     там же, где ставятся плюсы. По умолчанию отмечены все — снимать проще тех,
+     кого не было. */
+  function editPresent(d) {
+    if (!Array.isArray(d.present)) d.present = presentIds(d);
+    return d.present;
+  }
 
-  function startAttendance(d) {
-    d.present = roster().map(function (s) { return s.id; });
+  function wasThere(d, id) { return editPresent(d).indexOf(id) !== -1; }
+
+  function togglePresent(d, id) {
+    var list = editPresent(d);
+    var i = list.indexOf(id);
+    if (i === -1) list.push(id); else list.splice(i, 1);
     touch();
   }
 
-  function togglePresent(d, id) {
-    if (!attendanceOn(d)) return;
-    var i = d.present.indexOf(id);
-    if (i === -1) d.present.push(id); else d.present.splice(i, 1);
+  function editSeriesRoster(d) {
+    if (!Array.isArray(d.roster)) d.roster = rosterIds(d);
+    return d.roster;
+  }
+
+  /* Убрали из списка серии — уходит и из пришедших: сказать «был» о том, кого в
+     списке нет, значит запутать счёт посещений. */
+  function toggleInSeries(d, id) {
+    var list = editSeriesRoster(d);
+    var i = list.indexOf(id);
+    if (i === -1) {
+      list.push(id);
+      if (!d.solved[id]) d.solved[id] = [];
+      editPresent(d).push(id);
+    } else {
+      list.splice(i, 1);
+      d.present = editPresent(d).filter(function (x) { return x !== id; });
+    }
     touch();
   }
 
@@ -580,6 +656,7 @@
     d = d || state.series;
     if (!d) return "нечего сохранять";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date)) return "не указана дата";
+    if (!rosterIds(d).length) return "в списке серии никого";
     if (!d.problems.length) return "не добавлено ни одной задачи";
     var seen = {};
     for (var i = 0; i < d.problems.length; i++) {
@@ -599,11 +676,16 @@
 
   // то, что уедет в файл: по нему же определяется, изменилась ли серия
   function dayPayload(d) {
+    var ids = rosterIds(d);
     var payload = {
       n: d.n,
       series: seriesNo(d),
+      given: givenOf(d),
       date: d.date,
+      held: isHeld(d),
       title: "Серия " + seriesNo(d),
+      roster: ids.slice(),
+      present: presentIds(d),
       problems: (d.problems || []).map(function (p) {
         var out = {
           id: String(p.id).trim(),
@@ -618,22 +700,15 @@
       }),
       solved: {}
     };
-    /* Посещаемость пишем только если её вели: пустой список значил бы «никто
-       не пришёл», а это совсем другое утверждение. */
-    if (attendanceOn(d)) {
-      payload.present = roster().filter(function (s) {
-        return d.present.indexOf(s.id) !== -1;
-      }).map(function (s) { return s.id; });
-    }
     if (d.pdf && d.pdf.file) {
-      payload.pdf = { file: d.pdf.file, size: d.pdf.size };
+      payload.pdf = { file: d.pdf.file, size: d.pdf.size, at: d.pdf.at };
     }
 
-    /* Пишем весь список и вдобавок чужие непустые отметки: ученика могли убрать
-       из списка, и стирать заодно его плюсы — не дело записи одной серии. Они
-       не считаются нигде, но лежат на месте и вернутся вместе с человеком. */
-    roster().forEach(function (s) {
-      payload.solved[s.id] = ((d.solved || {})[s.id] || []).slice().sort(cmpIds);
+    /* Пишем весь список серии и вдобавок чужие непустые отметки: человека могли
+       убрать из списка, и стирать заодно его плюсы — не дело записи одной серии.
+       Они не считаются нигде, но лежат на месте и вернутся вместе с ним. */
+    ids.forEach(function (id) {
+      payload.solved[id] = ((d.solved || {})[id] || []).slice().sort(cmpIds);
     });
     Object.keys(d.solved || {}).forEach(function (sid) {
       if (payload.solved[sid] || !(d.solved[sid] || []).length) return;
@@ -663,8 +738,9 @@
     return function () {
       var file = "data/series/" + pad2(d.n) + ".json";
       var payload = dayPayload(d);
-      var pluses = roster().reduce(function (a, s) {
-        return a + payload.solved[s.id].length;
+      // в подписи к правке — плюсы тех, кто в списке серии: они и считаются
+      var pluses = payload.roster.reduce(function (a, id) {
+        return a + (payload.solved[id] || []).length;
       }, 0);
 
       /* Серия, о которой редактор не знает, но файл под её именем есть, — это
@@ -866,27 +942,22 @@
     return state.sig !== was;
   }
 
-  /* n в формуле «вес задачи = n − число решивших». По умолчанию это число
-     учеников в списке: задачу, которую сдали все, тогда никто не считает за
-     достижение, а задача-одиночка стоит почти в цену всей группы. */
-  /* Сколько учеников в списке — от этого считается цена задачи по умолчанию.
-     Единица снизу нужна для пустого списка: n = 0 обнулило бы всё. */
-  function defaultN() { return Math.max(roster().length, 1); }
+  /* Вес задачи = n − число решивших. n — сколько человек занималось по этой
+     серии, то есть длина её списка: задачу, которую сдали все, никто не считает
+     за достижение, а задача-одиночка стоит почти в цену всей группы. Список у
+     каждой серии свой, поэтому и n у них разное.
 
-  function configN() {
-    var n = DATA.config.scoring && DATA.config.scoring.n;
-    return typeof n === "number" && n > 0 ? n : defaultN();
-  }
+     Гробы к занятию не привязаны и считаются от всего списка группы. Единица
+     снизу — для пустого списка: n = 0 обнулило бы всё. */
+  function baseOf(list) { return Math.max((list || []).length, 1); }
 
-  function wnValue() {
-    if (state.wn !== null) return state.wn;
-    if (SAVED.wn !== null) return SAVED.wn;
-    return configN();
-  }
+  function seriesBase(d) { return baseOf(rosterIds(d)); }
+
+  function gravesBase() { return baseOf(roster()); }
 
   /* Ниже одного очка вес не опускается — то же правило, что и на сайте. Задачу,
      которую взяли все, обнулять не за что: она была решена, просто всеми. */
-  function weightOf(k) { return Math.max(wnValue() - k, 1); }
+  function weightOf(k, base) { return Math.max(base - k, 1); }
 
   /* Цену задачи можно задать вручную. Формула знает только число решивших, а
      задача бывает дорога и не поэтому: её давали с подсказкой, или она стоила
@@ -898,47 +969,28 @@
     return typeof w === "number" && isFinite(w) && w >= 0 ? Math.round(w) : null;
   }
 
-  function priceOf(p, solvers) {
+  function priceOf(p, solvers, base) {
     var w = customWeight(p);
-    return w === null ? weightOf(solvers) : w;
+    return w === null ? weightOf(solvers, base) : w;
   }
 
-  function wnDirty() {
-    if (state.wn === null) return false;
-    return state.wn !== (SAVED.wn !== null ? SAVED.wn : configN());
-  }
-
-  function configDirty() { return sigDirty() || wnDirty(); }
+  function configDirty() { return sigDirty(); }
 
   /* Пишем только то, что правили. Обе настройки разом писать нельзя: значение
      нетронутой берётся из памяти страницы, а она устаревает — правка одной
      настройки откатывала бы чужое изменение другой. */
+  /* Файл читается заново и меняется точечно: в нём же лежит отметка сборки, и
+     затирать её правкой со старой страницы нельзя. */
   function putConfigFile() {
     var sig = state.sig;
-    var n = state.wn;
-    var wantSig = sigDirty();
-    var wantN = wnDirty();
-    var what = [];
-    if (wantN) what.push("очки: n = " + n);
-    if (wantSig) what.push(sig ? "подпись включена" : "подпись выключена");
-
     return getFile("data/config.json").then(function (cur) {
       if (!cur) throw new Error("нет data/config.json");
       var cfg = JSON.parse(cur.text);
-      if (wantSig) {
-        cfg.signature = cfg.signature || {};
-        cfg.signature.on = sig;
-      }
-      if (wantN) {
-        cfg.scoring = cfg.scoring || {};
-        cfg.scoring.n = n;
-      }
+      cfg.signature = cfg.signature || {};
+      cfg.signature.on = sig;
       return putFile("data/config.json", JSON.stringify(cfg, null, 2) + "\n",
-        "Настройки: " + what.join(", "), cur.sha);
-    }).then(function () {
-      if (wantSig) SAVED.sig = sig;
-      if (wantN) SAVED.wn = n;
-    });
+        "Настройки: " + (sig ? "подпись включена" : "подпись выключена"), cur.sha);
+    }).then(function () { SAVED.sig = sig; });
   }
 
   function putStudentsFile() {
@@ -963,9 +1015,11 @@
   function stagedBlobs() { return state.blobs || (state.blobs = []); }
   function goneBlobs() { return state.blobsGone || (state.blobsGone = []); }
 
-  function stageBlob(path, data, size, title) {
+  function stageBlob(path, data, size, title, replace) {
     unstageBlob(path);
-    stagedBlobs().push({ path: path, data: data, size: size, title: title });
+    stagedBlobs().push({
+      path: path, data: data, size: size, title: title, replace: !!replace
+    });
     // файл вернули на то же имя — значит, удалять его уже не надо
     state.blobsGone = goneBlobs().filter(function (x) { return x !== path; });
   }
@@ -1035,15 +1089,17 @@
     return function () {
       return statFile(b.path).then(function (cur) {
         /* Тот же файл уже на месте — значит, прошлая отправка успела пройти, а
-           сорвалось что-то следующее. Повтор не должен спотыкаться об это.
-           Чужой файл того же имени переписывать нельзя: имя выдаётся по
-           названию, и совпасть может с чем угодно. */
+           сорвалось что-то следующее. Повтор не должен спотыкаться об это. */
         if (cur && cur.size === b.size) return null;
-        if (cur) {
+        /* У листка имя закреплено за записью (серия, гробарий), и новый ложится
+           поверх старого. У файла зачёта имя выдаётся по названию и совпасть
+           может с чем угодно — такой чужой файл переписывать нельзя. */
+        if (cur && !b.replace) {
           throw new Error("файл " + b.path.split("/").pop() +
             " уже есть в репозитории — переименуй запись");
         }
-        return putFile(b.path, null, "Файл: " + (b.title || b.path), null, b.data);
+        return putFile(b.path, null, "Файл: " + (b.title || b.path),
+          cur && cur.sha, b.data);
       }).then(function () { unstageBlob(b.path); });
     };
   }
@@ -1074,15 +1130,16 @@
     return (n / 1024 / 1024).toFixed(1).replace(".", ",") + " МБ";
   }
 
-  /* Карточка «приложенный pdf»: выбрать, показать, убрать. Одна на серию,
-     гробарий и любую другую запись с файлом. */
+  /* Карточка приложенного листка: выбрать, показать, убрать. Одна на серию и на
+     гробарий. Называется он везде одинаково — «Листок»: чей это листок, видно
+     по месту, где он лежит. Осмысленное имя нужно уже скачанному файлу, и его
+     даёт сайт. */
   function pdfCard(current, opts) {
     var card = el("div", "card");
-    var name = opts.label || "Листок";
 
     if (current && current.file) {
       var line = el("div", "subline wide");
-      var main = el("span", "subline-name", current.file);
+      var main = el("span", "subline-name", "Листок");
       if (stagedBlob(opts.dir + current.file)) {
         main.appendChild(el("i", "badge", "новый"));
       }
@@ -1108,9 +1165,9 @@
     file.className = "hidden-file";
     file.addEventListener("change", function () {
       readPdf(file.files && file.files[0], function (data, f) {
-        var fname = opts.name(f);
-        stageBlob(opts.dir + fname, data, f.size, name);
-        opts.onPick({ file: fname, size: f.size });
+        stageBlob(opts.dir + opts.name, data, f.size, "Листок", true);
+        // дата загрузки уедет в файл: из неё делается имя скачанного гробария
+        opts.onPick({ file: opts.name, size: f.size, at: todayISO() });
         render();
       });
     });
@@ -1275,8 +1332,9 @@
      файле от порядка нажатий тогда не зависит, и в истории видно правку, а не
      перетасовку. Незаполненные записи наружу не уходят. */
   function gravesPayload(g) {
+    // имена берём вместе с выбывшими: иначе их решения сползли бы в конец
     var name = {};
-    roster().forEach(function (s) { name[s.id] = s.name; });
+    fullRoster().forEach(function (s) { name[s.id] = s.name; });
 
     var list = readSolutions(g).filter(function (s) {
       return s.student && s.problem;
@@ -1300,7 +1358,7 @@
       solutions: list
     };
     if (g && g.pdf && g.pdf.file) {
-      out.pdf = { file: g.pdf.file, size: g.pdf.size };
+      out.pdf = { file: g.pdf.file, size: g.pdf.size, at: g.pdf.at };
     }
     return out;
   }
@@ -1404,9 +1462,9 @@
     return solutions().filter(function (s) { return s.problem === id; }).length;
   }
 
-  // цена гроба считается той же формулой, что и у задачи серии
+  // цена гроба считается той же формулой, но от всего списка группы
   function gravePrice(id) {
-    return priceOf(graveById(id), graveSolvers(id));
+    return priceOf(graveById(id), graveSolvers(id), gravesBase());
   }
 
   function solutionValue(s) {
@@ -1481,8 +1539,7 @@
     host.appendChild(shp);
     host.appendChild(pdfCard(g.pdf, {
       dir: PDF_DIR,
-      label: "Гробарий",
-      name: function () { return "grobariy.pdf"; },
+      name: "grobariy.pdf",
       onPick: function (info) { g.pdf = info; touchGraves(); },
       onDrop: function () { delete g.pdf; touchGraves(); }
     }));
@@ -1737,7 +1794,7 @@
     row.appendChild(pick);
 
     var solvers = graveSolvers(p.id);
-    row.appendChild(weightChip(p, solvers));
+    row.appendChild(weightChip(p, solvers, gravesBase()));
 
     row.appendChild(deleteCell(asking, function () {
       state.confirmGrave = p.id;
@@ -1753,7 +1810,7 @@
     wrap.appendChild(row);
     if (open) wrap.appendChild(themeChooser(p, touchGraves));
     else if (state.pickWeight === p.id) {
-      wrap.appendChild(weightChooser(p, solvers, touchGraves));
+      wrap.appendChild(weightChooser(p, solvers, gravesBase(), touchGraves));
     }
     return wrap;
   }
@@ -1892,27 +1949,34 @@
   }
 
   /* Свой выбор даты вместо системного: у мобильных браузеров он выглядит
-     по-разному и всегда чужеродно. */
-  function dateField() {
+     по-разному и всегда чужеродно. Дат у серии две — выдачи и занятия; какую
+     правим, говорит ключ, он же служит признаком открытого календаря. */
+  function dateField(key, plain) {
+    var open = state.pickDate === key;
     var box = el("div", "datefield");
 
-    var btn = el("button", "picker-btn" + (state.pickDate ? " open" : ""));
+    var btn = el("button", "picker-btn" + (open ? " open" : ""));
     btn.type = "button";
-    btn.appendChild(el("span", null, longDate(state.series.date)));
+    /* Подпись — той же обёрткой, что и в прочих выпадающих полях: она не даёт
+       длинной дате разъехаться на две строки, а обрезает её. На узкой кнопке
+       день недели не пишем вовсе — он и не поместился бы. */
+    btn.appendChild(el("span", "picker-label",
+      plain ? dayMonth(state.series[key]) : longDate(state.series[key])));
     btn.appendChild(el("span", "picker-caret", "▾"));
     btn.addEventListener("click", function () {
-      state.pickDate = !state.pickDate;
+      state.pickDate = open ? null : key;
       state.pickTheme = null;
+      state.calMonth = null;
       render();
     });
     box.appendChild(btn);
 
-    if (state.pickDate) box.appendChild(calendar());
+    if (open) box.appendChild(calendar(key));
     return box;
   }
 
-  function calendar() {
-    var cur = parseISO(state.series.date);
+  function calendar(key) {
+    var cur = parseISO(state.series[key]);
     var shown = state.calMonth ? parseISO(state.calMonth + "-01")
       : new Date(cur.getFullYear(), cur.getMonth(), 1);
 
@@ -1946,12 +2010,12 @@
       (function (day) {
         var iso = toISO(new Date(shown.getFullYear(), shown.getMonth(), day));
         var b = el("button", "cal-day" +
-          (iso === state.series.date ? " sel" : "") +
+          (iso === state.series[key] ? " sel" : "") +
           (iso === today ? " today" : ""), day);
         b.type = "button";
         b.addEventListener("click", function () {
-          state.series.date = iso;
-          state.pickDate = false;
+          state.series[key] = iso;
+          state.pickDate = null;
           state.calMonth = null;
           touch();
           render();
@@ -1963,14 +2027,14 @@
 
     var foot = el("div", "cal-foot");
     foot.appendChild(button("сегодня", "mini-btn", function () {
-      state.series.date = todayISO();
-      state.pickDate = false;
+      state.series[key] = todayISO();
+      state.pickDate = null;
       state.calMonth = null;
       touch();
       render();
     }));
     foot.appendChild(button("закрыть", "mini-btn", function () {
-      state.pickDate = false;
+      state.pickDate = null;
       render();
     }));
     wrap.appendChild(foot);
@@ -2039,8 +2103,13 @@
       render();
     });
     mrow.appendChild(field("Номер серии", numInput, "narrow"));
-    mrow.appendChild(field("Дата", dateField()));
+    mrow.appendChild(field("Выдана", dateField("given", true), "date"));
     meta.appendChild(mrow);
+
+    var drow = el("div", "frow top");
+    drow.appendChild(field("Занятие", dateField("date")));
+    meta.appendChild(drow);
+    meta.appendChild(heldToggle(state.series));
     host.appendChild(meta);
 
     var sh = el("div", "section-head");
@@ -2063,7 +2132,7 @@
       var sh2 = el("div", "section-head");
       sh2.appendChild(el("span", "section-title", "Кондуит"));
       host.appendChild(sh2);
-      host.appendChild(conduitGrid(state.series.problems, state.series.solved, touch));
+      host.appendChild(conduitGrid(state.series));
     }
 
     var sh3 = el("div", "section-head");
@@ -2071,85 +2140,92 @@
     host.appendChild(sh3);
     host.appendChild(seriesPdfCard(state.series));
 
+    /* Список серии стоит последним: правится он редко, а места занимает много.
+       Всё, чем пользуются на каждом занятии, должно быть выше него. */
     var sh4 = el("div", "section-head");
-    sh4.appendChild(el("span", "section-title", "Кто был"));
+    sh4.appendChild(el("span", "section-title", "Список серии"));
     host.appendChild(sh4);
-    host.appendChild(attendanceCard(state.series));
+    host.appendChild(rosterCard(state.series));
 
     host.appendChild(deleteBar());
   }
 
-  var PDF_DIR = "data/pdf/";
-
-  // листок серии: pdf с условиями, ссылка на него стоит на сайте у серии
-  function seriesPdfCard(d) {
-    return pdfCard(d.pdf, {
-      dir: PDF_DIR,
-      label: "Листок серии " + seriesNo(d),
-      name: function () {
-        var taken = allDays().map(function (x) {
-          var day = state.days[x.n] || dayBySlot(x.n);
-          return (day && day.pdf && day.pdf.file) || "";
-        });
-        return pdfName("seriya-" + seriesNo(d), taken, "seriya");
-      },
-      onPick: function (info) { d.pdf = info; touch(); },
-      onDrop: function () { delete d.pdf; touch(); }
+  /* Пока занятие не прошло, сайт показывает серию и её листок, но не кондуит:
+     пустая сетка ничего не говорит, а листок уже нужен. */
+  function heldToggle(d) {
+    var on = isHeld(d);
+    var row = el("div", "frow gap");
+    var b = el("button", "chip pick",
+      on ? "занятие прошло" : "занятие ещё не прошло");
+    b.type = "button";
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.addEventListener("click", function () {
+      d.held = !on;
+      touch();
+      render();
     });
+    row.appendChild(b);
+    if (!on) row.appendChild(el("span", "savecard-note", "кондуит на сайте скрыт"));
+    return row;
   }
 
-  /* Кто был. Пока список не заведён, серия про посещаемость ничего не
-     утверждает — это честнее, чем считать всех пришедшими. */
-  function attendanceCard(d) {
+  /* Список серии: кто по ней занимался. Заводится он с общего списка, а дальше
+     живёт своей жизнью — убирать отсюда стоит тех, кого занятие не касалось:
+     уехавших на сборы, финал, турнир. Пропуском это не считается, и цена задач
+     считается без них. */
+  function rosterCard(d) {
     var card = el("div", "card");
-    if (!attendanceOn(d)) {
-      var row = el("div", "frow gap");
-      row.appendChild(button("Отметить посещаемость", "ghost-btn", function () {
-        startAttendance(d);
-        render();
-      }));
-      card.appendChild(row);
-      card.appendChild(el("div", "savecard-note",
-        "отметятся все, дальше снимаешь тех, кого не было"));
-      return card;
-    }
+    var ids = editSeriesRoster(d);
+    var all = roster();
 
     var head = el("div", "filter-head");
     head.appendChild(el("span", "filter-title",
-      withNum(d.present.length, "был", "было", "было") + " из " + roster().length));
-    head.appendChild(mini("все", function () {
-      d.present = roster().map(function (s) { return s.id; });
-      touch();
-      render();
-    }));
-    head.appendChild(mini("никого", function () {
-      d.present = [];
-      touch();
-      render();
-    }));
-    head.appendChild(mini("не вести", function () {
-      delete d.present;
-      touch();
+      withNum(ids.length, "ученик", "ученика", "учеников")));
+    head.appendChild(mini("весь список", function () {
+      all.forEach(function (st) {
+        if (ids.indexOf(st.id) === -1) toggleInSeries(d, st.id);
+      });
       render();
     }));
     card.appendChild(head);
 
+    /* Кроме общего списка показываем тех, кто в этой серии есть, а из группы уже
+       выбыл: иначе их отсюда было бы не убрать. */
+    var extra = ids.filter(function (id) {
+      return !all.some(function (st) { return st.id === id; });
+    }).map(function (id) { return { id: id, name: nameOf(id) }; });
+
     var chips = el("div", "chips");
-    roster().slice().sort(function (a, b) {
+    all.concat(extra).sort(function (a, b) {
       return a.name.localeCompare(b.name, "ru");
     }).forEach(function (st) {
-      var on = d.present.indexOf(st.id) !== -1;
       var b = el("button", "chip pick", st.name);
       b.type = "button";
-      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.setAttribute("aria-pressed", ids.indexOf(st.id) !== -1 ? "true" : "false");
       b.addEventListener("click", function () {
-        togglePresent(d, st.id);
+        toggleInSeries(d, st.id);
         render();
       });
       chips.appendChild(b);
     });
     card.appendChild(chips);
+    card.appendChild(el("div", "savecard-note",
+      "цена задачи считается от этого списка: n = " + seriesBase(d)));
     return card;
+  }
+
+  var PDF_DIR = "data/pdf/";
+
+  /* Листок серии. Имя файла — по слоту, а не по номеру серии: номер можно
+     поменять, и тогда файл потерялся бы. Имя закреплено за записью, поэтому
+     новый листок просто ложится поверх старого. */
+  function seriesPdfCard(d) {
+    return pdfCard(d.pdf, {
+      dir: PDF_DIR,
+      name: "seriya-" + pad2(d.n) + ".pdf",
+      onPick: function (info) { d.pdf = info; touch(); },
+      onDrop: function () { delete d.pdf; touch(); }
+    });
   }
 
   function mini(text, fn) {
@@ -2287,13 +2363,13 @@
     pick.addEventListener("click", function () {
       state.pickTheme = open ? null : p.id;
       state.pickWeight = null;
-      state.pickDate = false;
+      state.pickDate = null;
       render();
     });
     row.appendChild(pick);
 
     var solvers = solversOf(p.id);
-    row.appendChild(weightChip(p, solvers));
+    row.appendChild(weightChip(p, solvers, seriesBase(state.series)));
 
     row.appendChild(deleteCell(asking, function () {
       state.confirmProblem = p.id;
@@ -2311,7 +2387,7 @@
     // панели раскрываются по одной: обе разом заняли бы пол-экрана
     if (open) wrap.appendChild(themeChooser(p, touch));
     else if (state.pickWeight === p.id) {
-      wrap.appendChild(weightChooser(p, solvers, touch));
+      wrap.appendChild(weightChooser(p, solvers, seriesBase(state.series), touch));
     }
     return wrap;
   }
@@ -2319,16 +2395,16 @@
   /* Цена задачи в строке: приглушённая, пока считается формулой, и плотная,
      когда задана вручную. Касание раскрывает панель под строкой — поля для
      ввода числа здесь, как и везде в редакторе, нет. */
-  function weightChip(p, solvers) {
+  function weightChip(p, solvers, base) {
     var b = el("button",
-      "wchip" + (customWeight(p) === null ? "" : " on"), priceOf(p, solvers));
+      "wchip" + (customWeight(p) === null ? "" : " on"), priceOf(p, solvers, base));
     b.type = "button";
     b.setAttribute("data-pid", p.id);
     b.setAttribute("aria-label", "цена задачи " + p.id);
     b.addEventListener("click", function () {
       state.pickWeight = state.pickWeight === p.id ? null : p.id;
       state.pickTheme = null;
-      state.pickDate = false;
+      state.pickDate = null;
       render();
     });
     return b;
@@ -2337,9 +2413,9 @@
   /* По одному и по десять: от единицы до цены всей группы дотянуться хватает, а
      набирать число на телефоне неудобно. «По формуле» возвращает задачу к
      автоматической цене — иначе из ручной не было бы выхода. */
-  function weightChooser(p, solvers, touch) {
+  function weightChooser(p, solvers, base, touch) {
     var box = el("div", "chooser");
-    var now = priceOf(p, solvers);
+    var now = priceOf(p, solvers, base);
 
     /* Ноль руками поставить можно, и это не то же самое, что «нет цены»:
        формула ниже единицы не опускается нарочно, а вручную задача обнуляется
@@ -2364,7 +2440,7 @@
     var foot = el("div", "wfoot");
     var own = customWeight(p) !== null;
     foot.appendChild(el("span", "wnote", own
-      ? "по формуле было бы " + weightOf(solvers)
+      ? "по формуле было бы " + weightOf(solvers, base)
       : "считается по формуле"));
     var back = button("по формуле", "mini-btn", function () {
       delete p.weight;
@@ -2378,11 +2454,15 @@
     return box;
   }
 
-  // сколько человек взяло эту задачу в открытом дне — от этого зависит цена
+  /* Сколько человек взяло эту задачу в открытой серии — от этого зависит её
+     цена. Считаем по списку серии: плюс того, кого в нём нет, остался от
+     прежнего состава и цену сдвигать не должен. */
   function solversOf(pid) {
-    var solved = (state.series && state.series.solved) || {};
-    return roster().filter(function (s) {
-      var list = solved[s.id];
+    var d = state.series;
+    if (!d) return 0;
+    var solved = d.solved || {};
+    return rosterIds(d).filter(function (id) {
+      var list = solved[id];
       return list && list.indexOf(pid) !== -1;
     }).length;
   }
@@ -2435,10 +2515,17 @@
   /* Как и на сайте: фамилии — отдельной таблицей слева, клетки прокручиваются
      справа. Залипающий столбец на телефоне налезал на имена.
 
-     Сетка одна на серию и на гробарий: ей передают список задач, отметки и
-     что сделать после касания. Подписи она пересчитывает сама, не перерисовывая
-     таблицу — иначе на каждом плюсе сбивалась бы прокрутка. */
-  function conduitGrid(problems, solved, onChange) {
+     Строки — список этой серии, а не общий: кого в ней не было, того в кондуите
+     и нет. Последний столбец — посещаемость: отмечать её удобнее там же, где
+     ставятся плюсы, а не отдельным списком под таблицей.
+
+     Подписи пересчитываются на месте, без перерисовки таблицы, — иначе на
+     каждом плюсе сбивалась бы прокрутка. */
+  function conduitGrid(d) {
+    var problems = d.problems;
+    var solved = d.solved;
+    var rows = seriesRows(d);
+    var base = seriesBase(d);
     var leader = leaderId();
     var split = el("div", "conduit-split");
 
@@ -2450,11 +2537,15 @@
     function rowCount(sid) { return (solved[sid] || []).length; }
 
     function colCount(pid) {
-      return roster().filter(function (s) { return marked(s.id, pid); }).length;
+      return rows.filter(function (st) { return marked(st.id, pid); }).length;
     }
 
     function allCount() {
-      return roster().reduce(function (a, s) { return a + rowCount(s.id); }, 0);
+      return rows.reduce(function (a, st) { return a + rowCount(st.id); }, 0);
+    }
+
+    function hereCount() {
+      return rows.filter(function (st) { return wasThere(d, st.id); }).length;
     }
 
     var names = el("table", "conduit names");
@@ -2465,7 +2556,7 @@
     names.appendChild(nHead);
 
     var nBody = el("tbody");
-    roster().forEach(function (st) {
+    rows.forEach(function (st) {
       var tr = el("tr", "crow");
       var cell = el("td", "pname");
       var box = el("span", "name-box");
@@ -2506,11 +2597,12 @@
       hr.appendChild(cell);
     });
     hr.appendChild(el("th", "pcount", "всего"));
+    hr.appendChild(el("th", "pcount patt", "был"));
     thead.appendChild(hr);
     table.appendChild(thead);
 
     var tbody = el("tbody");
-    roster().forEach(function (st) {
+    rows.forEach(function (st) {
       var tr = el("tr", "crow");
       problems.forEach(function (p) {
         var td = el("td", "cell");
@@ -2535,6 +2627,23 @@
         tr.appendChild(td);
       });
       tr.appendChild(el("td", "pcount rowcount", rowCount(st.id)));
+
+      /* Клетка посещаемости — не плюс: она говорит «был», а не «сделал».
+         Поэтому и выглядит иначе — кружком, а не квадратом со знаком. */
+      var att = el("td", "cell patt");
+      var ab = el("button", "mark att" + (wasThere(d, st.id) ? " on" : ""));
+      ab.type = "button";
+      ab.setAttribute("aria-label", st.name + " — был на занятии");
+      ab.addEventListener("click", function () {
+        togglePresent(d, st.id);
+        var on = wasThere(d, st.id);
+        ab.className = "mark att" + (on ? " on pop" : " drop");
+        setTimeout(function () { ab.classList.remove(on ? "pop" : "drop"); }, 260);
+        refresh();
+      });
+      att.appendChild(ab);
+      tr.appendChild(att);
+
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
@@ -2543,12 +2652,14 @@
     var f1 = el("tr");
     problems.forEach(function (p) { f1.appendChild(el("td", "colcount", colCount(p.id))); });
     f1.appendChild(el("td", "pcount total", allCount()));
+    f1.appendChild(el("td", "pcount patt here", hereCount()));
     tfoot.appendChild(f1);
     var f2 = el("tr", "weights");
     problems.forEach(function (p) {
-      f2.appendChild(el("td", "colweight", priceOf(p, colCount(p.id))));
+      f2.appendChild(el("td", "colweight", priceOf(p, colCount(p.id), base)));
     });
     f2.appendChild(el("td", "pcount"));
+    f2.appendChild(el("td", "pcount patt"));
     tfoot.appendChild(f2);
     table.appendChild(tfoot);
 
@@ -2556,9 +2667,9 @@
     split.appendChild(scroll);
 
     function refresh() {
-      var rows = table.querySelectorAll("tbody tr");
-      roster().forEach(function (st, i) {
-        var c = rows[i] && rows[i].querySelector(".rowcount");
+      var trs = table.querySelectorAll("tbody tr");
+      rows.forEach(function (st, i) {
+        var c = trs[i] && trs[i].querySelector(".rowcount");
         if (c) c.textContent = rowCount(st.id);
       });
 
@@ -2567,10 +2678,12 @@
       problems.forEach(function (p, i) {
         var n = colCount(p.id);
         if (cols[i]) cols[i].textContent = n;
-        if (ws[i]) ws[i].textContent = priceOf(p, n);
+        if (ws[i]) ws[i].textContent = priceOf(p, n, base);
       });
       var total = table.querySelector(".total");
       if (total) total.textContent = allCount();
+      var here = table.querySelector(".here");
+      if (here) here.textContent = hereCount();
 
       /* Цена в строке задачи считается от числа решивших — значит, меняется от
          каждого касания клетки. Перерисовывать ради неё весь экран нельзя:
@@ -2581,12 +2694,19 @@
           var found = problems.filter(function (x) {
             return String(x.id) === pid;
           })[0];
-          if (found) chip.textContent = priceOf(found, colCount(found.id));
+          if (found) chip.textContent = priceOf(found, colCount(found.id), base);
         });
-      if (onChange) onChange();
+      touch();
     }
 
     return split;
+  }
+
+  // строки кондуита: список этой серии по алфавиту
+  function seriesRows(d) {
+    return rosterIds(d).map(function (id) {
+      return { id: id, name: nameOf(id) };
+    }).sort(function (a, b) { return a.name.localeCompare(b.name, "ru"); });
   }
 
   /* Первый в рейтинге — по всем сериям, которые уже на сайте, так же как на публичной
@@ -2596,13 +2716,18 @@
     var score = {};
     roster().forEach(function (s) { score[s.id] = 0; });
     DATA.series.forEach(function (s) {
+      if (!isHeld(s)) return;    // занятие ещё не прошло — считать нечего
+      var ids = rosterIds(s);
+      var base = baseOf(ids);
       (s.problems || []).forEach(function (p) {
-        var solvers = roster().filter(function (st) {
-          var list = s.solved[st.id];
+        var solvers = ids.filter(function (id) {
+          var list = s.solved[id];
           return list && list.indexOf(p.id) !== -1;
         });
-        var weight = priceOf(p, solvers.length);
-        solvers.forEach(function (st) { score[st.id] += weight; });
+        var weight = priceOf(p, solvers.length, base);
+        solvers.forEach(function (id) {
+          if (score[id] !== undefined) score[id] += weight;
+        });
       });
     });
 
@@ -2610,7 +2735,7 @@
     var taken = readSolutions(DATA.graves);
     ((DATA.graves && DATA.graves.problems) || []).forEach(function (p) {
       var mine = taken.filter(function (x) { return x.problem === p.id; });
-      var weight = priceOf(p, mine.length);
+      var weight = priceOf(p, mine.length, gravesBase());
       mine.forEach(function (x) {
         if (score[x.student] === undefined) return;
         score[x.student] += weight + solutionBonus(x);
@@ -2781,15 +2906,23 @@
       var name = String(input.value).trim();
       if (!name) return;
       var draft = editRoster();
-      if (draft.some(function (x) { return x.name === name; })) {
+      var was = draft.filter(function (x) { return x.name === name; })[0];
+      if (was && !was.out) {
         state.note = "Такой ученик уже есть";
         state.noteKind = "bad";
         return render();
       }
-      draft.push({
-        id: uniqueId(translit(name), draft.map(function (x) { return x.id; })),
-        name: name
-      });
+      /* Вернулся тот, кого убирали: снимаем пометку вместо новой строки — тогда
+         к нему возвращаются и прежние плюсы, они всё это время лежали в файлах
+         серий под тем же id. */
+      if (was) delete was.out;
+      else {
+        draft.push({
+          id: uniqueId(translit(name), draft.map(function (x) { return x.id; })),
+          name: name
+        });
+      }
+      input.value = "";
       state.note = "";
       state.noteKind = "";
       render();
@@ -2824,7 +2957,7 @@
     name.addEventListener("change", function () {
       var v = String(name.value).trim();
       var busy = editRoster().some(function (x) {
-        return x !== st && x.name === v;
+        return x.id !== st.id && x.name === v;
       });
       if (!v || busy) {
         name.value = st.name;
@@ -2844,18 +2977,20 @@
     if (DATA.config.admin === st.id) box.appendChild(el("i", "badge-admin", "◆"));
     line.appendChild(box);
 
+    // у кого плюсов ещё нет — пустое место: прочерк тут ничего не добавляет
     var n = studentPluses(st.id);
-    line.appendChild(el("span", "subline-val" + (n ? "" : " muted"),
-      n ? "+" + n : "—"));
+    line.appendChild(el("span", "subline-val", n ? "+" + n : ""));
 
-    /* Плюсы удалённого остаются в файлах серий: стирать чужую работу заодно со
-       строкой списка — слишком много для одного нажатия. Считаться они
-       перестанут, а вернутся вместе с человеком, если завести его снова. */
+    /* Выбывший помечается, а не стирается. Его плюсы остаются в файлах серий, а
+       имя — в кондуитах тех занятий, где он был: строка списка не должна уносить
+       с собой чужую работу. В общем списке и в рейтинге его больше нет, а
+       вернуть его можно, заведя с тем же именем. */
     line.appendChild(deleteCell(asking, function () {
       state.confirmStudent = st.id;
       render();
     }, function () {
-      state.roster = editRoster().filter(function (x) { return x.id !== st.id; });
+      var mine = editRoster().filter(function (x) { return x.id === st.id; })[0];
+      if (mine) mine.out = true;
       state.confirmStudent = null;
       render();
     }));
@@ -3017,14 +3152,38 @@
     state.zachetTitle = "";
     state.sig = null;
     SAVED.sig = null;
-    state.wn = null;
-    SAVED.wn = null;
     lastSeriesN = null;
     if (n !== null && dayBySlot(n)) openSeries(n);
     else render();
   }
 
+  /* Серия помечена как не прошедшая, но плюсы в ней уже стоят: скорее всего
+     занятие было, а переключатель остался. На сайте такой кондуит не виден, и
+     заметить это самому неоткуда — поэтому говорим здесь. */
+  function heldMissed() {
+    return Object.keys(state.days).map(function (k) { return state.days[k]; })
+      .filter(function (d) {
+        if (isHeld(d)) return false;
+        return Object.keys(d.solved || {}).some(function (id) {
+          return (d.solved[id] || []).length > 0;
+        });
+      });
+  }
+
   function viewSave(host) {
+    var missed = heldMissed();
+    if (missed.length) {
+      var hw = el("div", "card warn");
+      hw.appendChild(el("div", "warn-title", "Занятие помечено как не прошедшее"));
+      missed.forEach(function (d) {
+        var line = el("div", "warn-line");
+        line.appendChild(el("span", "warn-where", dayLabel(d)));
+        line.appendChild(el("span", "warn-ids", "кондуит на сайте не виден"));
+        hw.appendChild(line);
+      });
+      host.appendChild(hw);
+    }
+
     var untyped = untypedTasks();
     if (untyped.length) {
       var warn = el("div", "card warn");
@@ -3108,34 +3267,6 @@
       }
       host.appendChild(rev);
     }
-
-    var shScore = el("div", "section-head");
-    shScore.appendChild(el("span", "section-title", "Очки"));
-    host.appendChild(shScore);
-
-    var score = el("div", "card");
-    var nIn = el("input");
-    nIn.type = "number";
-    nIn.inputMode = "numeric";
-    /* Меньше числа учеников n быть не может: задача, которую сдали больше n
-       человек, весила бы меньше нуля, и плюс за неё отнимал бы очки. */
-    var least = defaultN();
-    nIn.min = String(least);
-    nIn.value = wnValue();
-    nIn.className = "input short";
-    nIn.addEventListener("change", function () {
-      var v = parseInt(nIn.value, 10);
-      if (!v || v < least) { nIn.value = wnValue(); return; }
-      state.wn = v;
-      state.note = "";
-      state.noteKind = "";
-      render();
-    });
-    score.appendChild(field("n", nIn));
-    score.appendChild(el("div", "savecard-note",
-      "вес задачи = n − число решивших, но не меньше 1; само n меньше " +
-      least + " не бывает"));
-    host.appendChild(score);
 
     var sh = el("div", "section-head");
     sh.appendChild(el("span", "section-title", "Доступ"));
@@ -3367,6 +3498,7 @@
             zachetOk: zachetOk,
             zachet: { items: (res[5] && res[5].items) || [] },
             graves: {
+              pdf: res[4].pdf,
               problems: res[4].problems || [],
               solutions: res[4].solutions,
               solved: res[4].solved || {}
@@ -3419,10 +3551,6 @@
           !!(DATA.config.signature && DATA.config.signature.on)) {
         state.sig = null;
         SAVED.sig = null;
-      }
-      if (state.wn !== null && state.wn === configN()) {
-        state.wn = null;
-        SAVED.wn = null;
       }
       render();
     }).catch(function () { render(); });

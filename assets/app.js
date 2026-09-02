@@ -15,6 +15,7 @@
   var CAT = {};       // id раздела -> раздел
   var LEAVES = [];    // [{key, catId, catName, subId, subName, slot, label}]
   var LEAF = {};      // key -> лист
+  var NAME = {};      // id -> имя; в этой карте есть и выбывшие из списка
   var FULL = null;    // рейтинг по всему сразу — им определяется первый в нём
 
   var state = {
@@ -44,27 +45,24 @@
     return s && s.on && s.student === id && s.text ? s.text : null;
   }
 
-  /* Вес задачи = n − число решивших. По умолчанию n — число учеников в списке,
-     но его можно задать отдельно из редактора: тогда цена задачи считается от
-     него, а не от состава группы. Заданное n за списком не следует нарочно —
-     иначе новый ученик переоценил бы все прошлые задачи задним числом. */
-  function weightBase() {
-    var n = DATA.config.scoring && DATA.config.scoring.n;
-    return typeof n === "number" && n > 0 ? n : Math.max(DATA.students.length, 1);
-  }
+  /* Вес задачи = n − число решивших, где n — сколько человек занималось по этой
+     серии. Список у каждой серии свой, поэтому и n у них разное: задача, которую
+     давали десятерым, и задача на весь кружок стоят по-разному — и правильно.
+     Гробы считаются от всего списка: они не привязаны к занятию. */
+  function baseOf(list) { return Math.max((list || []).length, 1); }
 
   /* Ниже одного очка вес не опускается. Задача, которую взяли все, всё-таки
      была решена: обнулять её значило бы, что плюс за неё не стоит ничего — а он
      стоит, просто самую малость. Правило то же в редакторе. */
-  function weightOf(solvers) { return Math.max(weightBase() - solvers, 1); }
+  function weightOf(solvers, base) { return Math.max(base - solvers, 1); }
 
   /* Цену задачи можно задать вручную — тогда формула к ней не применяется.
      Ставится она в редакторе: формула знает только число решивших, а задача
      бывает дорога и не поэтому. */
-  function priceOf(p, solvers) {
+  function priceOf(p, solvers, base) {
     var w = p && p.weight;
     return typeof w === "number" && isFinite(w) && w >= 0
-      ? Math.round(w) : weightOf(solvers);
+      ? Math.round(w) : weightOf(solvers, base);
   }
 
   /* Номер серии — то, что видно снаружи. В файле рядом лежит служебный слот n:
@@ -80,6 +78,41 @@
     return s ? seriesNo(s) : sn;
   }
 
+  /* Список серии — те, кто по ней занимался. Он задаётся, когда серию заводят, и
+     за общим списком дальше не следует: уехавшие на турнир занятие не пропустили
+     — его у них просто не было. Имена берутся из общего списка, в нём же
+     остаются выбывшие, иначе старый кондуит потерял бы фамилии.
+
+     У серии без своего списка он равен нынешнему общему — так читаются файлы,
+     записанные до того, как списки появились. */
+  function rosterOf(s) {
+    if (Array.isArray(s.roster)) return s.roster;
+    return DATA.students.map(function (x) { return x.id; });
+  }
+
+  function rosterRows(s) {
+    return rosterOf(s).map(function (id) {
+      return { id: id, name: NAME[id] || id };
+    });
+  }
+
+  /* Серия, по которой занятие ещё не прошло: листок и темы у неё уже есть, а
+     кондуит пуст и ничего не говорит. Такую серию не считаем нигде — иначе она
+     отняла бы у всех проценты, ничего не дав взамен. */
+  function held(s) { return s.held !== false; }
+
+  // дата выдачи: у серий, заведённых до того, как дат стало две, её нет
+  function givenDate(s) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(s.given)) ? s.given : null;
+  }
+
+  /* Серия без пропусков — та, где был каждый из её списка. Список у серии свой,
+     поэтому уехавшие на турнир её не портят: их в этом списке нет. */
+  function noMisses(s) {
+    if (!attended(s) || !held(s)) return false;
+    return rosterOf(s).every(function (id) { return s.present.indexOf(id) !== -1; });
+  }
+
   /* В кондуите ученики стоят по алфавиту, а не по результату серии: кондуит —
      ведомость, в ней ищут человека, а не место. Полное имя сравнивается
      целиком, поэтому однофамильцы идут по именам. */
@@ -91,8 +124,8 @@
 
   function hasTasks(s) { return (s.problems || []).length > 0; }
 
-  /* Посещаемость ведётся по желанию: у серии либо есть список пришедших, либо
-     она про это ничего не говорит. Считаем только по тем, где список есть. */
+  /* Посещаемость. Считаются только прошедшие занятия и только те, кто был в
+     списке серии: занятие, которого у человека не было, он не пропускал. */
   function attended(s) { return Array.isArray(s.present); }
 
   function wasThere(s, id) {
@@ -102,20 +135,23 @@
   function attendance(id) {
     var was = 0, of = 0;
     DATA.series.forEach(function (s) {
-      if (!attended(s)) return;
+      if (!attended(s) || !held(s)) return;
+      if (rosterOf(s).indexOf(id) === -1) return;
       of += 1;
       if (wasThere(s, id)) was += 1;
     });
     return { was: was, of: of };
   }
 
-  // строка «скачать pdf»: одна и та же у листка серии, гробария и зачёта
-  function pdfRow(file, title, size) {
+  /* Строка «скачать pdf». Называется листок везде одинаково — «Листок»: чей он,
+     видно по месту, где он лежит. А вот у скачанного файла имя должно говорить
+     само за себя, поэтому оно приходит отдельно. */
+  function pdfRow(file, download, size) {
     var row = el("a", "lik-row");
     row.href = "data/pdf/" + encodeURIComponent(file);
-    row.setAttribute("download", title + ".pdf");
+    row.setAttribute("download", download + ".pdf");
     var main = el("span", "lik-main");
-    main.appendChild(el("span", "lik-title", title));
+    main.appendChild(el("span", "lik-title", "Листок"));
     main.appendChild(el("span", "lik-meta",
       "PDF" + (fileSize(size) ? " · " + fileSize(size) : "")));
     row.appendChild(main);
@@ -123,7 +159,10 @@
     return row;
   }
 
-  function realSeries() { return DATA.series.filter(hasTasks); }
+  // в рейтинге только прошедшие занятия: в остальных считать нечего
+  function realSeries() {
+    return DATA.series.filter(function (s) { return hasTasks(s) && held(s); });
+  }
 
   var MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня",
     "июля", "августа", "сентября", "октября", "ноября", "декабря"];
@@ -150,6 +189,12 @@
 
   function clear(node) {
     while (node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  // с годом: имя скачанного файла живёт дольше учебного года
+  function fullDate(iso) {
+    var p = String(iso).split("-");
+    return p.length === 3 ? prettyDate(iso) + " " + p[0] : String(iso);
   }
 
   function pct(x) { return Math.round(x * 100) + "%"; }
@@ -268,11 +313,16 @@
 
     UNITS = [];
     DATA.series.forEach(function (s) {
+      if (!held(s)) return;    // занятие ещё не прошло — считать нечего
+      var ids = rosterOf(s);
+      var base = baseOf(ids);
       s.problems.forEach(function (p) {
-        var solvers = [];
-        DATA.students.forEach(function (st) {
-          var list = s.solved[st.id];
-          if (list && list.indexOf(p.id) !== -1) solvers.push(st.id);
+        /* Решившие — только из списка серии. Плюс человека, которого в этом
+           списке нет, остался от прежнего состава: он лежит в файле, но в счёт
+           не идёт, иначе сдвинул бы цену задачи. */
+        var solvers = ids.filter(function (id) {
+          var list = s.solved[id];
+          return list && list.indexOf(p.id) !== -1;
         });
         UNITS.push({
           sn: s.n,
@@ -282,7 +332,8 @@
           kind: isExercise(p) ? "exercise" : "problem",
           solvers: solvers,
           solverSet: new Set(solvers),
-          weight: priceOf(p, solvers.length)
+          roster: new Set(ids),
+          weight: priceOf(p, solvers.length, base)
         });
       });
     });
@@ -310,16 +361,19 @@
         kind: "grave",
         solvers: solvers,
         solverSet: new Set(solvers),
+        roster: null,          // гроб доступен всем: он не привязан к занятию
         bonus: bonus,
-        weight: priceOf(p, solvers.length)
+        weight: priceOf(p, solvers.length, baseOf(DATA.students))
       });
     });
 
     state.leaves = new Set(LEAVES.map(function (l) { return l.key; }));
     state.series = new Set(realSeries().map(function (s) { return s.n; }));
-    state.openSeries = DATA.series.length
-      ? DATA.series[DATA.series.length - 1].n
-      : GRAVES;
+    /* Открыт по умолчанию последний кондуит, а не последняя серия: у серии, по
+       которой занятия ещё не было, показывать нечего. */
+    var live = realSeries();
+    state.openSeries = live.length ? live[live.length - 1].n
+      : (DATA.series.length ? DATA.series[DATA.series.length - 1].n : GRAVES);
 
     /* Первый считается по всему сразу и не зависит от фильтров: он помечен
        одинаково на любой вкладке и при любом отборе. */
@@ -334,10 +388,6 @@
   var KINDS = [["problem", "Задачи"], ["exercise", "Упражнения"], ["grave", "Гробы"]];
   var ALL_KINDS = new Set(KINDS.map(function (p) { return p[0]; }));
 
-  function allLeaves() {
-    return new Set(LEAVES.map(function (l) { return l.key; }));
-  }
-
   function catLeaves(catId) {
     return LEAVES.filter(function (l) { return l.catId === catId; });
   }
@@ -345,7 +395,10 @@
   function computeRating(seriesSet, leafSet, kindSet) {
     kindSet = kindSet || state.kinds;
     var rows = DATA.students.map(function (s) {
-      return { id: s.id, name: s.name, score: 0, pluses: 0, bonus: 0 };
+      return {
+        id: s.id, name: s.name, score: 0, pluses: 0, bonus: 0,
+        avail: 0, ceil: 0
+      };
     });
     var byId = {};
     rows.forEach(function (r) { byId[r.id] = r; });
@@ -356,6 +409,13 @@
       if (!leafSet.has(u.leafKey) || !kindSet.has(u.kind)) return;
       available += 1;
       ceiling += u.weight;
+      /* Потолок у каждого свой: серия, в списке которой человека не было, ему не
+         в укор — она не входит ни в его задачи, ни в его возможные очки. */
+      rows.forEach(function (r) {
+        if (u.roster && !u.roster.has(r.id)) return;
+        r.avail += 1;
+        r.ceil += u.weight;
+      });
       u.solvers.forEach(function (id) {
         var r = byId[id];
         if (!r) return;
@@ -407,7 +467,8 @@
     b.type = "button";
     b.setAttribute("aria-pressed", pressed ? "true" : "false");
     b.appendChild(el("b", null, seriesNo(s)));
-    b.appendChild(el("small", null, prettyDate(s.date, true)));
+    // у серии, по которой занятия ещё не было, дата — намерение, а не факт
+    b.appendChild(el("small", null, held(s) ? prettyDate(s.date, true) : "скоро"));
     b.addEventListener("click", onClick);
     return b;
   }
@@ -551,6 +612,15 @@
       state.series = new Set(days.slice(-5).map(function (s) { return s.n; }));
       render();
     }));
+    /* Отбор по сериям, где был весь список серии. Показываем только когда он
+       и правда что-то отсекает: иначе это была бы вторая кнопка «все». */
+    var clean = days.filter(noMisses);
+    if (clean.length && clean.length < days.length) {
+      h2.appendChild(mini("где все были", function () {
+        state.series = new Set(clean.map(function (s) { return s.n; }));
+        render();
+      }));
+    }
     h2.appendChild(mini("ни одной", function () {
       state.series = new Set();
       render();
@@ -633,7 +703,7 @@
      при прокрутке налезали на имена — залипание конфликтует со слоями, которые
      браузер заводит под анимации. Две таблицы такого конфликта не создают.
      Высоты строк заданы жёстко, поэтому половинки идут вровень. */
-  function conduitTables(problems, rows, cellFor, footFor, countFor) {
+  function conduitTables(problems, rows, cellFor, footFor, countFor, att) {
     var split = el("div", "conduit-split");
 
     var names = el("table", "conduit names");
@@ -679,6 +749,7 @@
       hr.appendChild(cell);
     });
     hr.appendChild(el("th", "pcount", "всего"));
+    if (att) hr.appendChild(el("th", "pcount patt", "был"));
     thead.appendChild(hr);
     cells.appendChild(thead);
 
@@ -694,6 +765,15 @@
       var n = countFor(r);
       total += n;
       tr.appendChild(el("td", "pcount rowcount", n));
+
+      /* Пустая строка сама по себе двусмысленна: то ли ничего не решил, то ли
+         его на занятии не было. Столбец посещаемости и отвечает на это. */
+      if (att) {
+        var acell = el("td", "cell patt");
+        var mark = el("div", "mark att" + (att.was(r.id) ? " on" : ""));
+        acell.appendChild(mark);
+        tr.appendChild(acell);
+      }
       tbody.appendChild(tr);
     });
     cells.appendChild(tbody);
@@ -708,6 +788,10 @@
     });
     f1.appendChild(el("td", "pcount total", total));
     f2.appendChild(el("td", "pcount"));
+    if (att) {
+      f1.appendChild(el("td", "pcount patt", att.count));
+      f2.appendChild(el("td", "pcount patt"));
+    }
     tfoot.appendChild(f1);
     tfoot.appendChild(f2);
     cells.appendChild(tfoot);
@@ -771,15 +855,22 @@
 
     var sh = el("div", "section-head");
     sh.appendChild(el("span", "section-title", "Серия " + seriesNo(s)));
-    var note = prettyDate(s.date);
-    if (attended(s)) note += " · был " + s.present.length + " из " + DATA.students.length;
-    sh.appendChild(el("span", "section-note", note));
+    sh.appendChild(el("span", "section-note", seriesNote(s)));
     host.appendChild(sh);
 
     if (s.pdf && s.pdf.file) {
       var pcard = el("div", "card");
-      pcard.appendChild(pdfRow(s.pdf.file, "Листок серии " + seriesNo(s), s.pdf.size));
+      pcard.appendChild(pdfRow(s.pdf.file, "Серия " + seriesNo(s), s.pdf.size));
       host.appendChild(pcard);
+    }
+
+    /* Занятия ещё не было: листок уже выдан, а кондуит пуст и ничего не значит.
+       Показывать пустую сетку — только вводить в заблуждение. */
+    if (!held(s)) {
+      var soon = el("div", "card");
+      soon.appendChild(el("div", "section-title", "Занятие ещё не прошло"));
+      host.appendChild(soon);
+      return;
     }
 
     // в пустой серии показывать нечего — одна шапка с датой
@@ -788,7 +879,8 @@
     var byId = {};
     UNITS.forEach(function (u) { if (u.sn === s.n) byId[u.id] = u; });
 
-    var order = byName(computeRating(new Set([s.n]), allLeaves(), ALL_KINDS).rows);
+    // в кондуите — список этой серии, а не нынешний общий
+    var order = byName(rosterRows(s));
 
     host.appendChild(conduitTables(s.problems, order, function (p, r) {
       return byId[p.id].solverSet.has(r.id) ? el("div", "mark on", "+") : el("div", "mark");
@@ -798,7 +890,23 @@
       return s.problems.filter(function (p) {
         return byId[p.id].solverSet.has(r.id);
       }).length;
-    }));
+    }, attended(s) ? {
+      was: function (id) { return wasThere(s, id); },
+      count: s.present.length
+    } : null));
+  }
+
+  /* Подпись под номером серии: когда её выдали и когда по ней было занятие.
+     Обычно это разные дни — листок раздают заранее. */
+  function seriesNote(s) {
+    var out = [];
+    var g = givenDate(s);
+    if (g) out.push("выдана " + prettyDate(g));
+    out.push("занятие " + prettyDate(s.date));
+    if (held(s) && attended(s)) {
+      out.push("был " + s.present.length + " из " + rosterOf(s).length);
+    }
+    return out.join(" · ");
   }
 
   // порядок по номеру: файл обычно уже отсортирован, но полагаться на это незачем
@@ -834,7 +942,8 @@
     var gpdf = DATA.graves && DATA.graves.pdf;
     if (gpdf && gpdf.file) {
       var gcard = el("div", "card");
-      gcard.appendChild(pdfRow(gpdf.file, "Гробарий", gpdf.size));
+      gcard.appendChild(pdfRow(gpdf.file,
+        "Гробарий" + (gpdf.at ? " " + fullDate(gpdf.at) : ""), gpdf.size));
       host.appendChild(gcard);
     }
 
@@ -905,9 +1014,19 @@
 
     var card = el("div", "card");
     items.forEach(function (it) {
-      var row = pdfRow(it.file, it.title, it.size);
+      var row = el("a", "lik-row");
       // зачёт лежит своей папкой: сборной свалки файлов лучше не заводить
       row.href = "data/zachet/" + encodeURIComponent(it.file);
+      // без этого телефон открывает pdf во вкладке, а его просили скачать
+      row.setAttribute("download", it.title + ".pdf");
+
+      var main = el("span", "lik-main");
+      main.appendChild(el("span", "lik-title", it.title));
+      main.appendChild(el("span", "lik-meta",
+        "PDF" + (fileSize(it.size) ? " · " + fileSize(it.size) : "")));
+      row.appendChild(main);
+
+      row.appendChild(el("span", "lik-get", "скачать"));
       card.appendChild(row);
     });
     host.appendChild(card);
@@ -926,14 +1045,15 @@
 
     var tiles = el("div", "tiles");
     tiles.appendChild(tile("Место", row.rank + " / " + DATA.students.length, null));
-    /* Потолок считаем с надбавками этого ученика: они начислены за его
-       решения, и без них «11 из 6» выглядело бы ошибкой счёта. */
+    /* Потолок у каждого свой: серии, в списках которых его не было, в него не
+       входят. С надбавками этого ученика — они начислены за его решения, и без
+       них «11 из 6» выглядело бы ошибкой счёта. */
     tiles.appendChild(tile("Очки", num(row.score),
-      "из " + num(f.ceiling + row.bonus)));
-    tiles.appendChild(tile("Задачи", row.pluses + " / " + f.available, null));
+      "из " + num(row.ceil + row.bonus)));
+    tiles.appendChild(tile("Задачи", row.pluses + " / " + row.avail, null));
 
     // половина задач — рубеж, который стоит отметить
-    var share = f.available ? row.pluses / f.available : 0;
+    var share = row.avail ? row.pluses / row.avail : 0;
     var pctTile = tile("Процент", pct(share), null);
     if (share >= 0.5) pctTile.className = "tile hi";
     tiles.appendChild(pctTile);
@@ -1035,6 +1155,8 @@
     var card = el("div", "card");
 
     realSeries().forEach(function (s) {
+      // серия, в списке которой его не было, к нему и не относится
+      if (rosterOf(s).indexOf(id) === -1) return;
       var mine = [], total = 0, score = 0, ceiling = 0;
       UNITS.forEach(function (u) {
         if (u.sn !== s.n) return;
@@ -1084,6 +1206,7 @@
     var total = 0, got = 0, score = 0;
     UNITS.forEach(function (u) {
       if (u.sn !== null && !state.series.has(u.sn)) return;
+      if (u.roster && !u.roster.has(studentId)) return;
       if (!set.has(u.leafKey) || !state.kinds.has(u.kind)) return;
       total += 1;
       if (u.solverSet.has(studentId)) { got += 1; score += u.weight; }
@@ -1186,6 +1309,11 @@
     DATA.graves.solved = DATA.graves.solved || {};
     DATA.zachet = DATA.zachet || { items: [] };
     DATA.zachet.items = DATA.zachet.items || [];
+    /* Выбывшего помечают, а не стирают: в общем списке и в рейтинге его больше
+       нет, но имя нужно — оно стоит в кондуитах тех серий, где он занимался. */
+    NAME = {};
+    DATA.students.forEach(function (st) { NAME[st.id] = st.name; });
+    DATA.students = DATA.students.filter(function (st) { return !st.out; });
     DATA.students.sort(function (a, b) { return a.name.localeCompare(b.name, "ru"); });
     /* Порядок ленты — по номеру серии: он и есть её место в череде занятий.
        Дата разрешает спор, если два файла носят один номер. */
