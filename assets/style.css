@@ -373,11 +373,35 @@ input[type="number"]::-webkit-inner-spin-button {
   outline-offset: -2px;
 }
 
-/* Выбранная вкладка — залитая пилюля внутри пилюли. */
-.tab[aria-selected="true"] {
-  color: var(--ink-inv);
+/* Указатель один на всю полосу и переезжает с вкладки на вкладку, а не
+   загорается на каждой отдельно. Положение и ширину ему задаёт скрипт — по
+   месту самой вкладки, поэтому он верен при любой ширине экрана и любой
+   длине подписей.
+
+   Пока ширина не задана, указателя попросту нет: он не выскакивает из угла
+   при первой отрисовке. */
+.tabs::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: var(--thumb-w, 0);
+  transform: translateX(var(--thumb-x, 0));
+  border-radius: 999px;
   background: var(--ink);
+  pointer-events: none;
+  transition: transform .38s cubic-bezier(.22, .8, .24, 1),
+              width .38s cubic-bezier(.22, .8, .24, 1);
 }
+
+/* первая установка — без переезда: указателю неоткуда ехать */
+.tabs.no-anim::before { transition: none; }
+
+.tab { position: relative; z-index: 1; }
+
+/* Заливку выбранной вкладки рисует указатель, самой вкладке остаётся цвет. */
+.tab[aria-selected="true"] { color: var(--ink-inv); }
 
 /* ── карточки и фильтры ────────────────────────────────── */
 
@@ -1296,6 +1320,11 @@ td .date { margin-left: 8px; font-size: 12px; }
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* Смена вкладки. Содержимое уходит и приходит, а шапка, полоса вкладок и
+   указатель остаются живыми элементами страницы — переход браузера подменил бы
+   их снимками, и указатель замер бы вместо того, чтобы переехать. */
+#main.leaving { opacity: 0; transition: opacity .09s ease-in; }
 
 .view-enter > * { animation: rise .24s cubic-bezier(.2, .7, .3, 1) both; }
 .view-enter > *:nth-child(2) { animation-delay: .04s; }
@@ -2221,20 +2250,21 @@ table.conduit .patt { border-left: 1px solid var(--grid); }
 
 /* ── переходы между экранами ───────────────────────────── */
 
-/* Кадры перехода: старый уходит быстрее, чем приходит новый, и с меньшим
-   сдвигом — так переход читается как смена, а не как качание. Общая метка на
-   имени ученика заставляет его переехать из строки рейтинга в заголовок
-   карточки; это делает браузер сам, кода для этого нет. */
+/* Переход браузера остался только на открытии карточки ученика: там по общей
+   метке имя переезжает из строки рейтинга в заголовок, и это делает браузер сам.
+   Двигать при этом страницу нельзя — снимок берётся со всего окна, и вместе с
+   содержимым поехала бы шапка. Поэтому здесь чистое проявление одного кадра в
+   другой, без единого сдвига. */
 @keyframes vt-out {
-  to { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 0; }
 }
 
 @keyframes vt-in {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; }
 }
 
-::view-transition-old(root) { animation: vt-out .16s ease-in both; }
-::view-transition-new(root) { animation: vt-in .28s cubic-bezier(.2, .7, .3, 1) both; }
+::view-transition-old(root) { animation: vt-out .18s ease-in both; }
+::view-transition-new(root) { animation: vt-in .26s ease-out both; }
 
 /* Имя переезжает целиком, без проявления половинок друг сквозь друга. */
 ::view-transition-old(who),
@@ -2248,6 +2278,8 @@ table.conduit .patt { border-left: 1px solid var(--grid); }
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) { animation: none !important; }
+  .tabs::before { transition: none; }
+  #main.leaving { transition: none; }
 }
 
 /* Подсветка столбца в кондуите. Касание номера задачи гасит остальные: «кто

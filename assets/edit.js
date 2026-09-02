@@ -3381,15 +3381,74 @@
   /* Переходом браузера анимируется только смена вкладки — тем же, что и на
      сайте. Всё прочее перерисовывается сразу: правка должна отзываться на
      касание мгновенно, а не через кадр перехода. */
+
+  /* Указатель полосы вкладок. Он один и переезжает с вкладки на вкладку;
+     положение считается по месту самой вкладки, поэтому остаётся верным при
+     любой ширине экрана. Координата берётся в системе содержимого полосы, то
+     есть вместе с её прокруткой, — тогда указатель едет с ней заодно. */
+  var thumbReady = false;
+
+  function moveThumb() {
+    var tabs = document.querySelector(".tabs");
+    if (!tabs) return;
+    var active = tabs.querySelector('.tab[aria-selected="true"]');
+    if (!active) return;
+
+    var t = tabs.getBoundingClientRect();
+    var a = active.getBoundingClientRect();
+    var edge = parseFloat(getComputedStyle(tabs).borderLeftWidth) || 0;
+
+    // первый раз ставим без переезда: указателю неоткуда ехать
+    if (!thumbReady) tabs.classList.add("no-anim");
+    tabs.style.setProperty("--thumb-x", (a.left - t.left - edge + tabs.scrollLeft) + "px");
+    tabs.style.setProperty("--thumb-w", a.width + "px");
+    if (!thumbReady) {
+      void tabs.offsetWidth;
+      tabs.classList.remove("no-anim");
+      thumbReady = true;
+    }
+
+    /* Вкладок может быть больше, чем помещается: подвозим выбранную к краю,
+       чтобы указатель не уезжал за пределы видимого. */
+    var pad = 12;
+    if (a.left < t.left + pad) {
+      tabs.scrollBy({ left: a.left - t.left - pad - 8, behavior: "smooth" });
+    } else if (a.right > t.right - pad) {
+      tabs.scrollBy({ left: a.right - t.right + pad + 8, behavior: "smooth" });
+    }
+  }
+
+  function syncTabs() {
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+      t.setAttribute("aria-selected", t.dataset.view === state.view ? "true" : "false");
+    });
+    moveThumb();
+  }
+
+  var swapToken = 0;
+
   function render() {
     var moved = state.view !== lastScene;
     lastScene = state.view;
+    // указатель трогается сразу: полоса вкладок при смене не перерисовывается
+    syncTabs();
 
-    if (moved && !reduced() && document.startViewTransition) {
-      hush(document.startViewTransition(function () { paint(false); }));
-      return;
-    }
-    paint(moved && !reduced());
+    if (moved && !reduced()) return fadeSwap();
+    paint(false);
+  }
+
+  /* Смена вкладки: содержимое уходит, потом появляется новое. Переход браузера
+     здесь не годится — он подменяет всё окно снимками, и указатель замер бы
+     вместо того, чтобы переехать. Метка — на случай двух быстрых нажатий. */
+  function fadeSwap() {
+    var main = document.getElementById("main");
+    var mine = ++swapToken;
+    main.classList.add("leaving");
+    setTimeout(function () {
+      if (mine !== swapToken) return;
+      main.classList.remove("leaving");
+      paint(true);
+    }, 90);
   }
 
   /* Переход может не состояться: страница свёрнута, предыдущий ещё идёт,
@@ -3407,10 +3466,7 @@
     clear(main);
     clearInterval(cdTimer);
     cdTimer = null;
-
-    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
-      t.setAttribute("aria-selected", t.dataset.view === state.view ? "true" : "false");
-    });
+    syncTabs();
 
     if (animate) {
       main.classList.add("view-enter");
@@ -3598,6 +3654,8 @@
     }, { passive: true });
 
     TOKEN = lsGet(LS_TOKEN, null);
+    // при повороте экрана вкладки меняют ширину, указатель должен успеть
+    window.addEventListener("resize", moveThumb);
     loadSent();
     loadFromFiles().then(function (d) {
       // страница могла прийти из кэша Pages — тогда уходим на свежую
