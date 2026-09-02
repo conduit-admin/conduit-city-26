@@ -3435,25 +3435,76 @@
     syncTabs();
 
     if (moved && !reduced()) return fadeSwap();
+    if (moved) window.scrollTo(0, 0);
+
+    /* Перерисовка на месте: правка на том же экране. Прокрутку держим — иначе
+       страница прыгала к началу на каждое касание. */
+    var keep = window.scrollY;
     paint(false);
+    if (window.scrollY !== keep) window.scrollTo(0, keep);
   }
 
-  /* Смена вкладки: содержимое уходит, потом появляется новое. Переход браузера
+  /* Быстрая, но плавная прокрутка наверх. Новый экран должен начинаться
+     сначала, а прыжок туда читается как сбой. Своя, а не системная: у
+     системной длительность не задаётся, и с длинного списка она тянется
+     полсекунды и дольше. */
+  function toTop(then) {
+    var from = window.scrollY;
+    if (reduced() || from < 2 || document.hidden) {
+      window.scrollTo(0, 0);
+      return then();
+    }
+
+    var done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      window.scrollTo(0, 0);
+      then();
+    }
+
+    var dur = Math.min(260, 120 + from * 0.16);
+    var t0 = performance.now();
+    requestAnimationFrame(function step(t) {
+      if (done) return;
+      var k = Math.min(1, (t - t0) / dur);
+      var e = 1 - Math.pow(1 - k, 3);
+      window.scrollTo(0, Math.round(from * (1 - e)));
+      if (k < 1) requestAnimationFrame(step);
+      else finish();
+    });
+
+    /* Страховка. Кадры могут не приходить вовсе — окно свёрнуто, вкладка ушла в
+       фон, — и тогда экран не сменился бы вообще. Отсчёт времени работает и
+       там, где кадров нет. */
+    setTimeout(finish, dur + 250);
+  }
+
+
+  /* Смена экрана: страница отматывается наверх на глазах, со старым
      здесь не годится — он подменяет всё окно снимками, и указатель замер бы
      вместо того, чтобы переехать. Метка — на случай двух быстрых нажатий. */
   function fadeSwap() {
     var main = document.getElementById("main");
     var mine = ++swapToken;
-    main.classList.add("leaving");
-    setTimeout(function () {
+    /* Сначала отматываем наверх — на глазах, со старым содержимым, — и только
+       потом меняем его. Наоборот было бы непонятно: листаешь пустоту. */
+    toTop(function () {
       if (mine !== swapToken) return;
-      main.classList.remove("leaving");
-      paint(true);
-    }, 90);
+      main.classList.add("leaving");
+      setTimeout(function () {
+        if (mine !== swapToken) return;
+        main.classList.remove("leaving");
+        paint(true);
+      }, 80);
+    });
   }
 
   function paint(animate) {
     var main = document.getElementById("main");
+    /* На время перерисовки держим прежнюю высоту: опустевший на мгновение
+       экран короче, и браузер успевал прижать прокрутку к началу. */
+    main.style.minHeight = main.offsetHeight + "px";
     clear(main);
     clearInterval(cdTimer);
     cdTimer = null;
@@ -3482,6 +3533,8 @@
     else if (state.view === "themes") viewThemes(main);
     else if (state.view === "students") viewStudents(main);
     else if (state.view === "save") viewSave(main);
+
+    main.style.minHeight = "";
   }
 
   function setupChrome() {

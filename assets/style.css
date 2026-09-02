@@ -101,12 +101,6 @@
      он тёмный и работает как якорь для взгляда; на тёмной — чуть светлее
      подложки, потому что белое пятно во весь экран вечером бьёт по глазам.
      Заливка плоская: то, что переживает любую принудительную тёмную тему. */
-  --hero-bg: rgba(38, 30, 110, .74);
-  --hero-ink: #ffffff;
-  --hero-dim: rgba(255, 255, 255, .68);
-  --hero-edge: rgba(255, 255, 255, .26);
-  --hero-glow: rgba(120, 200, 255, .5);
-
   /* Полоска доли в строке рейтинга. */
   --bar: rgba(11, 11, 11, .085);
 
@@ -176,11 +170,6 @@
     --glass: rgba(26, 26, 25, .72);
     --glass-edge: rgba(255, 255, 255, .10);
     --paper: rgba(255, 255, 255, .04);
-    --hero-bg: rgba(52, 44, 128, .48);
-    --hero-ink: #ffffff;
-    --hero-dim: rgba(255, 255, 255, .62);
-    --hero-edge: rgba(255, 255, 255, .16);
-    --hero-glow: rgba(120, 200, 255, .34);
     --tint-a: #8b84ff;
     --tint-b: #2fd4c4;
     --tint-c: #c084fc;
@@ -234,10 +223,18 @@ body {
    каждом кадре, а этого телефон не простит.
 
    Клетка почти прозрачна: она задаёт масштаб и материал, а не рисунок. */
+/* Высота задана в lvh — по самому большому размеру окна, а не по нынешнему.
+   На телефоне при прокрутке вниз прячется адресная строка, окно становится
+   выше, и слой, растянутый по краям, каждый раз пересчитывался: нижнее пятно
+   света от этого дёргалось. С постоянной высотой ему нечего пересчитывать. */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100lvh;
   z-index: -1;
   pointer-events: none;
   background-color: var(--plane);
@@ -279,22 +276,28 @@ body::before {
   padding: 24px 0 16px;
 }
 
-/* Название набрано крупно и плотно, подпись под ним — мелко и вразрядку.
-   Контраст двух наборов и делает шапку заметной, без цветных полос и теней. */
+/* Шапка страницы: сначала мелкая надпись вразрядку, под ней крупное название.
+   Порядок обратный привычному нарочно — мелкая строка читается как подзаголовок
+   сверху, и на контрасте двух наборов шапка держится без всяких украшений. */
+.brand-box { display: flex; flex-direction: column; gap: 5px; }
+
 .brand {
-  font-size: 34px;
+  font-size: 40px;
   font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.02;
+  letter-spacing: -0.042em;
+  line-height: .96;
 }
 
 .brand-sub {
   color: var(--ink-muted);
-  font-size: 12.5px;
-  font-weight: 400;
-  letter-spacing: 0.01em;
-  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
+
+/* В редакторе название короткое и служебное — ему столько места не нужно. */
+body.is-editor .brand { font-size: 30px; }
 
 .spacer { flex: 1; }
 
@@ -428,8 +431,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .card,
 .tile,
 .table-wrap,
-.conduit-split,
-.hero {
+.conduit-split {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -470,9 +472,18 @@ input[type="number"]::-webkit-inner-spin-button {
   padding-bottom: 58%;
   border-radius: 50%;
   background: radial-gradient(circle,
-    color-mix(in srgb, var(--tint) 38%, transparent), transparent 70%);
+    color-mix(in srgb, var(--tint) 26%, transparent), transparent 70%);
   pointer-events: none;
 }
+
+/* На плитках свет ещё тише: их шесть в ряд, и каждая со своим цветом — вместе
+   они светили так, что цифры на них терялись. */
+.tile.glow::after {
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--tint) 15%, transparent), transparent 72%);
+}
+
+.tile.tinted { background: color-mix(in srgb, var(--tint) 9%, var(--pane)); }
 
 .glow > * { position: relative; }
 
@@ -763,107 +774,6 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .tile.hi .tile-value { color: var(--accent-hi); }
 .tile.hi .tile-label { color: var(--accent-hi); opacity: .85; }
-
-/* ── заголовок сезона ──────────────────────────────────── */
-
-/* Одна крупная величина и три подписи. Раньше страница начиналась с фильтров, и
-   зацепиться взгляду было не за что: весь сайт набран одним кеглем. */
-.hero {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px 24px;
-  padding: 20px 22px 18px;
-  margin-bottom: 14px;
-  border: 1px solid var(--hero-edge);
-  border-radius: var(--radius);
-  /* Косой блик поверх цвета — то, чем стекло отличается от простой заливки. */
-  background:
-    linear-gradient(142deg, rgba(255, 255, 255, .18), rgba(255, 255, 255, 0) 46%),
-    var(--hero-bg);
-  color: var(--hero-ink);
-  /* Светлая грань поверху — тот же приём, что и у стеклянной полосы вкладок:
-     она и читается как толщина блока. */
-  box-shadow: var(--shadow-2), inset 0 1px 0 var(--hero-edge);
-}
-
-@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  .hero {
-    -webkit-backdrop-filter: var(--pane-blur);
-    backdrop-filter: var(--pane-blur);
-  }
-}
-
-/* Пятно света в углу — единственное украшение на всю страницу. Лежит под
-   текстом и не мешает ему: заливка мягкая, края уходят в ничто. */
-.hero::after {
-  content: "";
-  position: absolute;
-  top: -55%;
-  right: -12%;
-  width: 62%;
-  padding-bottom: 62%;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--hero-glow), transparent 68%);
-  pointer-events: none;
-}
-
-.hero-main, .hero-stats { position: relative; }
-
-.hero-label {
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-  color: var(--hero-dim);
-}
-
-.hero-name {
-  font-size: 21px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin-top: 3px;
-}
-
-.hero-score {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.hero-score b {
-  font-size: 54px;
-  font-weight: 700;
-  line-height: .95;
-  letter-spacing: -0.05em;
-  font-variant-numeric: tabular-nums;
-}
-
-.hero-of { font-size: 13px; color: var(--hero-dim); }
-
-.hero-score-none { margin-top: 10px; font-size: 14px; color: var(--hero-dim); }
-
-.hero-stats { display: flex; gap: 24px; }
-
-.hstat { display: flex; flex-direction: column; gap: 1px; }
-
-.hstat b {
-  font-size: 22px;
-  font-weight: 620;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-  font-variant-numeric: tabular-nums;
-}
-
-.hstat span {
-  font-size: 11.5px;
-  letter-spacing: 0.02em;
-  color: var(--hero-dim);
-}
 
 /* ── таблицы ───────────────────────────────────────────── */
 
@@ -2225,18 +2135,14 @@ body.is-editor .brand::after {
 
 @media (max-width: 560px) {
   .wrap { padding: 0 12px 48px; }
-  .brand { font-size: 27px; }
+  .brand { font-size: 32px; }
+  body.is-editor .brand { font-size: 26px; }
+  .brand-sub { letter-spacing: 0.14em; }
   .section-title { font-size: 19px; }
   .section-head.big .section-title { font-size: 27px; }
   .tile-value { font-size: 27px; }
   table.data td, table.data th { padding: 9px 6px; }
 
-  /* На телефоне заголовок сезона встаёт в столбик, а подписи под цифрами
-     расходятся по всей ширине — так они читаются как строка итогов. */
-  .hero { padding: 16px 16px 14px; gap: 14px; }
-  .hero-score b { font-size: 46px; }
-  .hero-stats { width: 100%; justify-content: space-between; gap: 12px; }
-  .hstat b { font-size: 19px; }
 
   /* На телефоне числовым колонкам оставляем ровно столько, сколько нужно их
      заголовкам и значениям, остальное отдаём имени: обрезанная фамилия хуже

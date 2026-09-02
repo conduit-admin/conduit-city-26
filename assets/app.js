@@ -530,54 +530,6 @@
 
   function th(text, cls) { return el("th", cls, text); }
 
-  /* Заголовок сезона. Страница начиналась с фильтров, и глазу не за что было
-     зацепиться: дело не в отсутствии украшений, а в том, что весь сайт набран
-     одним кеглем. Здесь стоит единственная крупная величина — счёт первого — и
-     три подписи, которых нет в таблице.
-
-     Считается он по тому же отбору, что и таблица: иначе шапка говорила бы одно,
-     а строки под ней другое. */
-  function heroBlock(f) {
-    var box = el("section", "hero");
-    var top = f.rows[0];
-    var live = realSeries().filter(function (x) { return state.series.has(x.n); });
-
-    var main = el("div", "hero-main");
-    main.appendChild(el("div", "hero-label", "Первый"));
-    main.appendChild(el("div", "hero-name", top.name));
-    var score = el("div", "hero-score");
-    var big = el("b");
-    countUp(big, "score", top.score);
-    score.appendChild(big);
-    score.appendChild(el("span", "hero-of", "из " + num(top.ceil + top.bonus)));
-    main.appendChild(score);
-    box.appendChild(main);
-
-    /* Доля взятого — по всем, а не по первому: она говорит, насколько серии
-       вообще давались группе. */
-    var got = 0, could = 0;
-    f.rows.forEach(function (r) { got += r.pluses; could += r.avail; });
-
-    var stats = el("div", "hero-stats");
-    stats.appendChild(hstat("live", live.length, "",
-      plural(live.length, "серия", "серии", "серий")));
-    stats.appendChild(hstat("tasks", f.available, "",
-      plural(f.available, "задача", "задачи", "задач")));
-    stats.appendChild(hstat("share",
-      Math.round((could ? got / could : 0) * 100), "%", "решено"));
-    box.appendChild(stats);
-    return box;
-  }
-
-  function hstat(key, value, suffix, label) {
-    var t = el("div", "hstat");
-    var b = el("b");
-    countUp(b, key, value, suffix);
-    t.appendChild(b);
-    t.appendChild(el("span", null, label));
-    return t;
-  }
-
   /* Места без последней из выбранных серий — чтобы показать, кто на ней
      поднялся, а кто опустился. Считается по тому же отбору: «прошлое» здесь
      значит «то же самое, но без последнего занятия». Одна серия ни с чем не
@@ -728,13 +680,6 @@
   function viewRating(host) {
     if (!UNITS.length) return viewEmpty(host);
 
-    /* Шапка сезона появляется, только когда есть о чём говорить. Пока плюсов
-       нет, она сообщала бы «пока пусто» — это и так видно по пустой таблице. */
-    var early = filtered();
-    if (early.rows.length && early.rows[0].score > 0) {
-      host.appendChild(heroBlock(early));
-    }
-
     var f = renderFilters(host);
     var prev = prevPlaces();
 
@@ -757,7 +702,6 @@
     f.rows.forEach(function (r) {
       var tr = el("tr", "clickable");
       tr.addEventListener("click", function () {
-        scrollUp = true;
         state.openStudent = r.id;
         render();
       });
@@ -1379,7 +1323,6 @@
 
   var lastScene = null;
   var enterTimer = null;
-  var scrollUp = false;  // прокрутить наверх после отрисовки нового экрана
 
   // всё движение выключается системной настройкой — она не про красоту
   function reduced() {
@@ -1459,34 +1402,85 @@
     lastScene = scene;
 
     if (moved) {
-      if (reduced()) paint(false);
-      else fadeSwap();
+      if (reduced()) {
+        window.scrollTo(0, 0);
+        paint(false);
+      } else fadeSwap();
       return;
     }
 
+    /* Перерисовка на месте: сменили отбор, экран тот же. Прокрутку держим —
+       иначе страница прыгала к началу на каждое касание ярлыка. */
+    var keep = window.scrollY;
     var before = (!state.openStudent && state.view === "rating")
       ? rowTops() : null;
     paint(false);
+    if (window.scrollY !== keep) window.scrollTo(0, keep);
     if (before) flipRows(before);
   }
 
-  /* Смена вкладки: содержимое уходит, потом появляется новое. Переход браузера
+  /* Быстрая, но плавная прокрутка наверх. Новый экран должен начинаться
+     сначала, а прыжок туда читается как сбой. Своя, а не системная: у
+     системной длительность не задаётся, и с длинного списка она тянется
+     полсекунды и дольше. */
+  function toTop(then) {
+    var from = window.scrollY;
+    if (reduced() || from < 2 || document.hidden) {
+      window.scrollTo(0, 0);
+      return then();
+    }
+
+    var done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      window.scrollTo(0, 0);
+      then();
+    }
+
+    var dur = Math.min(260, 120 + from * 0.16);
+    var t0 = performance.now();
+    requestAnimationFrame(function step(t) {
+      if (done) return;
+      var k = Math.min(1, (t - t0) / dur);
+      var e = 1 - Math.pow(1 - k, 3);
+      window.scrollTo(0, Math.round(from * (1 - e)));
+      if (k < 1) requestAnimationFrame(step);
+      else finish();
+    });
+
+    /* Страховка. Кадры могут не приходить вовсе — окно свёрнуто, вкладка ушла в
+       фон, — и тогда экран не сменился бы вообще. Отсчёт времени работает и
+       там, где кадров нет. */
+    setTimeout(finish, dur + 250);
+  }
+
+
+  /* Смена экрана: страница отматывается наверх на глазах, со старым
      здесь не годится — он подменяет всё окно снимками, и указатель на полосе
      вкладок замер бы вместо того, чтобы переехать. Метка нужна на случай двух
      быстрых нажатий подряд: рисует только последнее. */
   function fadeSwap() {
     var main = document.getElementById("main");
     var mine = ++swapToken;
-    main.classList.add("leaving");
-    setTimeout(function () {
+    /* Сначала отматываем наверх — на глазах, со старым содержимым, — и только
+       потом меняем его. Наоборот было бы непонятно: листаешь пустоту. */
+    toTop(function () {
       if (mine !== swapToken) return;
-      main.classList.remove("leaving");
-      paint(true);
-    }, 90);
+      main.classList.add("leaving");
+      setTimeout(function () {
+        if (mine !== swapToken) return;
+        main.classList.remove("leaving");
+        paint(true);
+      }, 80);
+    });
   }
 
   function paint(animate) {
     var main = document.getElementById("main");
+    /* На время перерисовки держим прежнюю высоту: опустевший на мгновение
+       экран короче, и браузер успевал прижать прокрутку к началу. */
+    main.style.minHeight = main.offsetHeight + "px";
     clear(main);
     syncTabs();
 
@@ -1502,11 +1496,7 @@
     } else if (state.view === "series") viewSeries(main);
     else if (state.view === "zachet") viewZachet(main);
 
-    // наверх — уже с новым содержимым, чтобы не мелькнула прокрутка старого
-    if (scrollUp) {
-      window.scrollTo(0, 0);
-      scrollUp = false;
-    }
+    main.style.minHeight = "";
   }
 
   /* Где стояли строки до перерисовки. Приём известен как FLIP: запомнить
@@ -1533,24 +1523,6 @@
           [{ transform: "translateY(" + dy + "px)" }, { transform: "none" }],
           { duration: 340, easing: "cubic-bezier(.2,.7,.3,1)" });
       });
-  }
-
-  /* Крупные числа в шапке набегают, а не подменяются: при смене отбора видно,
-     что счёт пересчитался, и на что именно. */
-  var counted = {};
-
-  function countUp(node, key, value, suffix) {
-    var from = counted[key];
-    counted[key] = value;
-    node.textContent = num(value) + (suffix || "");
-    if (from === undefined || from === value || reduced()) return;
-    var t0 = performance.now();
-    requestAnimationFrame(function step(t) {
-      var k = Math.min(1, (t - t0) / 420);
-      var e = 1 - Math.pow(1 - k, 3);
-      node.textContent = num(Math.round(from + (value - from) * e)) + (suffix || "");
-      if (k < 1) requestAnimationFrame(step);
-    });
   }
 
   function setupChrome() {
