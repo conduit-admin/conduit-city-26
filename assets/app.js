@@ -510,12 +510,22 @@
     host.appendChild(wrap);
   }
 
-  function tile(label, value, note) {
-    var t = el("div", "tile");
+  /* Плитки в карточке ученика разноцветные: каждая про своё, и ряд одинаковых
+     белых прямоугольников читался хуже, чем ряд разных. */
+  function tile(label, value, note, hue) {
+    var t = el("div", "tile" + (hue ? " tinted glow" : ""));
+    if (hue) t.style.setProperty("--tint", "var(--tint-" + hue + ")");
     t.appendChild(el("div", "tile-label", label));
     t.appendChild(el("div", "tile-value", value));
     if (note) t.appendChild(el("div", "tile-note", note));
     return t;
+  }
+
+  // подкрасить панель: цвет приходит переменной, правила лежат в стилях
+  function tinted(node, hue) {
+    node.classList.add("tinted", "glow");
+    node.style.setProperty("--tint", "var(--tint-" + hue + ")");
+    return node;
   }
 
   function th(text, cls) { return el("th", cls, text); }
@@ -979,7 +989,7 @@
     host.appendChild(sh);
 
     if (s.pdf && s.pdf.file) {
-      var pcard = el("div", "card");
+      var pcard = tinted(el("div", "card"), "b");
       pcard.appendChild(pdfRow(s.pdf.file, "Серия " + seriesNo(s), s.pdf.size));
       host.appendChild(pcard);
     }
@@ -1061,13 +1071,13 @@
 
     var gpdf = DATA.graves && DATA.graves.pdf;
     if (gpdf && gpdf.file) {
-      var gcard = el("div", "card");
+      var gcard = tinted(el("div", "card"), "c");
       gcard.appendChild(pdfRow(gpdf.file,
         "Гробарий" + (gpdf.at ? " " + fullDate(gpdf.at) : ""), gpdf.size));
       host.appendChild(gcard);
     }
 
-    var card = el("div", "card");
+    var card = tinted(el("div", "card"), "c");
     list.slice().sort(function (a, b) {
       return graveNum(a.id) - graveNum(b.id);
     }).forEach(function (p) {
@@ -1132,7 +1142,7 @@
       return;
     }
 
-    var card = el("div", "card");
+    var card = tinted(el("div", "card"), "d");
     items.forEach(function (it) {
       var row = el("a", "lik-row");
       // зачёт лежит своей папкой: сборной свалки файлов лучше не заводить
@@ -1164,30 +1174,30 @@
     host.appendChild(sh);
 
     var tiles = el("div", "tiles");
-    tiles.appendChild(tile("Место", row.rank + " / " + DATA.students.length, null));
+    tiles.appendChild(tile("Место", row.rank + " / " + DATA.students.length, null, "a"));
     /* Потолок у каждого свой: серии, в списках которых его не было, в него не
        входят. С надбавками этого ученика — они начислены за его решения, и без
        них «11 из 6» выглядело бы ошибкой счёта. */
     tiles.appendChild(tile("Очки", num(row.score),
-      "из " + num(row.ceil + row.bonus)));
-    tiles.appendChild(tile("Задачи", row.pluses + " / " + row.avail, null));
+      "из " + num(row.ceil + row.bonus), "b"));
+    tiles.appendChild(tile("Задачи", row.pluses + " / " + row.avail, null, "c"));
 
     // половина задач — рубеж, который стоит отметить
     var share = row.avail ? row.pluses / row.avail : 0;
-    var pctTile = tile("Процент", pct(share), null);
+    var pctTile = tile("Процент", pct(share), null, "d");
     if (share >= 0.5) pctTile.className = "tile hi";
     tiles.appendChild(pctTile);
 
     var att = attendance(id);
     if (att.of) {
       tiles.appendChild(tile("Занятия", att.was + " / " + att.of,
-        att.was === att.of ? "ни одного пропуска" : null));
+        att.was === att.of ? "ни одного пропуска" : null, "e"));
     }
 
     var best = bestProblem(id);
     tiles.appendChild(tile("Самый ценный плюс", best ? "+" + best.value : "—",
       best ? (best.u.sn === null ? "гроб " + best.u.id
-        : "серия " + seriesNoBySlot(best.u.sn) + ", задача " + best.u.id) : null));
+        : "серия " + seriesNoBySlot(best.u.sn) + ", задача " + best.u.id) : null, "a"));
     host.appendChild(tiles);
 
     var sh2 = el("div", "section-head");

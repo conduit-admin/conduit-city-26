@@ -109,6 +109,15 @@
 
   /* Полоска доли в строке рейтинга. */
   --bar: rgba(11, 11, 11, .085);
+
+  /* Оттенки блоков. Это не палитра тем — те значат раздел математики, и путать
+     их нельзя. Эти пять просто раскрашивают крупные панели, чтобы страница не
+     была одноцветной: тот же приём, что и у шапки сезона. */
+  --tint-a: #635bff;
+  --tint-b: #12b3a6;
+  --tint-c: #a855f7;
+  --tint-d: #e0902a;
+  --tint-e: #ff6b9d;
 }
 
 /* Тёмная тема — свой набор шагов под тёмную подложку, а не инверсия светлой.
@@ -172,6 +181,11 @@
     --hero-dim: rgba(255, 255, 255, .62);
     --hero-edge: rgba(255, 255, 255, .16);
     --hero-glow: rgba(120, 200, 255, .34);
+    --tint-a: #8b84ff;
+    --tint-b: #2fd4c4;
+    --tint-c: #c084fc;
+    --tint-d: #f0b350;
+    --tint-e: #ff8fb8;
     --bar: rgba(255, 255, 255, .11);
   }
 }
@@ -435,6 +449,44 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .card { padding: 14px 16px; }
 
+/* Цвет живёт на блоках, а не на кнопках. Панель забирает оттенок себе — так же,
+   как шапка сезона, — и по нему видно, о чём этот кусок страницы. Оттенок
+   слабый: он подкрашивает стекло, а не закрашивает его. */
+.tinted {
+  background: color-mix(in srgb, var(--tint) 13%, var(--pane));
+  border-color: color-mix(in srgb, var(--tint) 28%, var(--border));
+}
+
+/* Пятно света в углу — то же, что у шапки сезона. Ставится отдельным классом:
+   панели с прокруткой его не получают, там лишний слой мешал бы прокрутке. */
+.glow { position: relative; overflow: hidden; }
+
+.glow::after {
+  content: "";
+  position: absolute;
+  top: -62%;
+  right: -14%;
+  width: 58%;
+  padding-bottom: 58%;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--tint) 38%, transparent), transparent 70%);
+  pointer-events: none;
+}
+
+.glow > * { position: relative; }
+
+/* Кондуит и таблица рейтинга подкрашены всегда: это главные панели сайта, и
+   свой оттенок у каждой из них постоянный. */
+.table-wrap { --tint: var(--tint-a); }
+.conduit-split { --tint: var(--tint-b); }
+
+.table-wrap,
+.conduit-split {
+  background: color-mix(in srgb, var(--tint) 7%, var(--pane));
+  border-color: color-mix(in srgb, var(--tint) 22%, var(--border));
+}
+
 /* карточка-предупреждение: данные не потеряны, но и не считаются */
 .card.warn { border-color: var(--accent-hi); background: var(--accent-wash); }
 
@@ -472,9 +524,9 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .filter-title {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--ink-muted);
 }
@@ -515,10 +567,12 @@ input[type="number"]::-webkit-inner-spin-button {
   border: 1px solid var(--border-strong);
   background: var(--wash);
   color: var(--ink-2);
-  border-radius: 999px;
+  /* Ярлыки отбора — скруглённые прямоугольники, а не пилюли: пилюли остались
+     за полосой вкладок и мелкими действиями, и путать их незачем. */
+  border-radius: 11px;
   font: inherit;
   font-size: 13px;
-  padding: 6px 12px;
+  padding: 7px 12px;
   cursor: pointer;
   transition: background .12s, color .12s, border-color .12s;
 }
@@ -554,7 +608,7 @@ input[type="number"]::-webkit-inner-spin-button {
 /* «Что считаем» — не тема, цвета ему не положено: выбранное помечено плотной
    рамкой и заливкой, и этого хватает, чтобы не спорить с ярлыками тем. */
 .filter-row .chips > .chip:not(.cat):not(.sub):not(.day)[aria-pressed="true"] {
-  border-color: var(--ink);
+  border-color: var(--border-strong);
   color: var(--ink);
   background: var(--pane-2);
 }
@@ -564,13 +618,14 @@ input[type="number"]::-webkit-inner-spin-button {
 .chip.day {
   flex-direction: column;
   gap: 0;
-  min-width: 44px;
-  padding: 4px 8px;
+  min-width: 46px;
+  padding: 5px 8px;
+  border-radius: 14px;
   font-variant-numeric: tabular-nums;
 }
 
 /* гробарий — одиночная кнопка, дата ему не нужна */
-.chip.day.wide { flex-direction: row; padding: 8px 16px; }
+.chip.day.wide { flex-direction: row; padding: 9px 16px; border-radius: 13px; }
 .chip.day.wide b { font-size: 13.5px; }
 
 .chip.day b { font-size: 13px; font-weight: 620; line-height: 1.2; }
@@ -595,27 +650,11 @@ input[type="number"]::-webkit-inner-spin-button {
    пропадает: буква и есть пометка, цвет к ней только добавка. */
 .chip[aria-pressed="true"].day b { color: inherit; }
 
-/* Ярлык темы залит своим цветом: цвет здесь и есть значение, а не украшение.
-   Заливка слабая, рамка и текст плотные — так десяток ярлыков в ряд остаётся
-   читаемым, а раздел узнаётся не вчитываясь. Цвет приходит переменной, поэтому
-   правило одно на все восемь. */
-.chip.cat[aria-pressed="true"],
-.chip.sub[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: color-mix(in srgb, var(--accent) 62%, var(--ink));
-}
-
-.chip.cat[aria-pressed="true"]:hover,
-.chip.sub[aria-pressed="true"]:hover {
-  background: color-mix(in srgb, var(--accent) 24%, transparent);
-}
-
-/* Выключенный ярлык цвета не держит: он и означает «эту тему не считаем». */
-.chip.cat[aria-pressed="false"],
-.chip.sub[aria-pressed="false"] {
-  border-color: var(--border-strong);
-  background: none;
+/* Цвет раздела в ярлыке — только кружок. Заливать им весь ярлык пробовали:
+   десяток цветных плашек в ряд рябит и спорит с самим кондуитом, где цвет
+   что-то значит. Здесь от цвета нужен намёк, и он держится в рамке. */
+.chip.cat[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border-strong));
 }
 
 /* темы: раздел и его подразделы */
@@ -627,7 +666,13 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-top: 8px;
 }
 
-.chip.cat { font-weight: 560; }
+.chip.cat {
+  font-size: 14px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  padding: 9px 14px;
+  border-radius: 13px;
+}
 .chip.cat.partial { border-style: dashed; }
 
 .chip-count {
@@ -641,8 +686,9 @@ input[type="number"]::-webkit-inner-spin-button {
 .subs { display: flex; flex-wrap: wrap; gap: 5px; }
 
 .chip.sub {
-  font-size: 12.5px;
+  font-size: 12px;
   padding: 5px 10px 5px 9px;
+  border-radius: 9px;
   border-color: var(--border);
 }
 
@@ -687,16 +733,19 @@ input[type="number"]::-webkit-inner-spin-button {
 .tile { padding: 12px 14px; }
 
 .tile-label {
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--ink-muted);
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
 .tile-value {
-  font-size: 27px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  font-size: 31px;
+  font-weight: 640;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
 }
 
 .tile-note {
@@ -705,7 +754,8 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-top: 2px;
 }
 
-/* плитка, отмечающая достижение: половина задач и выше */
+/* плитка, отмечающая достижение: половина задач и выше. Стоит после подкраски
+   нарочно — своё золото она держит поверх любого оттенка. */
 .tile.hi {
   border-color: var(--accent-hi);
   background: var(--accent-wash);
@@ -894,22 +944,23 @@ table.data tr.clickable { cursor: pointer; }
 
 .name { font-weight: 500; }
 
-/* Полоска доли: сколько человек взял от своего потолка. Плоская заливка под
-   именем, без градиента — он бы не пережил принудительную тёмную тему. */
+/* Полоска доли: сколько человек взял от своего потолка. Тонкая линия по низу
+   ячейки, а не заливка за именем: заливка читалась пятном под текстом, а линия
+   складывается по всей таблице в маленькую диаграмму. */
 table.data td.name { position: relative; }
 
 .rowbar {
   position: absolute;
-  left: 0;
-  top: 5px;
-  bottom: 5px;
-  border-radius: 0 999px 999px 0;
-  background: var(--bar);
+  left: 12px;
+  bottom: 4px;
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tint-a) 55%, transparent);
   pointer-events: none;
 }
 
 /* У первого места полоска золотая — то же пятно, что и у его номера. */
-.rank-1 + td.name .rowbar { background: var(--accent-wash); }
+.rank-1 + td.name .rowbar { background: var(--leader); }
 
 table.data td.name .name-box { position: relative; }
 
@@ -1169,14 +1220,21 @@ table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
   margin: 22px 0 10px;
 }
 
-.section-title { font-size: 16px; font-weight: 600; white-space: nowrap; }
+/* Заголовок раздела и подпись под ним расходятся по кеглю сильно и нарочно:
+   на этом контрасте и держится вся страница, других украшений у неё нет. */
+.section-title {
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
 
 /* Имя ученика — заголовок его страницы, а не подпись к блоку. */
 .section-head.big { align-items: center; margin-top: 6px; }
 .section-head.big .section-title {
-  font-size: 26px;
-  font-weight: 680;
-  letter-spacing: -0.03em;
+  font-size: 31px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
 }
 
 .section-note { font-size: 12.5px; color: var(--ink-muted); }
@@ -2168,7 +2226,9 @@ body.is-editor .brand::after {
 @media (max-width: 560px) {
   .wrap { padding: 0 12px 48px; }
   .brand { font-size: 27px; }
-  .tile-value { font-size: 23px; }
+  .section-title { font-size: 19px; }
+  .section-head.big .section-title { font-size: 27px; }
+  .tile-value { font-size: 27px; }
   table.data td, table.data th { padding: 9px 6px; }
 
   /* На телефоне заголовок сезона встаёт в столбик, а подписи под цифрами
