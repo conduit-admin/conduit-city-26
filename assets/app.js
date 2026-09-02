@@ -533,22 +533,14 @@
     var live = realSeries().filter(function (x) { return state.series.has(x.n); });
 
     var main = el("div", "hero-main");
-    if (top && top.score > 0) {
-      main.appendChild(el("div", "hero-label", "Первый"));
-      var name = el("div", "hero-name");
-      name.appendChild(document.createTextNode(top.name));
-      main.appendChild(name);
-      var score = el("div", "hero-score");
-      var big = el("b");
-      countUp(big, "score", top.score);
-      score.appendChild(big);
-      score.appendChild(el("span", "hero-of", "из " + num(top.ceil + top.bonus)));
-      main.appendChild(score);
-    } else {
-      main.appendChild(el("div", "hero-label", "Счёт"));
-      main.appendChild(el("div", "hero-name", "Пока пусто"));
-      main.appendChild(el("div", "hero-score-none", "ни одного плюса по этому отбору"));
-    }
+    main.appendChild(el("div", "hero-label", "Первый"));
+    main.appendChild(el("div", "hero-name", top.name));
+    var score = el("div", "hero-score");
+    var big = el("b");
+    countUp(big, "score", top.score);
+    score.appendChild(big);
+    score.appendChild(el("span", "hero-of", "из " + num(top.ceil + top.bonus)));
+    main.appendChild(score);
     box.appendChild(main);
 
     /* Доля взятого — по всем, а не по первому: она говорит, насколько серии
@@ -618,6 +610,8 @@
       var cat = el("button", "chip cat" + (on && on < leaves.length ? " partial" : ""));
       cat.type = "button";
       cat.setAttribute("aria-pressed", on ? "true" : "false");
+      // цвет раздела достаётся всему ярлыку, а не одному кружку в нём
+      cat.style.setProperty("--accent", "var(--s" + t.slot + ")");
       cat.appendChild(dot(t.slot));
       cat.appendChild(document.createTextNode(t.name));
       cat.addEventListener("click", function () {
@@ -724,8 +718,12 @@
   function viewRating(host) {
     if (!UNITS.length) return viewEmpty(host);
 
+    /* Шапка сезона появляется, только когда есть о чём говорить. Пока плюсов
+       нет, она сообщала бы «пока пусто» — это и так видно по пустой таблице. */
     var early = filtered();
-    host.appendChild(heroBlock(early));
+    if (early.rows.length && early.rows[0].score > 0) {
+      host.appendChild(heroBlock(early));
+    }
 
     var f = renderFilters(host);
     var prev = prevPlaces();
@@ -749,10 +747,6 @@
     f.rows.forEach(function (r) {
       var tr = el("tr", "clickable");
       tr.addEventListener("click", function () {
-        /* Метку ставим прямо сейчас, до перерисовки: кадр «до» снимается с
-           нынешней страницы, и по метке браузер узнаёт, чему во что перетекать. */
-        vtWho = r.id;
-        nm.style.viewTransitionName = "who";
         scrollUp = true;
         state.openStudent = r.id;
         render();
@@ -778,8 +772,6 @@
       var share = (r.ceil + r.bonus) ? r.score / (r.ceil + r.bonus) : 0;
       bar.style.width = Math.max(0, Math.min(100, Math.round(share * 100))) + "%";
       nm.insertBefore(bar, nm.firstChild);
-      // имя перетекает в заголовок карточки — метка одна на обе стороны
-      if (vtWho === r.id) nm.style.viewTransitionName = "who";
       tr.appendChild(nm);
 
       tr.appendChild(el("td", "score", num(r.score)));
@@ -1168,9 +1160,7 @@
     var row = f.rows.filter(function (r) { return r.id === id; })[0];
 
     var sh = el("div", "section-head big");
-    var who = nameCell("span", "section-title", student);
-    if (vtWho === id) who.style.viewTransitionName = "who";
-    sh.appendChild(who);
+    sh.appendChild(nameCell("span", "section-title", student));
     host.appendChild(sh);
 
     var tiles = el("div", "tiles");
@@ -1379,8 +1369,7 @@
 
   var lastScene = null;
   var enterTimer = null;
-  var vtWho = null;      // чьё имя сейчас перетекает из строки в карточку
-  var scrollUp = false;  // прокрутить наверх внутри перехода, а не до него
+  var scrollUp = false;  // прокрутить наверх после отрисовки нового экрана
 
   // всё движение выключается системной настройкой — она не про красоту
   function reduced() {
@@ -1442,10 +1431,16 @@
   var lastView = state.view;
   var swapToken = 0;
 
+  /* Смена экрана — всегда одна и та же: содержимое уходит, приходит новое.
+     Переход браузера здесь пробовался и убран: он подменяет снимками всё окно,
+     из-за чего дёргалась шапка, замирал указатель на вкладках и путалась
+     прокрутка при открытии ученика из середины списка.
+
+     Смена отбора экрана не меняет: строки те же, у них меняются только места.
+     Их доигрываем отдельно. */
   function render() {
     /* Указатель трогается сразу, не дожидаясь содержимого: он живёт в полосе
        вкладок, а она при смене вкладки не перерисовывается вовсе. */
-    var tabMoved = state.view !== lastView;
     lastView = state.view;
     syncTabs();
 
@@ -1453,21 +1448,15 @@
     var moved = scene !== lastScene;
     lastScene = scene;
 
-    if (tabMoved) {
+    if (moved) {
       if (reduced()) paint(false);
       else fadeSwap();
       return;
     }
 
-    var before = (!moved && !state.openStudent && state.view === "rating")
+    var before = (!state.openStudent && state.view === "rating")
       ? rowTops() : null;
-
-    if (moved && !reduced() && document.startViewTransition) {
-      hush(document.startViewTransition(function () { paint(false); }));
-      return;
-    }
-
-    paint(moved && !reduced());
+    paint(false);
     if (before) flipRows(before);
   }
 
@@ -1484,16 +1473,6 @@
       main.classList.remove("leaving");
       paint(true);
     }, 90);
-  }
-
-  /* Переход может не состояться: страница свёрнута, предыдущий ещё идёт,
-     браузер решил его отменить. Само обновление при этом всё равно проходит,
-     поэтому отказы просто проглатываем — иначе они всплывают в консоль. */
-  function hush(t) {
-    if (!t) return;
-    ["ready", "finished", "updateCallbackDone"].forEach(function (k) {
-      if (t[k] && t[k].catch) t[k].catch(function () {});
-    });
   }
 
   function paint(animate) {
@@ -1513,8 +1492,7 @@
     } else if (state.view === "series") viewSeries(main);
     else if (state.view === "zachet") viewZachet(main);
 
-    /* Прокрутка наверх делается здесь, внутри перехода: сделанная до него, она
-       успела бы дёрнуть страницу раньше, чем браузер снимет кадр «до». */
+    // наверх — уже с новым содержимым, чтобы не мелькнула прокрутка старого
     if (scrollUp) {
       window.scrollTo(0, 0);
       scrollUp = false;

@@ -2474,9 +2474,10 @@
 
     var cats = el("div", "chips");
     types().forEach(function (t) {
-      var b = el("button", "chip pick");
+      var b = el("button", "chip pick cat");
       b.type = "button";
       b.setAttribute("aria-pressed", t.id === p.type ? "true" : "false");
+      b.style.setProperty("--accent", "var(--s" + t.slot + ")");
       b.appendChild(dot(t.slot));
       b.appendChild(document.createTextNode(t.name));
       b.addEventListener("click", function () {
@@ -3449,16 +3450,6 @@
       main.classList.remove("leaving");
       paint(true);
     }, 90);
-  }
-
-  /* Переход может не состояться: страница свёрнута, предыдущий ещё идёт,
-     браузер решил его отменить. Само обновление при этом всё равно проходит,
-     поэтому отказы просто проглатываем — иначе они всплывают в консоль. */
-  function hush(t) {
-    if (!t) return;
-    ["ready", "finished", "updateCallbackDone"].forEach(function (k) {
-      if (t[k] && t[k].catch) t[k].catch(function () {});
-    });
   }
 
   function paint(animate) {
