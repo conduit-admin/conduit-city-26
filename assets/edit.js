@@ -3538,58 +3538,7 @@
   }
 
 
-  /* Переключатель цвета. Выбор запоминается в этом браузере и применяется ещё
-     до отрисовки — крохотным скриптом в самой странице; иначе цветной вид
-     успевал бы мигнуть при каждом открытии. Здесь только кнопка.
-
-     Цвета тем переключатель не трогает: кружок раздела и полоска в кондуите —
-     это данные, по ним читают, к какой теме задача, а не украшение. */
-  var LS_LOOK = "conduit-look";
-
-  function vivid() {
-    return document.documentElement.classList.contains("vivid");
-  }
-
-  function setupLook() {
-    var b = document.getElementById("look");
-    if (!b) return;
-
-    /* Значок — два кружка внахлёст, полный и приглушённый. Рисуется в svg:
-       шрифтовому символу здесь доверять нельзя, глифа может не оказаться. */
-    var NS = "http://www.w3.org/2000/svg";
-    var svg = document.createElementNS(NS, "svg");
-    svg.setAttribute("viewBox", "0 0 16 16");
-    svg.setAttribute("width", "17");
-    svg.setAttribute("height", "17");
-    svg.setAttribute("aria-hidden", "true");
-    [[6.1, "1"], [9.9, "0.4"]].forEach(function (pair) {
-      var c = document.createElementNS(NS, "circle");
-      c.setAttribute("cx", String(pair[0]));
-      c.setAttribute("cy", "8");
-      c.setAttribute("r", "4.4");
-      c.setAttribute("fill", "currentColor");
-      c.setAttribute("fill-opacity", pair[1]);
-      svg.appendChild(c);
-    });
-    b.appendChild(svg);
-
-    function sync() {
-      b.setAttribute("aria-pressed", vivid() ? "true" : "false");
-      b.setAttribute("title", vivid() ? "Убрать цвет" : "Добавить цвет");
-    }
-
-    sync();
-    b.addEventListener("click", function () {
-      document.documentElement.classList.toggle("vivid");
-      try {
-        localStorage.setItem(LS_LOOK, vivid() ? "vivid" : "plain");
-      } catch (e) { /* приватный режим — тогда выбор живёт до перезагрузки */ }
-      sync();
-    });
-  }
-
   function setupChrome() {
-    setupLook();
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
       t.addEventListener("click", function () {
         state.view = t.dataset.view;
