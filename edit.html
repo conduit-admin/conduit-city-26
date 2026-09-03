@@ -8,11 +8,14 @@
 <meta name="theme-color" content="#eceef6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#06060b" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="assets/icon-192.png?v=202609022127">
+<link rel="apple-touch-icon" href="assets/icon-192.png?v=202609031754">
 <title>Статистика — редактор</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23c026d3'/%3E%3Cpath d='M16 9v14M9 16h14' stroke='%23fcfcfb' stroke-width='3.6' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=202609022127">
-<meta name="build" content="202609022127">
+<link rel="stylesheet" href="assets/style.css?v=202609031754">
+<!-- Цвет применяем до отрисовки: иначе выбранный вид мигал бы при каждом
+     открытии страницы. Одна строка здесь дешевле этого мигания. -->
+<script>try{if(localStorage.getItem("conduit-look")==="vivid")document.documentElement.classList.add("vivid")}catch(e){}</script>
+<meta name="build" content="202609031754">
 </head>
 <body class="is-editor">
 <div class="wrap">
@@ -21,6 +24,9 @@
       <div class="brand-sub">кондуит · ввод</div>
       <div class="brand">Редактор</div>
     </div>
+    <div class="spacer"></div>
+    <button class="look" type="button" id="look" aria-pressed="false"
+            aria-label="Цвет"></button>
   </header>
 
   <nav class="tabs">
@@ -35,6 +41,6 @@
   <main id="main"></main>
 </div>
 
-<script src="assets/edit.js?v=202609022127"></script>
+<script src="assets/edit.js?v=202609031754"></script>
 </body>
 </html>

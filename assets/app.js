@@ -1394,6 +1394,7 @@
   function render() {
     /* Указатель трогается сразу, не дожидаясь содержимого: он живёт в полосе
        вкладок, а она при смене вкладки не перерисовывается вовсе. */
+    var tabMoved = state.view !== lastView;
     lastView = state.view;
     syncTabs();
 
@@ -1405,7 +1406,7 @@
       if (reduced()) {
         window.scrollTo(0, 0);
         paint(false);
-      } else fadeSwap();
+      } else fadeSwap(!tabMoved);
       return;
     }
 
@@ -1460,19 +1461,28 @@
      здесь не годится — он подменяет всё окно снимками, и указатель на полосе
      вкладок замер бы вместо того, чтобы переехать. Метка нужна на случай двух
      быстрых нажатий подряд: рисует только последнее. */
-  function fadeSwap() {
+  function fadeSwap(quiet) {
     var main = document.getElementById("main");
     var mine = ++swapToken;
-    /* Сначала отматываем наверх — на глазах, со старым содержимым, — и только
-       потом меняем его. Наоборот было бы непонятно: листаешь пустоту. */
-    toTop(function () {
-      if (mine !== swapToken) return;
+
+    /* Содержимое сначала уходит, и только потом подменяется. */
+    function swap() {
       main.classList.add("leaving");
       setTimeout(function () {
         if (mine !== swapToken) return;
+        // прыжок к началу делаем на погасшем экране: его не видно
+        if (quiet) window.scrollTo(0, 0);
         main.classList.remove("leaving");
         paint(true);
       }, 80);
+    }
+
+    /* Внутри одной вкладки (открыли карточку ученика) список наверх не мотаем:
+       он пролетел бы весь на глазах. Между вкладками — наоборот, отматываем
+       плавно, там это и просили. */
+    if (quiet) return swap();
+    toTop(function () {
+      if (mine === swapToken) swap();
     });
   }
 
@@ -1525,7 +1535,59 @@
       });
   }
 
+
+  /* Переключатель цвета. Выбор запоминается в этом браузере и применяется ещё
+     до отрисовки — крохотным скриптом в самой странице; иначе цветной вид
+     успевал бы мигнуть при каждом открытии. Здесь только кнопка.
+
+     Цвета тем переключатель не трогает: кружок раздела и полоска в кондуите —
+     это данные, по ним читают, к какой теме задача, а не украшение. */
+  var LS_LOOK = "conduit-look";
+
+  function vivid() {
+    return document.documentElement.classList.contains("vivid");
+  }
+
+  function setupLook() {
+    var b = document.getElementById("look");
+    if (!b) return;
+
+    /* Значок — два кружка внахлёст, полный и приглушённый. Рисуется в svg:
+       шрифтовому символу здесь доверять нельзя, глифа может не оказаться. */
+    var NS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 16 16");
+    svg.setAttribute("width", "17");
+    svg.setAttribute("height", "17");
+    svg.setAttribute("aria-hidden", "true");
+    [[6.1, "1"], [9.9, "0.4"]].forEach(function (pair) {
+      var c = document.createElementNS(NS, "circle");
+      c.setAttribute("cx", String(pair[0]));
+      c.setAttribute("cy", "8");
+      c.setAttribute("r", "4.4");
+      c.setAttribute("fill", "currentColor");
+      c.setAttribute("fill-opacity", pair[1]);
+      svg.appendChild(c);
+    });
+    b.appendChild(svg);
+
+    function sync() {
+      b.setAttribute("aria-pressed", vivid() ? "true" : "false");
+      b.setAttribute("title", vivid() ? "Убрать цвет" : "Добавить цвет");
+    }
+
+    sync();
+    b.addEventListener("click", function () {
+      document.documentElement.classList.toggle("vivid");
+      try {
+        localStorage.setItem(LS_LOOK, vivid() ? "vivid" : "plain");
+      } catch (e) { /* приватный режим — тогда выбор живёт до перезагрузки */ }
+      sync();
+    });
+  }
+
   function setupChrome() {
+    setupLook();
     document.getElementById("brand-title").textContent = DATA.config.title;
     document.getElementById("brand-sub").textContent = DATA.config.subtitle || "";
     document.title = DATA.config.title + " — " + (DATA.config.subtitle || "");
