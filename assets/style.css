@@ -9,7 +9,7 @@
      где браузер не умеет размывать подложку, и там, где сквозь панель ничего
      просвечивать не должно. */
   --surface: #ffffff;
-  --plane: #e4e7f2;
+  --plane: #dde1ee;
   --ink: #0e0e14;
   --ink-2: #45454f;
   --ink-muted: #7c7c88;
@@ -23,9 +23,14 @@
 
   /* Матовое стекло. Панель — это заливка с прозрачностью плюс размытие того,
      что под ней; толщину даёт светлая грань поверху, а не рамка. */
-  --pane: rgba(255, 255, 255, 0.38);
-  --pane-2: rgba(255, 255, 255, 0.74);
-  --pane-edge: rgba(255, 255, 255, 0.92);
+  --pane: rgba(255, 255, 255, 0.40);
+  --pane-2: rgba(255, 255, 255, 0.78);
+  /* Две грани: светлая сверху и тёмная снизу. Вместе они читаются как толщина
+     стекла — без них панель остаётся просто светлым прямоугольником. */
+  --pane-edge: rgba(255, 255, 255, 1);
+  --pane-edge-low: rgba(11, 11, 11, 0.05);
+  /* Косой блик поверх панели: то, чем стекло отличается от заливки. */
+  --sheen: rgba(255, 255, 255, 0.34);
   /* Одно значение на весь сайт. Если размытие где-то окажется дорогим —
      достаточно поставить здесь none, и стекло станет просто прозрачным. */
   --pane-blur: blur(28px) saturate(190%);
@@ -33,11 +38,11 @@
   /* Пятна на подложке. Они лежат неподвижным слоем под всей страницей: двигать
      их нельзя — размытие панелей пересчитывалось бы каждый кадр.
 
-     Цвет в них слабый нарочно: это подсветка стекла, а не заливка. Всё, что
-     ярче, начинает спорить с цветами тем — а те значат раздел математики. */
-  --glow-1: rgba(99, 91, 255, 0.13);
-  --glow-2: rgba(255, 122, 182, 0.10);
-  --glow-3: rgba(45, 205, 195, 0.11);
+     Цвета в них нет: это чистый свет. Он и подчёркивает стекло — сквозь панель
+     видно, что под ней светлее, а по краям темнее. */
+  --glow-1: rgba(255, 255, 255, 0.95);
+  --glow-2: rgba(255, 255, 255, 0.72);
+  --glow-3: rgba(255, 255, 255, 0.58);
 
   /* Цвета тем различаются прежде всего тоном, а не яркостью: тон переживает
      любое затемнение, яркость — нет. Фиолетовый уведён от синего подальше:
@@ -110,12 +115,14 @@
   /* Оттенки блоков. Это не палитра тем — те значат раздел математики, и путать
      их нельзя. Эти пять раскрашивают крупные панели.
 
-     Берутся они малыми долями, проценты — в правилах ниже. */
-  --tint-a: #635bff;
-  --tint-b: #12b3a6;
-  --tint-c: #a855f7;
-  --tint-d: #e0902a;
-  --tint-e: #ff6b9d;
+     Сейчас все пять белые: панель ими подсвечивается, а не красится. Слоты
+     оставлены нарочно — когда цвет понадобится точечно, достаточно будет
+     заменить нужный, и подкрасится ровно один блок. */
+  --tint-a: #ffffff;
+  --tint-b: #ffffff;
+  --tint-c: #ffffff;
+  --tint-d: #ffffff;
+  --tint-e: #ffffff;
 }
 
 /* Тёмная тема — свой набор шагов под тёмную подложку, а не инверсия светлой.
@@ -136,12 +143,14 @@
     --good: #34d17f;
     --bad: #ff7a90;
 
-    --pane: rgba(30, 30, 44, 0.36);
+    --pane: rgba(38, 38, 52, 0.36);
     --pane-2: rgba(24, 24, 36, 0.80);
-    --pane-edge: rgba(255, 255, 255, 0.18);
-    --glow-1: rgba(99, 91, 255, 0.16);
-    --glow-2: rgba(236, 72, 153, 0.09);
-    --glow-3: rgba(20, 200, 190, 0.10);
+    --pane-edge: rgba(255, 255, 255, 0.24);
+    --pane-edge-low: rgba(0, 0, 0, 0.28);
+    --sheen: rgba(255, 255, 255, 0.07);
+    --glow-1: rgba(255, 255, 255, 0.11);
+    --glow-2: rgba(255, 255, 255, 0.07);
+    --glow-3: rgba(255, 255, 255, 0.08);
 
     /* На тёмной подложке цвет должен быть светлее, чем на светлой, а не темнее.
        Прежний набор был темнее светлого — отсюда «цвета тем слишком тёмные и
@@ -174,11 +183,11 @@
     --glass: rgba(26, 26, 25, .72);
     --glass-edge: rgba(255, 255, 255, .10);
     --paper: rgba(255, 255, 255, .055);
-    --tint-a: #8b84ff;
-    --tint-b: #2fd4c4;
-    --tint-c: #c084fc;
-    --tint-d: #f0b350;
-    --tint-e: #ff8fb8;
+    --tint-a: #ffffff;
+    --tint-b: #ffffff;
+    --tint-c: #ffffff;
+    --tint-d: #ffffff;
+    --tint-e: #ffffff;
     --bar: rgba(255, 255, 255, .11);
   }
 }
@@ -416,10 +425,16 @@ input[type="number"]::-webkit-inner-spin-button {
 .tile,
 .table-wrap,
 .conduit-split {
-  background: var(--surface);
+  /* Заливка и блик заданы порознь: подкраска ниже меняет только цвет, а блик
+     остаётся на месте. */
+  background-color: var(--surface);
+  background-image: linear-gradient(147deg, var(--sheen), transparent 44%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-1), inset 0 1px 0 var(--pane-edge);
+  box-shadow:
+    var(--shadow-1),
+    inset 0 1px 0 var(--pane-edge),
+    inset 0 -1px 0 var(--pane-edge-low);
 }
 
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
@@ -427,7 +442,7 @@ input[type="number"]::-webkit-inner-spin-button {
   .tile,
   .table-wrap,
   .conduit-split {
-    background: var(--pane);
+    background-color: var(--pane);
     -webkit-backdrop-filter: var(--pane-blur);
     backdrop-filter: var(--pane-blur);
   }
@@ -435,12 +450,12 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .card { padding: 14px 16px; }
 
-/* Цвет живёт на блоках, а не на кнопках. Панель забирает оттенок себе — так же,
-   как шапка сезона, — и по нему видно, о чём этот кусок страницы. Оттенок
-   слабый: он подкрашивает стекло, а не закрашивает его. */
+/* Подсветка блока. Сейчас она белая и работает как свет: панель светлее там,
+   где на неё «падает». Когда понадобится цвет, тот же приём подкрасит блок —
+   менять придётся одну переменную. */
 .tinted {
-  background: color-mix(in srgb, var(--tint) 7%, var(--pane));
-  border-color: color-mix(in srgb, var(--tint) 18%, var(--border));
+  background-color: color-mix(in srgb, var(--tint) 13%, var(--pane));
+  border-color: color-mix(in srgb, var(--tint) 26%, var(--border));
 }
 
 /* Пятно света в углу — то же, что у шапки сезона. Ставится отдельным классом:
@@ -456,7 +471,7 @@ input[type="number"]::-webkit-inner-spin-button {
   padding-bottom: 58%;
   border-radius: 50%;
   background: radial-gradient(circle,
-    color-mix(in srgb, var(--tint) 13%, transparent), transparent 70%);
+    color-mix(in srgb, var(--tint) 30%, transparent), transparent 70%);
   pointer-events: none;
 }
 
@@ -464,10 +479,10 @@ input[type="number"]::-webkit-inner-spin-button {
    они светили так, что цифры на них терялись. */
 .tile.glow::after {
   background: radial-gradient(circle,
-    color-mix(in srgb, var(--tint) 8%, transparent), transparent 72%);
+    color-mix(in srgb, var(--tint) 26%, transparent), transparent 72%);
 }
 
-.tile.tinted { background: color-mix(in srgb, var(--tint) 5.5%, var(--pane)); }
+.tile.tinted { background-color: color-mix(in srgb, var(--tint) 11%, var(--pane)); }
 
 .glow > * { position: relative; }
 
@@ -478,8 +493,8 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .table-wrap,
 .conduit-split {
-  background: color-mix(in srgb, var(--tint) 4%, var(--pane));
-  border-color: color-mix(in srgb, var(--tint) 15%, var(--border));
+  background-color: color-mix(in srgb, var(--tint) 8%, var(--pane));
+  border-color: color-mix(in srgb, var(--tint) 20%, var(--border));
 }
 
 /* карточка-предупреждение: данные не потеряны, но и не считаются */
@@ -849,7 +864,7 @@ table.data td.name { position: relative; }
   bottom: 4px;
   height: 3px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--tint-a) 55%, transparent);
+  background: var(--axis);
   pointer-events: none;
 }
 
