@@ -17,16 +17,16 @@
         "name": "Последовательности"
       },
       {
-        "id": "matan",
-        "name": "Матан"
+        "id": "funkcionalnye-uravneniya",
+        "name": "Функциональные уравнения"
       },
       {
-        "id": "linal",
-        "name": "Линал"
+        "id": "lineynaya-algebra",
+        "name": "Линейная алгебра"
       },
       {
-        "id": "fur",
-        "name": "ФУР"
+        "id": "matematicheskiy-analiz",
+        "name": "Математический анализ"
       }
     ]
   },
@@ -44,8 +44,8 @@
         "name": "Стереометрия"
       },
       {
-        "id": "geomneravenstva",
-        "name": "Геомнеравенства"
+        "id": "geometricheskie-neravenstva",
+        "name": "Геометрические неравенства"
       }
     ]
   },
@@ -67,16 +67,16 @@
         "name": "Клетчатые задачи"
       },
       {
-        "id": "kg",
-        "name": "КГ"
-      },
-      {
         "id": "podschet",
         "name": "Подсчёт"
       },
       {
         "id": "veroyatnosti",
         "name": "Вероятности"
+      },
+      {
+        "id": "kombinatornaya-geometriya",
+        "name": "Комбинаторная геометрия"
       }
     ]
   },
