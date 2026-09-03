@@ -3437,10 +3437,14 @@
     if (moved && !reduced()) return fadeSwap();
     if (moved) window.scrollTo(0, 0);
 
-    /* Перерисовка на месте: правка на том же экране. Прокрутку держим — иначе
-       страница прыгала к началу на каждое касание. */
+    /* Перерисовка на месте: правка на том же экране. Прокрутку держим, а с ней
+       и высоту: опустевший на мгновение экран короче, и браузер успевал прижать
+       прокрутку к началу сам. */
+    var main = document.getElementById("main");
     var keep = window.scrollY;
+    main.style.minHeight = main.offsetHeight + "px";
     paint(false);
+    main.style.minHeight = "";
     if (window.scrollY !== keep) window.scrollTo(0, keep);
   }
 
@@ -3502,9 +3506,6 @@
 
   function paint(animate) {
     var main = document.getElementById("main");
-    /* На время перерисовки держим прежнюю высоту: опустевший на мгновение
-       экран короче, и браузер успевал прижать прокрутку к началу. */
-    main.style.minHeight = main.offsetHeight + "px";
     clear(main);
     clearInterval(cdTimer);
     cdTimer = null;
@@ -3533,8 +3534,6 @@
     else if (state.view === "themes") viewThemes(main);
     else if (state.view === "students") viewStudents(main);
     else if (state.view === "save") viewSave(main);
-
-    main.style.minHeight = "";
   }
 
 

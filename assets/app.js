@@ -513,7 +513,7 @@
   /* Плитки в карточке ученика разноцветные: каждая про своё, и ряд одинаковых
      белых прямоугольников читался хуже, чем ряд разных. */
   function tile(label, value, note, hue) {
-    var t = el("div", "tile" + (hue ? " tinted glow" : ""));
+    var t = el("div", "tile" + (hue ? " tinted" : ""));
     if (hue) t.style.setProperty("--tint", "var(--tint-" + hue + ")");
     t.appendChild(el("div", "tile-label", label));
     t.appendChild(el("div", "tile-value", value));
@@ -523,7 +523,7 @@
 
   // подкрасить панель: цвет приходит переменной, правила лежат в стилях
   function tinted(node, hue) {
-    node.classList.add("tinted", "glow");
+    node.classList.add("tinted");
     node.style.setProperty("--tint", "var(--tint-" + hue + ")");
     return node;
   }
@@ -1411,11 +1411,16 @@
     }
 
     /* Перерисовка на месте: сменили отбор, экран тот же. Прокрутку держим —
-       иначе страница прыгала к началу на каждое касание ярлыка. */
+       иначе страница прыгала к началу на каждое касание ярлыка. Высоту на это
+       время придерживаем: опустевший на мгновение экран короче, и браузер
+       успевал прижать прокрутку сам. */
+    var main = document.getElementById("main");
     var keep = window.scrollY;
     var before = (!state.openStudent && state.view === "rating")
       ? rowTops() : null;
+    main.style.minHeight = main.offsetHeight + "px";
     paint(false);
+    main.style.minHeight = "";
     if (window.scrollY !== keep) window.scrollTo(0, keep);
     if (before) flipRows(before);
   }
@@ -1488,9 +1493,6 @@
 
   function paint(animate) {
     var main = document.getElementById("main");
-    /* На время перерисовки держим прежнюю высоту: опустевший на мгновение
-       экран короче, и браузер успевал прижать прокрутку к началу. */
-    main.style.minHeight = main.offsetHeight + "px";
     clear(main);
     syncTabs();
 
@@ -1506,7 +1508,6 @@
     } else if (state.view === "series") viewSeries(main);
     else if (state.view === "zachet") viewZachet(main);
 
-    main.style.minHeight = "";
   }
 
   /* Где стояли строки до перерисовки. Приём известен как FLIP: запомнить

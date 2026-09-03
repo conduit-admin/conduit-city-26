@@ -33,7 +33,7 @@
   --sheen: rgba(255, 255, 255, 0.34);
   /* Одно значение на весь сайт. Если размытие где-то окажется дорогим —
      достаточно поставить здесь none, и стекло станет просто прозрачным. */
-  --pane-blur: blur(28px) saturate(190%);
+  --pane-blur: blur(18px);
 
   /* Пятна на подложке. Они лежат неподвижным слоем под всей страницей: двигать
      их нельзя — размытие панелей пересчитывалось бы каждый кадр.
@@ -98,9 +98,6 @@
   /* Стекло — только для полосы вкладок и плавающих панелей: под ними проезжает
      содержимое, там эффект и виден. На карточках и в кондуите его нет — размытие
      под длинной таблицей стоит плавности прокрутки, а текст на нём теряется. */
-  --glass: rgba(252, 252, 251, .74);
-  --glass-edge: rgba(255, 255, 255, .8);
-
   /* Линия тетрадной клетки на подложке. */
   --paper: rgba(11, 11, 11, .06);
   --paper-step: 30px;
@@ -180,8 +177,6 @@
     --ink-inv: #08080e;
     --shadow-1: 0 1px 2px rgba(0, 0, 0, .5), 0 10px 28px -14px rgba(0, 0, 0, .75);
     --shadow-2: 0 2px 8px rgba(0, 0, 0, .55), 0 28px 64px -28px rgba(0, 0, 0, .9);
-    --glass: rgba(26, 26, 25, .72);
-    --glass-edge: rgba(255, 255, 255, .10);
     --paper: rgba(255, 255, 255, .055);
     --tint-a: #ffffff;
     --tint-b: #ffffff;
@@ -261,17 +256,6 @@ body::before {
     var(--paper-step) var(--paper-step),
     var(--paper-step) var(--paper-step),
     auto, auto, auto;
-  /* Проявляется один раз при открытии. Двигать этот слой нельзя, а разовое
-     проявление стоит одного кадра и задаёт настроение странице. */
-  animation: glow-in 1.1s ease-out both;
-}
-
-@keyframes glow-in {
-  from { opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  body::before { animation: none; }
 }
 
 .wrap {
@@ -439,62 +423,34 @@ input[type="number"]::-webkit-inner-spin-button {
 
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
   .card,
-  .tile,
   .table-wrap,
   .conduit-split {
     background-color: var(--pane);
     -webkit-backdrop-filter: var(--pane-blur);
     backdrop-filter: var(--pane-blur);
   }
+
+  /* Плитки размытия не получают нарочно: их шесть на экране, они мелкие, а
+     подложка под ними ровная — разницы не видно, зато каждая стоила кадра.
+     Заливка та же, что у карточек: панель должна быть одна на всех. */
+  .tile { background-color: var(--pane); }
 }
 
 .card { padding: 14px 16px; }
 
-/* Подсветка блока. Сейчас она белая и работает как свет: панель светлее там,
-   где на неё «падает». Когда понадобится цвет, тот же приём подкрасит блок —
-   менять придётся одну переменную. */
+/* Подсветка блока. Пятно света лежит в самой панели, ещё одним слоем заливки,
+   а не отдельным элементом поверх: тот требовал обрезки по краю и своего слоя
+   на каждую панель, а рисовал ровно то же.
+
+   Сейчас свет белый. Когда понадобится цвет, менять придётся одну переменную:
+   у блока свой слот оттенка. */
 .tinted {
-  background-color: color-mix(in srgb, var(--tint) 13%, var(--pane));
-  border-color: color-mix(in srgb, var(--tint) 26%, var(--border));
-}
-
-/* Пятно света в углу — то же, что у шапки сезона. Ставится отдельным классом:
-   панели с прокруткой его не получают, там лишний слой мешал бы прокрутке. */
-.glow { position: relative; overflow: hidden; }
-
-.glow::after {
-  content: "";
-  position: absolute;
-  top: -62%;
-  right: -14%;
-  width: 58%;
-  padding-bottom: 58%;
-  border-radius: 50%;
-  background: radial-gradient(circle,
-    color-mix(in srgb, var(--tint) 30%, transparent), transparent 70%);
-  pointer-events: none;
-}
-
-/* На плитках свет ещё тише: их шесть в ряд, и каждая со своим цветом — вместе
-   они светили так, что цифры на них терялись. */
-.tile.glow::after {
-  background: radial-gradient(circle,
-    color-mix(in srgb, var(--tint) 26%, transparent), transparent 72%);
-}
-
-.tile.tinted { background-color: color-mix(in srgb, var(--tint) 11%, var(--pane)); }
-
-.glow > * { position: relative; }
-
-/* Кондуит и таблица рейтинга подкрашены всегда: это главные панели сайта, и
-   свой оттенок у каждой из них постоянный. */
-.table-wrap { --tint: var(--tint-a); }
-.conduit-split { --tint: var(--tint-b); }
-
-.table-wrap,
-.conduit-split {
-  background-color: color-mix(in srgb, var(--tint) 8%, var(--pane));
-  border-color: color-mix(in srgb, var(--tint) 20%, var(--border));
+  background-color: color-mix(in srgb, var(--tint) 12%, var(--pane));
+  background-image:
+    radial-gradient(56% 56% at 100% -16%,
+      color-mix(in srgb, var(--tint) 30%, transparent), transparent 70%),
+    linear-gradient(147deg, var(--sheen), transparent 44%);
+  border-color: color-mix(in srgb, var(--tint) 24%, var(--border));
 }
 
 /* карточка-предупреждение: данные не потеряны, но и не считаются */
@@ -808,14 +764,6 @@ table.data th {
   padding: 10px 12px;
   border-bottom: 1px solid var(--grid);
   white-space: nowrap;
-  /* Липнет она внутри обёртки таблицы, а не к окну: у обёртки своя прокрутка.
-     Отступ здесь поэтому нулевой — иначе шапка съезжает на первую строку.
-     Заливка плотнее панели: под шапкой проезжают строки, и сквозь неё они
-     просвечивать не должны. */
-  position: sticky;
-  top: 0;
-  background: var(--pane-2);
-  z-index: 2;
 }
 
 table.data th.left, table.data td.left { text-align: left; }
@@ -1327,9 +1275,10 @@ td .date { margin-left: 8px; font-size: 12px; }
 /* Появление нового экрана — дополнение, а не событие: карточки поднимаются на
    четыре пикселя, и всё. Перекличка строк по очереди отсюда убрана: на списке
    в три десятка человек она читалась не как оживление, а как ожидание. */
-.view-enter > * { animation: rise .2s cubic-bezier(.2, .7, .3, 1) both; }
-.view-enter > *:nth-child(2) { animation-delay: .03s; }
-.view-enter > *:nth-child(n+3) { animation-delay: .05s; }
+/* Появление нового экрана — одна анимация на весь экран, а не по одной на
+   каждую карточку с задержками: те читались как «страница собирается на
+   глазах», а на телефоне это ещё и десяток слоёв разом. */
+.view-enter { animation: rise .2s cubic-bezier(.2, .7, .3, 1) both; }
 
 .banner { animation: rise .2s ease-out both; }
 
@@ -2232,7 +2181,7 @@ table.conduit .patt { border-left: 1px solid var(--grid); }
 @media (prefers-reduced-motion: reduce) {
   .tabs::before { transition: none; }
   #main.leaving { transition: none; }
-  .view-enter > * { animation: none; }
+  .view-enter { animation: none; }
 }
 }
 
@@ -2245,10 +2194,4 @@ table.conduit.cells.has-hot td.cell:not(.hot) .mark,
 table.conduit.cells.has-hot th:not(.hot) .phead,
 table.conduit.cells.has-hot tfoot td:not(.hot) { opacity: .25; }
 
-table.conduit.cells .mark,
-table.conduit.cells .phead { transition: opacity .16s ease; }
 
-@media (prefers-reduced-motion: reduce) {
-  table.conduit.cells .mark,
-  table.conduit.cells .phead { transition: none; }
-}
