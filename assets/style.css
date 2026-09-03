@@ -543,7 +543,8 @@ input[type="number"]::-webkit-inner-spin-button {
   text-decoration-thickness: 1px;
 }
 
-.chip[aria-pressed="false"] .dot { opacity: .28; }
+.chip[aria-pressed="false"] .dot,
+.chip[aria-pressed="false"] .ic { opacity: .28; }
 
 /* Выбор одного из вариантов — не фильтр: невыбранное здесь не «исключено»,
    поэтому не зачёркивается. Выбранное обводится жирнее. */
@@ -554,7 +555,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .chip.pick[aria-pressed="false"] .dot,
-.chip.sub.pick[aria-pressed="false"]::before { opacity: 1; }
+.chip.pick[aria-pressed="false"] .ic { opacity: 1; }
 
 .chip.pick[aria-pressed="true"] {
   border-color: var(--ink);
@@ -649,18 +650,35 @@ input[type="number"]::-webkit-inner-spin-button {
   border-color: var(--border);
 }
 
-.chip.sub::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
+.chip.sub[aria-pressed="true"] { color: var(--ink); }
+
+/* ── значки тем ─────────────────────────────────────────
+   Рисунок лежит в спрайте (assets/icons.js), здесь только размер и толщина
+   линии. Цвет значок берёт от текста, поэтому красится обычным color — и встаёт
+   ровно туда, где раньше стоял цветной кружок, с тем же цветом раздела.
+
+   Ни fill, ни stroke селектором внутрь <use> не достать, зато они наследуются:
+   заданные здесь, они доходят до содержимого символа сами. */
+.ic {
+  width: 15px;
+  height: 15px;
   flex: none;
-  background: var(--accent);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.chip.sub[aria-pressed="true"] { color: var(--ink); }
-.chip.sub[aria-pressed="false"]::before { opacity: .28; }
+/* У подраздела значок мельче — разница в размере держит уровни списка так же,
+   как её держал разный размер кружков. Линия при этом чуть толще: на мелком
+   размере тонкая тает. */
+.chip.sub .ic,
+.pline.sub .ic,
+.subline-name .ic { width: 13px; height: 13px; stroke-width: 1.9; }
 
+/* Кружок остался там, где он и есть кружок, а не знак темы: выбор цвета
+   раздела в редакторе. */
 .dot {
   width: 9px;
   height: 9px;
@@ -983,11 +1001,9 @@ table.conduit thead th {
 /* задача без темы: номер приглушён, полоска под ним серая */
 .phead-id.untyped { color: var(--ink-muted); }
 
-.phead-rule {
-  width: 20px;
-  height: 3px;
-  border-radius: 2px;
-}
+/* Полоска под номером задачи говорила только раздел — цветом. Значок говорит
+   ещё и подраздел, а места занимает столько же: столбец широкий, 38px. */
+.phead .ic { width: 14px; height: 14px; }
 
 /* Клетка одинакова на сайте и в редакторе: размер выбран под палец, но и
    читается на просмотре лучше мелкой. min-width обязателен — без него браузер
@@ -1118,7 +1134,37 @@ table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
   color: var(--ink);
 }
 
-.subline-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* В строке подраздела теперь два предмета: кнопка со значком и название.
+   Обрезание длинного названия многоточием переехало на сам текст: у гибкой
+   строки оно не сработало бы, текст в ней — безымянный кусок между
+   предметами. */
+.subline-name { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.subline-name .ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Кнопка выбора значка: сам значок и есть её содержимое. Размер как у прочих
+   квадратных кнопок редактора — под палец. */
+.icon-pick {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--wash);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color .14s ease, background-color .14s ease;
+}
+
+.icon-pick.open { border-color: var(--ink); background: var(--surface); }
+
+/* Ярлык в россыпи значков — без подписи: значок и выбирают глазами, а два
+   десятка названий рядом превратили бы россыпь в список. */
+.chip.icon-chip { padding: 7px 10px; }
 .subline-val { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .confirm {

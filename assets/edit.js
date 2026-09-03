@@ -1601,7 +1601,7 @@
       ? p.id + (sub ? " · " + sub.name : (t ? " · " + t.name : ""))
       : "какой?";
     top.appendChild(field("Гроб", picker(label,
-      p ? (typed(p) ? dot(t.slot) : greyDot()) : null, whatOpen,
+      p ? themeMark(p) : null, whatOpen,
       function () {
         state.pickGrave = whatOpen ? null : i;
         state.pickSolver = null;
@@ -1670,7 +1670,7 @@
       var b = el("button", "chip pick");
       b.type = "button";
       b.setAttribute("aria-pressed", p.id === s.problem ? "true" : "false");
-      b.appendChild(typed(p) ? dot(typeById(p.type).slot) : greyDot());
+      b.appendChild(themeMark(p));
       b.appendChild(document.createTextNode(p.id));
       b.addEventListener("click", function () {
         s.problem = p.id;
@@ -1781,7 +1781,7 @@
     var pick = el("button", "picker-btn" + (open ? " open" : ""));
     pick.type = "button";
     var label = el("span", "picker-label");
-    label.appendChild(ok ? dot(t.slot) : greyDot());
+    label.appendChild(themeMark(p));
     label.appendChild(document.createTextNode(
       !t ? "тема?" : t.name + (sub ? " · " + sub.name : (ok ? "" : " · ?"))));
     pick.appendChild(label);
@@ -1878,19 +1878,32 @@
 
   // ── детали интерфейса ───────────────────────────────────
 
-  /* Только чистый цвет: картинку-градиент Samsung Internet затемняет, плоскую
-     заливку — нет. */
+  /* Кружок остался только там, где он и есть кружок, а не знак темы: выбор
+     цвета раздела. Только чистый цвет, без градиента. */
   function dot(slot) {
     var d = el("span", "dot");
     d.style.background = "var(--s" + slot + ")";
     return d;
   }
 
-  // задача без темы — серый кружок вместо цвета раздела
-  function greyDot() {
-    var d = el("span", "dot");
-    d.style.background = "var(--axis)";
-    return d;
+  /* Знак темы. Рисунок лежит в спрайте (assets/icons.js), сюда приходит только
+     ключ; цвет раздела значок получает через color, потому что нарисован
+     currentColor. Без цвета — серый: так же, как раньше выглядел кружок у
+     задачи без темы. */
+  function mark(icon, slot, title) {
+    var g = Icons.make(icon, title);
+    g.style.color = slot ? "var(--s" + slot + ")" : "var(--axis)";
+    return g;
+  }
+
+  /* Значок темы задачи или гроба. Тема бывает выбрана наполовину — раздел есть,
+     подраздел нет, — и это не тема: в рейтинг такая задача не идёт, поэтому и
+     знак у неё пустой. */
+  function themeMark(p) {
+    var t = typeById(p.type);
+    if (!t || !typed(p)) return mark("none", 0);
+    var sub = subOf(t, p);
+    return mark((sub && sub.icon) || t.icon, t.slot);
   }
 
   /* Стрелка «назад» рисуется в svg. Ни шрифтовой символ, ни фигура из рамок
@@ -2352,7 +2365,7 @@
     var pick = el("button", "picker-btn" + (open ? " open" : ""));
     pick.type = "button";
     var label = el("span", "picker-label");
-    label.appendChild(ok ? dot(t.slot) : greyDot());
+    label.appendChild(themeMark(p));
     if (isExercise(p)) label.appendChild(el("span", "badge", "упр."));
     label.appendChild(document.createTextNode(
       !t ? "тема?" : t.name + (sub ? " · " + sub.name : (ok ? "" : " · ?"))));
@@ -2476,7 +2489,7 @@
       b.type = "button";
       b.setAttribute("aria-pressed", t.id === p.type ? "true" : "false");
       b.style.setProperty("--accent", "var(--s" + t.slot + ")");
-      b.appendChild(dot(t.slot));
+      b.appendChild(mark(t.icon, t.slot));
       b.appendChild(document.createTextNode(t.name));
       b.addEventListener("click", function () {
         p.type = t.id;
@@ -2496,6 +2509,7 @@
         b.type = "button";
         b.style.setProperty("--accent", "var(--s" + t.slot + ")");
         b.setAttribute("aria-pressed", s.id === p.sub ? "true" : "false");
+        b.appendChild(mark(s.icon || t.icon, t.slot));
         b.appendChild(document.createTextNode(s.name));
         b.addEventListener("click", function () {
           p.sub = s.id;
@@ -2584,14 +2598,11 @@
     var thead = el("thead");
     var hr = el("tr");
     problems.forEach(function (p) {
-      var t = typeById(p.type);
       var ok = typed(p);
       var cell = el("th");
       var box = el("div", "phead");
       box.appendChild(el("div", "phead-id" + (ok ? "" : " untyped"), p.id));
-      var rule = el("div", "phead-rule");
-      rule.style.background = ok ? "var(--s" + t.slot + ")" : "var(--axis)";
-      box.appendChild(rule);
+      box.appendChild(themeMark(p));
       cell.appendChild(box);
       hr.appendChild(cell);
     });
@@ -2757,7 +2768,10 @@
 
       var head = el("div", "tblock-head");
       var nameBox = el("span", "type-name");
-      nameBox.appendChild(dot(t.slot));
+      nameBox.appendChild(iconPick(t.id, t.icon, t.slot, function (key) {
+        var cat = editTypes().filter(function (x) { return x.id === t.id; })[0];
+        cat.icon = key;
+      }));
       nameBox.appendChild(el("b", null, t.name));
       head.appendChild(nameBox);
 
@@ -2779,10 +2793,18 @@
       }
       block.appendChild(head);
 
+      if (state.pickIcon === t.id) block.appendChild(iconChooser(t.slot));
+
       (t.subs || []).forEach(function (s) {
         var key = t.id + "/" + s.id;
         var line = el("div", "subline");
-        line.appendChild(el("span", "subline-name", s.name));
+        var subName = el("span", "subline-name");
+        subName.appendChild(iconPick(key, s.icon || t.icon, t.slot, function (k) {
+          var cat = editTypes().filter(function (x) { return x.id === t.id; })[0];
+          cat.subs.filter(function (x) { return x.id === s.id; })[0].icon = k;
+        }));
+        subName.appendChild(el("span", "ell", s.name));
+        line.appendChild(subName);
 
         /* Задачи удалённого подраздела остаются без темы и выпадают из
            рейтинга, пока им не выберут тему заново. */
@@ -2797,6 +2819,7 @@
           render();
         }));
         block.appendChild(line);
+        if (state.pickIcon === key) block.appendChild(iconChooser(t.slot));
       });
 
       var add = el("div", "frow gap");
@@ -2814,7 +2837,9 @@
         });
         var cat = draft.filter(function (x) { return x.id === t.id; })[0];
         if (!cat.subs) cat.subs = [];
-        cat.subs.push({ id: uniqueId(translit(name), taken), name: name });
+        cat.subs.push({
+          id: uniqueId(translit(name), taken), name: name, icon: "none"
+        });
         render();
       }));
       block.appendChild(add);
@@ -2836,7 +2861,7 @@
 
     var slotSel = el("div", "chips");
     var used = types().map(function (t) { return t.slot; });
-    var chosen = { slot: 0 };
+    var chosen = { slot: 0, icon: "none" };
     for (var i = 1; i <= 8; i++) {
       if (used.indexOf(i) !== -1) continue;
       if (!chosen.slot) chosen.slot = i;
@@ -2854,6 +2879,26 @@
         slotSel.appendChild(b);
       })(i);
     }
+    /* Значок нового раздела выбирается прямо здесь, россыпью, а не всплывающим
+       окном: он такая же его часть, как название и цвет, и забыть о нём не
+       должно быть возможности. */
+    var iconSel = el("div", "chips");
+    Icons.keys().forEach(function (k) {
+      var b = el("button", "chip pick icon-chip");
+      b.type = "button";
+      b.title = Icons.name(k);
+      b.setAttribute("aria-label", Icons.name(k));
+      b.setAttribute("aria-pressed", chosen.icon === k ? "true" : "false");
+      b.appendChild(mark(k, 0));
+      b.addEventListener("click", function () {
+        chosen.icon = k;
+        Array.prototype.forEach.call(iconSel.children, function (c) {
+          c.setAttribute("aria-pressed", c === b ? "true" : "false");
+        });
+      });
+      iconSel.appendChild(b);
+    });
+
     row.appendChild(button("+", "icon-btn add", function () {
       var name = String(nameIn.value).trim();
       if (!name || !chosen.slot) return;
@@ -2862,6 +2907,7 @@
         id: uniqueId(translit(name), draft.map(function (t) { return t.id; })),
         name: name,
         slot: chosen.slot,
+        icon: chosen.icon,
         subs: []
       });
       render();
@@ -2872,7 +2918,46 @@
     } else {
       card2.appendChild(el("div", "summary", "Все восемь цветов заняты."));
     }
+    card2.appendChild(field("Значок", iconSel));
     host.appendChild(card2);
+  }
+
+  /* Кнопка со значком темы: нажатие раскрывает россыпь под строкой. Значок
+     хранится в types.json рядом с названием, поэтому новая тема получает свой
+     знак без правки кода — в этом весь смысл выбора здесь. */
+  function iconPick(key, icon, slot, apply) {
+    var open = state.pickIcon === key;
+    var b = el("button", "icon-pick" + (open ? " open" : ""));
+    b.type = "button";
+    b.setAttribute("aria-label", "значок: " + Icons.name(icon));
+    b.appendChild(mark(icon, slot));
+    b.addEventListener("click", function () {
+      state.pickIcon = open ? null : key;
+      state.iconApply = apply;
+      render();
+    });
+    return b;
+  }
+
+  function iconChooser(slot) {
+    var box = el("div", "chooser");
+    var chips = el("div", "chips");
+    Icons.keys().forEach(function (k) {
+      var b = el("button", "chip pick icon-chip");
+      b.type = "button";
+      b.title = Icons.name(k);
+      b.setAttribute("aria-label", Icons.name(k));
+      b.appendChild(mark(k, slot));
+      b.addEventListener("click", function () {
+        if (state.iconApply) state.iconApply(k);
+        state.pickIcon = null;
+        state.iconApply = null;
+        render();
+      });
+      chips.appendChild(b);
+    });
+    box.appendChild(chips);
+    return box;
   }
 
   // ── вид: ученики ────────────────────────────────────────

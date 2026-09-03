@@ -3,30 +3,37 @@
     "id": "algebra",
     "name": "Алгебра",
     "slot": 1,
+    "icon": "x",
     "subs": [
       {
         "id": "inequalities",
-        "name": "Неравенства"
+        "name": "Неравенства",
+        "icon": "le"
       },
       {
         "id": "mnogochleny",
-        "name": "Многочлены"
+        "name": "Многочлены",
+        "icon": "poly"
       },
       {
         "id": "posledovatelnosti",
-        "name": "Последовательности"
+        "name": "Последовательности",
+        "icon": "seq"
       },
       {
         "id": "funkcionalnye-uravneniya",
-        "name": "Функциональные уравнения"
+        "name": "Функциональные уравнения",
+        "icon": "func"
       },
       {
         "id": "lineynaya-algebra",
-        "name": "Линейная алгебра"
+        "name": "Линейная алгебра",
+        "icon": "matrix"
       },
       {
         "id": "matematicheskiy-analiz",
-        "name": "Математический анализ"
+        "name": "Математический анализ",
+        "icon": "integral"
       }
     ]
   },
@@ -34,18 +41,22 @@
     "id": "geometry",
     "name": "Геометрия",
     "slot": 2,
+    "icon": "triangle",
     "subs": [
       {
         "id": "planimetry",
-        "name": "Планиметрия"
+        "name": "Планиметрия",
+        "icon": "incircle"
       },
       {
         "id": "stereometry",
-        "name": "Стереометрия"
+        "name": "Стереометрия",
+        "icon": "cube"
       },
       {
         "id": "geometricheskie-neravenstva",
-        "name": "Геометрические неравенства"
+        "name": "Геометрические неравенства",
+        "icon": "triless"
       }
     ]
   },
@@ -53,30 +64,37 @@
     "id": "comb",
     "name": "Комбинаторика",
     "slot": 3,
+    "icon": "branch",
     "subs": [
       {
         "id": "games",
-        "name": "Игры"
+        "name": "Игры",
+        "icon": "turns"
       },
       {
         "id": "graphs",
-        "name": "Графы"
+        "name": "Графы",
+        "icon": "graph"
       },
       {
         "id": "cells",
-        "name": "Клетчатые задачи"
+        "name": "Клетчатые задачи",
+        "icon": "grid"
       },
       {
         "id": "podschet",
-        "name": "Подсчёт"
+        "name": "Подсчёт",
+        "icon": "tally"
       },
       {
         "id": "veroyatnosti",
-        "name": "Вероятности"
+        "name": "Вероятности",
+        "icon": "die"
       },
       {
         "id": "kombinatornaya-geometriya",
-        "name": "Комбинаторная геометрия"
+        "name": "Комбинаторная геометрия",
+        "icon": "hull"
       }
     ]
   },
@@ -84,10 +102,12 @@
     "id": "numbers",
     "name": "Теория чисел",
     "slot": 7,
+    "icon": "congr",
     "subs": [
       {
         "id": "klassika-2",
-        "name": "Классика"
+        "name": "Классика",
+        "icon": "column"
       }
     ]
   }

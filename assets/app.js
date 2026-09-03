@@ -299,13 +299,14 @@
     DATA.types.forEach(function (t) {
       var subs = t.subs || [];
       subs.forEach(function (sub) {
-        add(t, sub.id, sub.name, t.name + " · " + sub.name);
+        add(t, sub.id, sub.name, t.name + " · " + sub.name, sub.icon);
       });
-      // раздел без подразбиения — один лист на весь раздел
-      if (!subs.length) add(t, null, null, t.name);
+      /* Раздел без подразбиения — один лист на весь раздел, и значок у него
+         тоже свой, разделa. */
+      if (!subs.length) add(t, null, null, t.name, t.icon);
     });
 
-    function add(t, subId, subName, label) {
+    function add(t, subId, subName, label, icon) {
       var leaf = {
         key: leafKey(t.id, subId),
         catId: t.id,
@@ -313,6 +314,7 @@
         subId: subId,
         subName: subName,
         slot: t.slot,
+        icon: icon,
         label: label
       };
       LEAVES.push(leaf);
@@ -452,14 +454,21 @@
 
   // ── общие детали ────────────────────────────────────────
 
-  /* Заливка задаётся обычным цветом. Приём с картинкой-градиентом вместо цвета
-     здесь вреден: в Samsung Internet затемняются как раз градиенты, а плоский
-     цвет остаётся как задан. Проверено на самом кондуите — полоска темы там
-     единственная осталась на чистом цвете и единственная рисовалась верно. */
-  function dot(slot) {
-    var d = el("span", "dot");
-    d.style.background = "var(--s" + slot + ")";
-    return d;
+  /* Знак темы. Рисунок лежит в спрайте (assets/icons.js), сюда приходит только
+     ключ; цвет раздела значок получает через color, потому что нарисован
+     currentColor. Раньше на этом месте стоял просто цветной кружок: он говорил
+     раздел, но молчал о подразделе. Значок говорит и то, и другое.
+
+     Темы у задачи может не быть вовсе — тогда серый пустой квадрат: место
+     занято, но ничего не сказано, и в рейтинг такая задача не идёт. */
+  function mark(icon, slot, title) {
+    var g = Icons.make(icon, title);
+    g.style.color = slot ? "var(--s" + slot + ")" : "var(--axis)";
+    return g;
+  }
+
+  function leafMark(leaf, title) {
+    return leaf ? mark(leaf.icon, leaf.slot, title) : mark("none", 0, title);
   }
 
   function mini(text, fn) {
@@ -572,9 +581,9 @@
       var cat = el("button", "chip cat" + (on && on < leaves.length ? " partial" : ""));
       cat.type = "button";
       cat.setAttribute("aria-pressed", on ? "true" : "false");
-      // цвет раздела достаётся всему ярлыку, а не одному кружку в нём
+      // цвет раздела достаётся всему ярлыку, а не одному значку в нём
       cat.style.setProperty("--accent", "var(--s" + t.slot + ")");
-      cat.appendChild(dot(t.slot));
+      cat.appendChild(mark(t.icon, t.slot));
       cat.appendChild(document.createTextNode(t.name));
       cat.addEventListener("click", function () {
         var all = on === leaves.length;
@@ -588,10 +597,12 @@
       if (leaves.length > 1 || leaves[0].subName) {
         var subs = el("div", "subs");
         leaves.forEach(function (l) {
-          var b = el("button", "chip sub", l.subName || t.name);
+          var b = el("button", "chip sub");
           b.type = "button";
           b.setAttribute("aria-pressed", state.leaves.has(l.key) ? "true" : "false");
           b.style.setProperty("--accent", "var(--s" + t.slot + ")");
+          b.appendChild(leafMark(l));
+          b.appendChild(document.createTextNode(l.subName || t.name));
           b.addEventListener("click", function () {
             if (state.leaves.has(l.key)) state.leaves.delete(l.key);
             else state.leaves.add(l.key);
@@ -795,10 +806,9 @@
       cell.dataset.col = i;
       var box = el("div", "phead");
       box.appendChild(el("div", "phead-id" + (leaf ? "" : " untyped"), p.id));
-      var rule = el("div", "phead-rule");
-      // без темы — серая полоска: задача видна, но в рейтинг не идёт
-      rule.style.background = leaf ? "var(--s" + leaf.slot + ")" : "var(--axis)";
-      box.appendChild(rule);
+      /* Подпись значку нужна только здесь: во всех прочих местах рядом стоит
+         название темы, а в шапке столбца его нет. */
+      box.appendChild(leafMark(leaf, leaf ? leaf.label : "без темы"));
       cell.appendChild(box);
       /* Касание номера задачи гасит остальные столбцы: «кто взял эту» — самый
          частый вопрос к кондуиту, а глазами вести по строке неудобно. */
@@ -1033,10 +1043,7 @@
       var head = el("div", "grave-head");
       head.appendChild(el("b", "grave-num", p.id));
       var theme = el("span", "grave-theme");
-      var d = el("span", "dot");
-      // без темы — серый кружок: гроб виден, но в рейтинг не идёт
-      d.style.background = leaf ? "var(--s" + leaf.slot + ")" : "var(--axis)";
-      theme.appendChild(d);
+      theme.appendChild(leafMark(leaf));
       theme.appendChild(document.createTextNode(leaf ? leaf.label : "без темы"));
       head.appendChild(theme);
       block.appendChild(head);
@@ -1157,13 +1164,14 @@
       if (!catStat.total) return;   // тема без задач ничего не говорит
 
       var block = el("div", "tblock");
-      block.appendChild(statLine(t.name, dot(t.slot), catStat, t.slot, false));
+      block.appendChild(statLine(t.name, mark(t.icon, t.slot), catStat, t.slot, false));
 
       if (leaves.length > 1 || leaves[0].subName) {
         leaves.forEach(function (l) {
           var st = statFor([l.key], id);
           if (!st.total) return;
-          block.appendChild(statLine(l.subName || t.name, null, st, t.slot, true));
+          // у подраздела значок свой: раньше здесь не было метки вовсе
+          block.appendChild(statLine(l.subName || t.name, leafMark(l), st, t.slot, true));
         });
       }
 
