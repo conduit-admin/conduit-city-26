@@ -623,10 +623,12 @@
     h3.appendChild(el("span", "filter-title", "Что считаем"));
     r3.appendChild(h3);
 
-    var c3 = el("div", "chips");
+    /* Не россыпь ярлыков, а один переключатель: набор здесь закрыт тремя
+       частями навсегда, и путать их с темами, которых десятки, незачем. */
+    var c3 = el("div", "seg");
     KINDS.forEach(function (pair) {
       var on = state.kinds.has(pair[0]);
-      var b = el("button", "chip", pair[1]);
+      var b = el("button", "seg-btn", pair[1]);
       b.type = "button";
       b.setAttribute("aria-pressed", on ? "true" : "false");
       b.addEventListener("click", function () {

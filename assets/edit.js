@@ -1520,11 +1520,11 @@
     g.problems.forEach(function (p) { card.appendChild(graveRow(p)); });
 
     var actions = el("div", "frow gap");
-    actions.appendChild(button("+ гроб", "ghost-btn", function () {
+    actions.appendChild(button("гроб", "ghost-btn add", function () {
       addGrave();
       render();
     }));
-    var gpart = button("+ пункт", "ghost-btn", function () {
+    var gpart = button("пункт", "ghost-btn add", function () {
       addGravePart();
       render();
     });
@@ -1559,7 +1559,7 @@
     g.solutions.forEach(function (s, i) { scard.appendChild(solutionBlock(s, i)); });
 
     var sact = el("div", "frow gap");
-    sact.appendChild(button("+ гроборешение", "ghost-btn", function () {
+    sact.appendChild(button("гроборешение", "ghost-btn add", function () {
       addSolution();
       render();
     }));
@@ -2131,8 +2131,9 @@
     state.series.problems.forEach(function (p) { pcard.appendChild(problemRow(p)); });
 
     var actions = el("div", "frow gap");
-    actions.appendChild(button("+ задача", "ghost-btn", function () { addProblem(); render(); }));
-    var part = button("+ пункт", "ghost-btn", function () { addPart(); render(); });
+    actions.appendChild(button("задача", "ghost-btn add",
+      function () { addProblem(); render(); }));
+    var part = button("пункт", "ghost-btn add", function () { addPart(); render(); });
     // дошли до «е» — дальше пункт совпал бы с уже существующим
     part.disabled = state.series.problems.length > 0 && !canAddPart();
     actions.appendChild(part);

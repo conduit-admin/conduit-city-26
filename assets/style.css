@@ -18,6 +18,12 @@
   --border: rgba(255, 255, 255, 0.7);
   --border-strong: rgba(11, 11, 11, 0.16);
   --wash: rgba(255, 255, 255, 0.45);
+
+  /* Включённая часть переключателя. Отдельный цвет, а не --surface: на тёмной
+     теме --surface темнее панели, и включённое выглядело бы утопленным, тогда
+     как на светлой — приподнятым. Здесь оно приподнято в обеих. */
+  --seg-on: #ffffff;
+
   --good: #067a3e;
   --bad: #d23b53;
 
@@ -137,6 +143,7 @@
     --border: rgba(255, 255, 255, 0.13);
     --border-strong: rgba(255, 255, 255, 0.26);
     --wash: rgba(255, 255, 255, 0.07);
+    --seg-on: rgba(255, 255, 255, 0.17);
     --good: #34d17f;
     --bad: #ff7a90;
 
@@ -490,31 +497,85 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* Не голубая ссылка, а маленькая кнопка: голубой в этом интерфейсе занят под
    цвет темы «Алгебра», и надпись читалась как ещё один ярлык темы. */
+/* Мелкое действие над отбором: «все», «ни одной», «последние 5». Рамка у него
+   была та же, что у ярлыка отбора, и в шапке раздела они спорили — одинаковый
+   вес у того, что выбирают, и у того, чем выбирают. Рамку сняли: приглушённой
+   подложки хватает, чтобы кнопку было видно, и не хватает, чтобы она тянула
+   внимание на себя. Отступы при этом выросли — площадь под палец от снятия
+   рамки не пострадала. */
 .mini-btn {
   appearance: none;
-  border: 1px solid var(--border-strong);
+  border: 0;
   background: var(--wash);
-  color: var(--ink-2);
+  color: var(--ink-muted);
   border-radius: 999px;
   font: inherit;
   font-size: 12px;
   line-height: 1;
-  padding: 6px 11px;
+  padding: 9px 14px;
   cursor: pointer;
   white-space: nowrap;
 }
 
-.mini-btn:hover {
-  background: var(--wash);
-  border-color: var(--border-strong);
-  color: var(--ink);
-}
+.mini-btn:hover { background: var(--surface); color: var(--ink); }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
+
+/* «Что считаем» — не темы, а три грани одного вопроса, и набор их закрыт
+   навсегда. Поэтому не россыпь ярлыков, а один слитный переключатель: сразу
+   видно, что это одно решение из трёх частей, а не ещё десяток тем, которые
+   легко спутать с темами настоящими.
+
+   Дорожка утоплена, включённая часть приподнята над ней — тем же приёмом, что
+   и везде на странице: --wash тише, --surface плотнее. */
+.seg {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--wash);
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Ширина у каждой части своя, по её слову: равные доли обрезали бы
+   «Упражнения» многоточием, а обрезанное слово в переключателе из трёх частей —
+   это потеря на ровном месте, места хватает и так. */
+.seg-btn {
+  appearance: none;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  padding: 9px 13px;
+  min-height: 34px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Включённая часть залита, выключенная пуста. Зачёркивания здесь нет нарочно:
+   у ярлыка отбора оно значит «исключено», а тут ничего не исключают — тут
+   складывают, и невыбранное просто ещё не добавлено. */
+/* Обводка задана тенью, а не рамкой: рамка сдвинула бы соседние части на
+   пиксель при каждом переключении. Состояние держат сразу четыре вещи —
+   заливка, обводка, цвет текста и его насыщенность: одной заливки на стекле
+   мало, она сама полупрозрачна. */
+.seg-btn[aria-pressed="true"] {
+  background: var(--seg-on);
+  color: var(--ink);
+  font-weight: 560;
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.seg-btn:hover { color: var(--ink); }
 
 .chip {
   appearance: none;
@@ -1141,8 +1202,11 @@ table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
 .subline-name { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .subline-name .ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Кнопка выбора значка: сам значок и есть её содержимое. Размер как у прочих
-   квадратных кнопок редактора — под палец. */
+/* Кнопка выбора значка: сам значок и есть её содержимое. Рамка взята заметная,
+   а не бликовая: бликовая (--border) на светлой теме сливается с карточкой, и
+   двадцать таких кнопок выглядели бы просто рядом значков — нажать их никто бы
+   не догадался. Заливки при этом нет: два десятка залитых квадратов в столбец
+   зарябили бы список. */
 .icon-pick {
   appearance: none;
   display: inline-flex;
@@ -1152,14 +1216,15 @@ table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
   height: 30px;
   flex: none;
   padding: 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 9px;
-  background: var(--wash);
+  background: transparent;
   color: inherit;
   cursor: pointer;
   transition: border-color .14s ease, background-color .14s ease;
 }
 
+.icon-pick:hover { border-color: var(--ink); }
 .icon-pick.open { border-color: var(--ink); background: var(--surface); }
 
 /* Ярлык в россыпи значков — без подписи: значок и выбирают глазами, а два
@@ -1340,7 +1405,7 @@ td .date { margin-left: 8px; font-size: 12px; }
 /* Отклик на касание. На телефоне подсветка касания погашена нарочно, поэтому
    без этого кнопки кажутся мёртвыми: нажал — и ничего. Сжатие берём
    преобразованием, оно не трогает разметку и ничего не сдвигает вокруг. */
-.chip, .ghost-btn, .primary-btn, .icon-btn, .mini-btn,
+.chip, .ghost-btn, .primary-btn, .icon-btn, .mini-btn, .seg-btn,
 .tab, .cal-day, .cal-nav, .banner-close, .picker-btn,
 .step-btn, .step-val, .wchip {
   transition: background-color .14s ease, color .14s ease,
@@ -1447,6 +1512,51 @@ select.input { padding-right: 6px; }
   cursor: pointer;
 }
 
+/* Вторичное действие: «+ задача», «+ пункт», «+ гроб», «Выбрать pdf»,
+   «Запомнить». Своих стилей у этой кнопки не было вовсе — в редакторе она
+   рисовалась системной серой кнопкой браузера, шрифтом Arial и рамкой outset.
+
+   От ярлыка отбора её отличает вес: ярлык — то, что выбирают, кнопка — то, что
+   делают, и делают пальцем. Отсюда 40 в высоту, как у поля ввода и у главной
+   кнопки: в строке редактора они стоят рядом и должны стоять вровень. */
+.ghost-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 560;
+  line-height: 1;
+  padding: 9px 15px;
+  min-height: 40px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ghost-btn:hover { border-color: var(--ink); }
+.ghost-btn:disabled { opacity: .38; cursor: default; }
+.ghost-btn:disabled:hover { border-color: var(--border-strong); }
+
+/* Плюс — отдельный знак, а не первый символ подписи: крупнее текста и тише по
+   цвету, поэтому читается как знак действия, а «задача» остаётся словом. Он же
+   держит все кнопки добавления одним рядом: глаз ловит столбик плюсов. */
+.ghost-btn.add::before {
+  content: "+";
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--ink-muted);
+  margin-top: -2px;
+}
+
+.ghost-btn.add:hover::before { color: var(--ink); }
+
 .primary-btn:disabled { opacity: .45; cursor: default; }
 
 .primary-btn.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
@@ -1487,8 +1597,15 @@ select.input { padding-right: 6px; }
 .icon-btn.back:hover { color: var(--ink); border-color: var(--border-strong); }
 .icon-btn svg { display: block; margin: 0 auto; }
 
-/* кнопка добавления — плюс тем же боксом, что и крестик */
-.icon-btn.add { color: var(--ink-2); font-size: 19px; }
+/* Квадратная кнопка добавления стоит в строке рядом с полем ввода, поэтому и
+   ростом с него: 34 против 40 читались как случайность. Крестик удаления при
+   этом остаётся 34 — он живёт в столбце таблицы, ширина которого задана. */
+.icon-btn.add {
+  color: var(--ink-2);
+  font-size: 19px;
+  width: 40px;
+  min-height: 40px;
+}
 .icon-btn.add:hover { color: var(--ink); border-color: var(--border-strong); }
 
 /* поле ввода занимает строку, кнопка стоит с краю */
@@ -1625,11 +1742,6 @@ body.is-editor .brand::after {
   min-height: 68px;
 }
 
-.savecard.center .ghost-btn {
-  min-height: 40px;
-  padding: 9px 18px;
-  font-size: 14px;
-}
 .savecard-main { flex: 1; min-width: 0; }
 .savecard-title { font-size: 14px; }
 .savecard-note { font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
@@ -1878,11 +1990,7 @@ body.is-editor .brand::after {
 
 .mini-btn:disabled { opacity: .4; cursor: default; }
 
-.mini-btn:disabled:hover {
-  background: var(--surface);
-  border-color: var(--border);
-  color: var(--ink-2);
-}
+.mini-btn:disabled:hover { background: var(--wash); color: var(--ink-muted); }
 
 /* ── гроборешения ──────────────────────────────────────── */
 
