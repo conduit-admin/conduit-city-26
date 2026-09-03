@@ -1322,7 +1322,6 @@
   // ── каркас ──────────────────────────────────────────────
 
   var lastScene = null;
-  var enterTimer = null;
 
   // всё движение выключается системной настройкой — она не про красоту
   function reduced() {
@@ -1405,7 +1404,7 @@
     if (moved) {
       if (reduced()) {
         window.scrollTo(0, 0);
-        paint(false);
+        paint();
       } else fadeSwap(!tabMoved);
       return;
     }
@@ -1419,7 +1418,7 @@
     var before = (!state.openStudent && state.view === "rating")
       ? rowTops() : null;
     main.style.minHeight = main.offsetHeight + "px";
-    paint(false);
+    paint();
     main.style.minHeight = "";
     if (window.scrollY !== keep) window.scrollTo(0, keep);
     if (before) flipRows(before);
@@ -1478,7 +1477,7 @@
         // прыжок к началу делаем на погасшем экране: его не видно
         if (quiet) window.scrollTo(0, 0);
         main.classList.remove("leaving");
-        paint(true);
+        paint();
       }, 80);
     }
 
@@ -1491,16 +1490,14 @@
     });
   }
 
-  function paint(animate) {
+  /* Отрисовка экрана. Появления у неё нет нарочно: новый экран показывается
+     разом и уже собранным. Пока он проявлялся, было видно, как страница
+     складывается — особенно на рейтинге, где строк три десятка. Плавность даёт
+     уход старого экрана, а приход должен быть мгновенным. */
+  function paint() {
     var main = document.getElementById("main");
     clear(main);
     syncTabs();
-
-    if (animate) {
-      main.classList.add("view-enter");
-      clearTimeout(enterTimer);
-      enterTimer = setTimeout(function () { main.classList.remove("view-enter"); }, 450);
-    }
 
     if (state.view === "rating") {
       if (state.openStudent) viewStudentCard(main, state.openStudent);

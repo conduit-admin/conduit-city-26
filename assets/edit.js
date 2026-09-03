@@ -2073,9 +2073,7 @@
 
     if (!state.series) { lastSeriesN = null; return; }
 
-    // оживает только при переходе на другую серию, а не на каждую правку
-    var body = el("div", "series-body" +
-      (state.series.n === lastSeriesN ? "" : " view-enter"));
+    var body = el("div", "series-body");
     lastSeriesN = state.series.n;
     host.appendChild(body);
     host = body;
@@ -3371,7 +3369,6 @@
   // ── каркас ──────────────────────────────────────────────
 
   var lastScene = null;
-  var enterTimer = null;
 
   // всё движение выключается системной настройкой — она не про красоту
   function reduced() {
@@ -3443,7 +3440,7 @@
     var main = document.getElementById("main");
     var keep = window.scrollY;
     main.style.minHeight = main.offsetHeight + "px";
-    paint(false);
+    paint();
     main.style.minHeight = "";
     if (window.scrollY !== keep) window.scrollTo(0, keep);
   }
@@ -3499,23 +3496,21 @@
       setTimeout(function () {
         if (mine !== swapToken) return;
         main.classList.remove("leaving");
-        paint(true);
+        paint();
       }, 80);
     });
   }
 
-  function paint(animate) {
+  /* Отрисовка экрана. Появления у неё нет нарочно: новый экран показывается
+     разом и уже собранным. Пока он проявлялся, было видно, как страница
+     складывается — особенно на рейтинге, где строк три десятка. Плавность даёт
+     уход старого экрана, а приход должен быть мгновенным. */
+  function paint() {
     var main = document.getElementById("main");
     clear(main);
     clearInterval(cdTimer);
     cdTimer = null;
     syncTabs();
-
-    if (animate) {
-      main.classList.add("view-enter");
-      clearTimeout(enterTimer);
-      enterTimer = setTimeout(function () { main.classList.remove("view-enter"); }, 450);
-    }
 
     if (state.note) {
       var banner = el("div", "banner " + (state.noteKind || ""));
