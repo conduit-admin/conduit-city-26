@@ -135,6 +135,10 @@
      выбирать один цвет на две задачи с разными требованиями к контрасту. */
   --danger-bg: rgba(178, 30, 54, 0.94);
   --danger-glow: rgba(255, 170, 130, 0.55);
+  /* Листок и файлы зачёта. Тон уведён в сине-зелёный: из восьми цветов разделов
+     ни один сюда не попадает, а листок разделом и не является. */
+  --sheet-bg: rgba(15, 76, 92, 0.94);
+  --sheet-glow: rgba(120, 220, 235, 0.44);
   /* Чем утемняется цвет раздела, когда становится заливкой плашки. */
   --solid-deep: #12121c;
 
@@ -227,6 +231,8 @@
     --warm-glow: rgba(255, 196, 120, 0.32);
     --danger-bg: rgba(190, 44, 66, 0.94);
     --danger-glow: rgba(255, 190, 150, 0.38);
+    --sheet-bg: rgba(20, 88, 106, 0.90);
+    --sheet-glow: rgba(120, 220, 235, 0.30);
     --solid-deep: #0a0a12;
 
     --mark-red: #ff4f42;
@@ -392,16 +398,17 @@ body {
 .brand-re {
   height: 0.913em;
   width: auto;
-  vertical-align: -0.174em;
+  vertical-align: -0.152em;
 }
 
 /* Тонкая линия одной толщины на всё: так рисуют геометрические гротески, и
    знак собран по тому же правилу. Торцы срезаны прямо — скруглённые сделали бы
    его мягче, чем он есть.
 
-   Пропорции сняты с оригинала и держатся на двух вещах, которые и делают знак
-   собой: «e» в полтора раза выше «r» и выходит за его строку и сверху, и снизу;
-   точки заметно толще линии букв. */
+   Пропорции держатся на двух вещах, которые и делают знак собой: «e» выше «r»
+   и выходит за его строку и сверху, и снизу; точки заметно толще линии букв.
+   Разница в росте при этом небольшая — «r» примерно в шесть седьмых от «e».
+   Сильнее разводить пробовали: «r» превращался в чёрточку при большом круге. */
 .brand-re path {
   fill: none;
   stroke: currentColor;
@@ -569,6 +576,7 @@ input[type="number"]::-webkit-inner-spin-button {
    Цвет приходит двумя переменными, так что плашку можно направить куда угодно,
    не трогая правило. Разрешённые места перечислены в README. */
 .solid,
+.lik-row,
 .chip.cat[aria-pressed="true"],
 .icon-btn.del,
 .icon-btn.danger,
@@ -586,6 +594,7 @@ input[type="number"]::-webkit-inner-spin-button {
 /* Пятно уходит под содержимое отрицательным слоем: у кнопки удаления внутри
    голый крестик, и поднимать его нечем — а так поднимать и не нужно. */
 .solid::after,
+.lik-row::after,
 .chip.cat[aria-pressed="true"]::after,
 .icon-btn.del::after,
 .icon-btn.danger::after,
@@ -608,7 +617,8 @@ input[type="number"]::-webkit-inner-spin-button {
 /* Подписи на плашке — приглушённый белый, а не серый: серый по цветному
    читается грязью. */
 .solid .tile-label,
-.solid .tile-note { color: var(--solid-dim); }
+.solid .tile-note,
+.lik-row .lik-meta { color: var(--solid-dim); }
 
 .card { padding: 14px 16px; }
 
@@ -654,6 +664,16 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-bottom: 9px;
 }
 
+/* Линейка от названия раздела до его действий. Она и делает шапку строкой, а
+   не двумя предметами, оставленными рядом: правый край перестаёт быть рваным,
+   а взгляд от слова «ТЕМЫ» доводится до «ВСЕ» сам. */
+.filter-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--grid);
+  min-width: 12px;
+}
+
 .filter-title {
   font-size: 11px;
   font-weight: 650;
@@ -691,18 +711,43 @@ input[type="number"]::-webkit-inner-spin-button {
   color: var(--ink);
 }
 
-/* Не голубая ссылка, а маленькая кнопка: голубой в этом интерфейсе занят под
-   цвет темы «Алгебра», и надпись читалась как ещё один ярлык темы. Мельче
-   ярлыка отбора и приглушённее по тексту: в шапке раздела она не должна
-   спорить с тем, что под ней. Материал при этом тот же. */
+/* Мелкое действие набрано тем же капителем вразрядку, что и название раздела
+   слева: шапка от этого читается одной типографской строкой, а не пилюлями,
+   приставленными к заголовку. Стеклянной коробки у него нет вовсе — коробка
+   ставила его в один вес с ярлыками отбора, а он им подчинён.
+
+   Нажимаемость держит подчёркивание: у мелкой надписи это единственный признак,
+   который работает и без наведения. Проведено оно отдельным слоем, а не рамкой,
+   — тогда линия идёт под самым текстом, а поле под палец остаётся во всю
+   высоту. */
 .mini-btn {
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
   color: var(--ink-muted);
-  border-radius: 999px;
-  font-size: 12px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   line-height: 1;
-  padding: 9px 14px;
+  padding: 10px 3px 9px;
   white-space: nowrap;
 }
+
+.mini-btn::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 6px;
+  height: 1px;
+  background: var(--axis);
+}
+
+.mini-btn:hover { background: none; color: var(--ink); }
+.mini-btn:hover::after { background: var(--ink); }
 
 .chips {
   display: flex;
@@ -2126,10 +2171,7 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 
 .mini-btn:disabled { opacity: .4; cursor: default; }
 
-.mini-btn:disabled:hover {
-  border-color: var(--glass-edge);
-  color: var(--ink-muted);
-}
+.mini-btn:disabled:hover { color: var(--ink-muted); }
 
 /* ── гроборешения ──────────────────────────────────────── */
 
@@ -2276,26 +2318,27 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 /* Вся строка — кнопка скачивания: на телефоне целиться в маленькую ссылку
    рядом с названием неудобно, а другого действия у строки и нет. */
 /* Строка с файлом — вся кнопка целиком: сюда заходят с одной целью, забрать
-   листок. Поэтому она и выглядит нажимаемой пилюлей, а не строкой списка. */
+   листок, и другого действия у строки нет. Поэтому она и плашка, а не строка
+   списка: на экране это единственное, за чем сюда пришли, и выглядеть оно
+   должно как предмет, который берут. */
 .lik-row {
+  --solid-bg: var(--sheet-bg);
+  --solid-glow: var(--sheet-glow);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   min-height: var(--tap);
-  padding: 10px 14px;
+  padding: 12px 14px;
   margin-bottom: 8px;
-  border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  background: var(--wash);
-  color: inherit;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color .14s ease, border-color .14s ease;
 }
 
+.lik-row > * { position: relative; }
 .lik-row:last-child { margin-bottom: 0; }
-.lik-row:hover { background: var(--pane-2); border-color: var(--ink-muted); }
+.lik-row:hover { filter: brightness(1.08); }
 
 .lik-main {
   display: flex;
@@ -2314,18 +2357,23 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 
 .lik-meta { font-size: 12px; color: var(--ink-muted); }
 
-/* Слово, а не значок: значок пришлось бы рисовать, а места хватает. */
+/* Стрелка вместо слова «скачать». Слово объясняло то, что и так очевидно:
+   строка одна, действие у неё одно, и заходят сюда ровно за ним. Стрелка на
+   плашке занимает угол и не спорит с названием файла. */
 .lik-get {
   flex: none;
-  font-size: 12.5px;
-  font-weight: 560;
-  color: var(--ink-2);
-  border: 1px solid var(--border-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  font-size: 17px;
+  line-height: 1;
+  color: #fff;
+  border: 1px solid var(--solid-edge);
   border-radius: 999px;
-  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.12);
 }
-
-.lik-row:hover .lik-get { color: var(--ink); border-color: var(--ink); }
 
 /* ── плюсы по сериям ───────────────────────────────────── */
 
