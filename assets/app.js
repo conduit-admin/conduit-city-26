@@ -565,7 +565,6 @@
     var r1 = el("div", "filter-row");
     var h1 = el("div", "filter-head");
     h1.appendChild(el("span", "filter-title", "Темы"));
-    h1.appendChild(el("span", "filter-rule"));
     h1.appendChild(mini("все", function () {
       state.leaves = new Set(LEAVES.map(function (l) { return l.key; }));
       render();
@@ -657,7 +656,6 @@
     var r2 = el("div", "filter-row");
     var h2 = el("div", "filter-head");
     h2.appendChild(el("span", "filter-title", "Серии"));
-    h2.appendChild(el("span", "filter-rule"));
     h2.appendChild(mini("все", function () {
       state.series = new Set(days.map(function (s) { return s.n; }));
       render();
