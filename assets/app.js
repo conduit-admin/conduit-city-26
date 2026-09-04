@@ -575,6 +575,8 @@
       var cat = el("button", "chip cat" + (on && on < leaves.length ? " partial" : ""));
       cat.type = "button";
       cat.setAttribute("aria-pressed", on ? "true" : "false");
+      // цвет раздела нужен ярлыку для слабой заливки — правила в стилях
+      cat.style.setProperty("--accent", "var(--s" + t.slot + ")");
       cat.appendChild(mark(t.icon, t.slot));
       cat.appendChild(document.createTextNode(t.name));
       cat.addEventListener("click", function () {

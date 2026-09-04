@@ -138,10 +138,10 @@
 
   /* Красный в знаке — единственный, который не значит ничего, кроме самого
      знака: он часть логотипа и потому живёт отдельно от палитры разделов. */
-  --font-ui: "Segoe UI Variable Text", system-ui, -apple-system, "Segoe UI",
-             Roboto, sans-serif;
-  --font-display: "Segoe UI Variable Display", system-ui, -apple-system,
-                  "Segoe UI", Roboto, sans-serif;
+  --font-ui: "Golos Text", "Segoe UI Variable Text", system-ui, -apple-system,
+             "Segoe UI", Roboto, sans-serif;
+  --font-display: "Golos Text", "Segoe UI Variable Display", system-ui,
+                  -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --mark-red: #e0241f;
 
@@ -150,6 +150,12 @@
   --glass-edge: rgba(11, 11, 11, 0.13);
   --glass-top: rgba(255, 255, 255, 0.95);
   --glass-sheen: rgba(255, 255, 255, 0.55);
+  /* Тень под кнопкой. Прежде у неё была только внутренняя грань поверху, и на
+     стеклянной панели кнопка лежала в одной плоскости с ней — отсюда и
+     ощущение плоского и дешёвого. Две тени: близкая держит край, дальняя
+     отрывает от панели. */
+  --btn-near: rgba(16, 16, 44, 0.10);
+  --btn-far: rgba(16, 16, 44, 0.30);
 }
 
 /* Тёмная тема — свой набор шагов под тёмную подложку, а не инверсия светлой.
@@ -227,6 +233,8 @@
     --glass-edge: rgba(255, 255, 255, 0.17);
     --glass-top: rgba(255, 255, 255, 0.10);
     --glass-sheen: rgba(255, 255, 255, 0.06);
+    --btn-near: rgba(0, 0, 0, 0.40);
+    --btn-far: rgba(0, 0, 0, 0.70);
     --bar: rgba(255, 255, 255, .11);
   }
 }
@@ -284,12 +292,37 @@ html {
   background-position: -1px -1px, -1px -1px, 0 0, 0 0, 0 0;
 }
 
-/* Две стопки вместо одной. Крупное и мелкое в интерфейсных гарнитурах рисуются
-   по-разному — узкое и плотное для текста, открытое и просторное для крупного,
-   — и там, где система даёт обе, глупо брать одну. Windows 11 даёт (Segoe UI
-   Variable), macOS и iOS переключают начертание сами внутри -apple-system,
-   Android отдаёт Roboto и там, и там. Ничего не скачивается: обе стопки
-   собраны из того, что на устройстве уже есть. */
+/* Гарнитура своя и лежит рядом, в assets/fonts. Не по прихоти: сайт целиком
+   русский, а системные интерфейсные шрифты рисуют кириллицу как приложение к
+   латинице. Golos Text рисовалась от кириллицы, и на здешних словах — вроде
+   «Комбинаторная геометрия» — это видно сразу.
+
+   Файлов два, по диапазонам: кириллический берётся всегда, латинский только
+   когда на странице попадётся латиница. Оба переменные, 400–700 в одном файле,
+   поэтому насыщенность ничего не стоит. Стороннего запроса нет — файлы свои.
+
+   Стопки всё равно две: пока шрифт летит (или не долетел вовсе), крупное и
+   мелкое подхватывают разные системные начертания, а не одно на всё. */
+@font-face {
+  font-family: "Golos Text";
+  src: url("fonts/golos-cyrillic.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: "Golos Text";
+  src: url("fonts/golos-latin.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+                 U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+                 U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 body {
   color: var(--ink);
   font-family: var(--font-ui);
@@ -334,14 +367,17 @@ body {
   white-space: nowrap;
 }
 
+/* Насыщенность обычная, не жирная: знак рядом тонкий, и «МЦ» в полужирном
+   спорило бы с ним по цвету линии. Крупный кегль делает его главным и без
+   утолщения. */
 .brand-mc {
-  font-size: 34px;
+  font-size: 46px;
   font-weight: 400;
-  letter-spacing: 0.005em;
-  margin-right: 12px;
+  letter-spacing: -0.005em;
+  margin-right: 14px;
 }
 
-.brand-re { height: 39px; width: auto; }
+.brand-re { height: 42px; width: auto; }
 
 /* Тонкая линия одной толщины на всё: так рисуют геометрические гротески, и
    знак собран по тому же правилу. Торцы срезаны прямо — скруглённые сделали бы
@@ -616,7 +652,10 @@ input[type="number"]::-webkit-inner-spin-button {
   background-color: var(--glass);
   background-image: linear-gradient(158deg, var(--glass-sheen), transparent 62%);
   border: 1px solid var(--glass-edge);
-  box-shadow: inset 0 1px 0 var(--glass-top);
+  box-shadow:
+    inset 0 1px 0 var(--glass-top),
+    0 1px 2px var(--btn-near),
+    0 5px 12px -7px var(--btn-far);
   cursor: pointer;
 }
 
@@ -675,6 +714,7 @@ input[type="number"]::-webkit-inner-spin-button {
   background-color: transparent;
   background-image: none;
   box-shadow: none;
+  border-color: var(--glass-edge);
   color: var(--ink-muted);
   text-decoration: line-through;
   text-decoration-thickness: 1px;
@@ -739,9 +779,18 @@ input[type="number"]::-webkit-inner-spin-button {
    пропадает: буква и есть пометка, цвет к ней только добавка. */
 .chip[aria-pressed="true"].day b { color: inherit; }
 
-/* Цвет раздела в ярлыке — только значок. Ни заливки, ни подкрашенной рамки:
-   и то и другое пробовали, десяток подкрашенных плашек в ряд рябит и спорит с
-   самим кондуитом, где цвет что-то значит. Рамка у всех кнопок одна. */
+/* Цвет раздела берут только четыре ярлыка из двадцати — сами разделы. Заливка
+   слабая, в седьмую часть: ярлык подкрашивается, а не красится, и ряд из
+   четырёх подкрашенных не рябит, потому что между ними стоят неподкрашенные
+   подразделы. Пробовать заливать цветом всё подряд уже случалось — рябило и
+   спорило с кондуитом, где цвет что-то значит.
+
+   Текст остаётся чернильным: подкрашенный по подкрашенному теряет контраст, а
+   ярлык прежде всего читают. */
+.chip.cat[aria-pressed="true"] {
+  background-color: color-mix(in srgb, var(--accent) 14%, var(--glass));
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--glass-edge));
+}
 
 /* темы: раздел и его подразделы */
 .tgroup {
@@ -754,11 +803,11 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .chip.cat {
   font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 650;
-  letter-spacing: -0.022em;
-  padding: 9px 15px;
-  border-radius: 14px;
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  padding: 10px 16px;
+  border-radius: 15px;
 }
 .chip.cat.partial { border-style: dashed; }
 
@@ -2290,8 +2339,8 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 
 @media (max-width: 560px) {
   .wrap { padding: 0 12px 48px; }
-  .brand-mc { font-size: 28px; margin-right: 10px; }
-  .brand-re { height: 32px; }
+  .brand-mc { font-size: 38px; margin-right: 11px; }
+  .brand-re { height: 35px; }
   body.is-editor .brand-box::after { font-size: 14px; vertical-align: 10px; }
   .section-title { font-size: 19px; }
   .section-head.big .section-title { font-size: 27px; }
