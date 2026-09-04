@@ -135,6 +135,8 @@
      выбирать один цвет на две задачи с разными требованиями к контрасту. */
   --danger-bg: rgba(178, 30, 54, 0.94);
   --danger-glow: rgba(255, 170, 130, 0.55);
+  /* Чем утемняется цвет раздела, когда становится заливкой плашки. */
+  --solid-deep: #12121c;
 
   /* Красный в знаке — единственный, который не значит ничего, кроме самого
      знака: он часть логотипа и потому живёт отдельно от палитры разделов. */
@@ -145,9 +147,9 @@
 
   --mark-red: #e0241f;
 
-  --glass: rgba(255, 255, 255, 0.66);
-  --glass-on: rgba(255, 255, 255, 0.92);
-  --glass-edge: rgba(11, 11, 11, 0.13);
+  --glass: rgba(255, 255, 255, 0.92);
+  --glass-on: rgba(255, 255, 255, 1);
+  --glass-edge: rgba(11, 11, 11, 0.22);
   --glass-top: rgba(255, 255, 255, 0.95);
   --glass-sheen: rgba(255, 255, 255, 0.55);
   /* Тень под кнопкой. Прежде у неё была только внутренняя грань поверху, и на
@@ -225,12 +227,17 @@
     --warm-glow: rgba(255, 196, 120, 0.32);
     --danger-bg: rgba(190, 44, 66, 0.94);
     --danger-glow: rgba(255, 190, 150, 0.38);
+    --solid-deep: #0a0a12;
 
     --mark-red: #ff4f42;
 
-    --glass: rgba(255, 255, 255, 0.085);
-    --glass-on: rgba(255, 255, 255, 0.155);
-    --glass-edge: rgba(255, 255, 255, 0.17);
+    /* На тёмной теме кнопка темнее панели, а не светлее: светлая вуаль поверх
+       и без того светлого стекла давала мутное пятно без краёв. Тёмная лунка со
+       светлым ободом читается вчетверо резче — и это ровно то, чего от кнопки и
+       ждёшь: её видно. */
+    --glass: rgba(6, 6, 12, 0.55);
+    --glass-on: rgba(6, 6, 12, 0.78);
+    --glass-edge: rgba(255, 255, 255, 0.24);
     --glass-top: rgba(255, 255, 255, 0.10);
     --glass-sheen: rgba(255, 255, 255, 0.06);
     --btn-near: rgba(0, 0, 0, 0.40);
@@ -363,6 +370,7 @@ body {
 .brand-box {
   display: block;
   font-family: var(--font-display);
+  font-size: 46px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -371,21 +379,37 @@ body {
    спорило бы с ним по цвету линии. Крупный кегль делает его главным и без
    утолщения. */
 .brand-mc {
-  font-size: 46px;
+  font-size: 1em;
   font-weight: 400;
   letter-spacing: -0.005em;
-  margin-right: 14px;
+  margin-right: 0.28em;
 }
 
-.brand-re { height: 42px; width: auto; }
+/* Размер и сдвиг заданы в em от кегля шапки: «e» в знаке выходит ниже строки,
+   и низ рисунка базовой линии не равен. Сдвигаем рисунок вниз ровно на этот
+   свес — тогда на базовую линию «МЦ» встаёт строка «r», как и должно. В em,
+   чтобы на узком экране всё уехало вместе, одним изменением кегля. */
+.brand-re {
+  height: 0.913em;
+  width: auto;
+  vertical-align: -0.174em;
+}
 
 /* Тонкая линия одной толщины на всё: так рисуют геометрические гротески, и
    знак собран по тому же правилу. Торцы срезаны прямо — скруглённые сделали бы
-   его мягче, чем он есть. */
+   его мягче, чем он есть.
+
+   Пропорции сняты с оригинала и держатся на двух вещах, которые и делают знак
+   собой: «e» в полтора раза выше «r» и выходит за его строку и сверху, и снизу;
+   точки заметно толще линии букв. */
 .brand-re path {
   fill: none;
   stroke: currentColor;
-  stroke-width: 3.6;
+  stroke-width: 2.5;
+  /* Перекладина «e» и его дуга — один контур: раздельными они давали на стыке
+     торчащий уголок, потому что плоский торец перекладины приходился на место,
+     где дуга уже уходит вертикально. */
+  stroke-linejoin: round;
 }
 
 .re-ink { fill: currentColor; }
@@ -396,10 +420,10 @@ body {
    взгляда, а перепутать их дорого. */
 body.is-editor .brand-box::after {
   content: "◆";
-  margin-left: 10px;
-  font-size: 17px;
+  margin-left: 0.22em;
+  font-size: 0.37em;
   color: var(--admin);
-  vertical-align: 12px;
+  vertical-align: 0.72em;
 }
 
 .spacer { flex: 1; }
@@ -545,6 +569,7 @@ input[type="number"]::-webkit-inner-spin-button {
    Цвет приходит двумя переменными, так что плашку можно направить куда угодно,
    не трогая правило. Разрешённые места перечислены в README. */
 .solid,
+.chip.cat[aria-pressed="true"],
 .icon-btn.del,
 .icon-btn.danger,
 .primary-btn.danger {
@@ -561,6 +586,7 @@ input[type="number"]::-webkit-inner-spin-button {
 /* Пятно уходит под содержимое отрицательным слоем: у кнопки удаления внутри
    голый крестик, и поднимать его нечем — а так поднимать и не нужно. */
 .solid::after,
+.chip.cat[aria-pressed="true"]::after,
 .icon-btn.del::after,
 .icon-btn.danger::after,
 .primary-btn.danger::after {
@@ -736,7 +762,10 @@ input[type="number"]::-webkit-inner-spin-button {
 .chip.pick[aria-pressed="false"] .dot,
 .chip.pick[aria-pressed="false"] .ic { opacity: 1; }
 
-.chip.pick[aria-pressed="true"] {
+/* Раздел исключён нарочно: выбранный раздел и в выборе темы задачи остаётся
+   цветной плашкой — тот же предмет, что и в отборе на сайте, незачем ему тут
+   выглядеть иначе. */
+.chip.pick[aria-pressed="true"]:not(.cat) {
   border-color: var(--ink);
   background-color: var(--glass-on);
   color: var(--ink);
@@ -779,18 +808,23 @@ input[type="number"]::-webkit-inner-spin-button {
    пропадает: буква и есть пометка, цвет к ней только добавка. */
 .chip[aria-pressed="true"].day b { color: inherit; }
 
-/* Цвет раздела берут только четыре ярлыка из двадцати — сами разделы. Заливка
-   слабая, в седьмую часть: ярлык подкрашивается, а не красится, и ряд из
-   четырёх подкрашенных не рябит, потому что между ними стоят неподкрашенные
-   подразделы. Пробовать заливать цветом всё подряд уже случалось — рябило и
-   спорило с кондуитом, где цвет что-то значит.
+/* Ярлык раздела — такая же плотная плашка, как «Место» в карточке ученика: тот
+   же плотный цвет, тот же косой блик, то же пятно в углу, тот же белый текст.
+   Цвет раздела при этом свой у каждого, поэтому заливка собирается из него же —
+   утемнённого до плотности, при которой белые буквы читаются. Сам --s-цвет для
+   этого не годится: он средний по тону, подобран под тонкие значки и полоски, и
+   белое на нём висит на грани.
 
-   Текст остаётся чернильным: подкрашенный по подкрашенному теряет контраст, а
-   ярлык прежде всего читают. */
+   Плашек таких четыре из двадцати, между ними стоят неподкрашенные подразделы —
+   поэтому ряд не рябит. */
 .chip.cat[aria-pressed="true"] {
-  background-color: color-mix(in srgb, var(--accent) 14%, var(--glass));
-  border-color: color-mix(in srgb, var(--accent) 32%, var(--glass-edge));
+  --solid-bg: color-mix(in srgb, var(--accent) 72%, var(--solid-deep));
+  --solid-glow: color-mix(in srgb, var(--accent) 55%, transparent);
 }
+
+/* Значок на плашке белеет вместе с текстом: цветной по цветному пропадает. */
+.chip.cat .ic { color: var(--accent); }
+.chip.cat[aria-pressed="true"] .ic { color: #fff; }
 
 /* темы: раздел и его подразделы */
 .tgroup {
@@ -2339,9 +2373,7 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 
 @media (max-width: 560px) {
   .wrap { padding: 0 12px 48px; }
-  .brand-mc { font-size: 38px; margin-right: 11px; }
-  .brand-re { height: 35px; }
-  body.is-editor .brand-box::after { font-size: 14px; vertical-align: 10px; }
+  .brand-box { font-size: 38px; }
   .section-title { font-size: 19px; }
   .section-head.big .section-title { font-size: 27px; }
   .tile-value { font-size: 27px; }
