@@ -2461,6 +2461,8 @@
       b.type = "button";
       b.setAttribute("aria-pressed", t.id === p.type ? "true" : "false");
       b.style.setProperty("--accent", "var(--s" + t.slot + ")");
+      b.style.setProperty("--fill", "var(--f" + t.slot + ")");
+      b.style.setProperty("--lift", "var(--g" + t.slot + ")");
       b.appendChild(Icons.make(t.icon));
       b.appendChild(document.createTextNode(t.name));
       b.addEventListener("click", function () {

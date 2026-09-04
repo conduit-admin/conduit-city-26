@@ -589,6 +589,8 @@
          плашки, и цвет значка — а на включённой плашке значок белеет. Красить
          его здесь нельзя, иначе он останется цветным на цветном. */
       cat.style.setProperty("--accent", "var(--s" + t.slot + ")");
+      cat.style.setProperty("--fill", "var(--f" + t.slot + ")");
+      cat.style.setProperty("--lift", "var(--g" + t.slot + ")");
       cat.appendChild(Icons.make(t.icon));
       cat.appendChild(document.createTextNode(t.name));
       cat.addEventListener("click", function () {
