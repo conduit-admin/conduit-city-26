@@ -519,12 +519,12 @@
     host.appendChild(wrap);
   }
 
-  /* Плитки и панели одинаковы все до одной. Подкраска у них была — своя у
-     каждой, — и именно из-за неё страница выглядела пёстрой рядом с редактором,
-     где панель одна на всех. Панель держится формой и содержимым; когда цвет
-     понадобится, его добавят точечно и осознанно, а не всем подряд. */
-  function tile(label, value, note) {
-    var t = el("div", "tile");
+  /* Плитки одинаковы все, кроме двух. Подкраска когда-то была у каждой своя —
+     из-за неё страница и выглядела пёстрой рядом с редактором, где панель одна
+     на всех; её убрали совсем. Цвет вернулся точечно: две плашки по краям ряда,
+     и обе перечислены в README поимённо. */
+  function tile(label, value, note, cls) {
+    var t = el("div", "tile" + (cls ? " " + cls : ""));
     t.appendChild(el("div", "tile-label", label));
     t.appendChild(el("div", "tile-value", value));
     if (note) t.appendChild(el("div", "tile-note", note));
@@ -1118,8 +1118,14 @@
     sh.appendChild(nameCell("span", "section-title", student));
     host.appendChild(sh);
 
+    /* Плотные плашки стоят по краям ряда: «Место» — то, ради чего карточку
+       открывают, «Самый ценный плюс» — то, ради чего её дочитывают. Четыре
+       подробности между ними остаются стеклянными. Температуры разные и не
+       случайно: место — холодное, итоговое, про сравнение с другими; лучший
+       плюс — тёплый, про один свой вечер. */
     var tiles = el("div", "tiles");
-    tiles.appendChild(tile("Место", row.rank + " / " + DATA.students.length));
+    tiles.appendChild(tile("Место", row.rank + " / " + DATA.students.length,
+      null, "solid cold"));
     /* Потолок у каждого свой: серии, в списках которых его не было, в него не
        входят. С надбавками этого ученика — они начислены за его решения, и без
        них «11 из 6» выглядело бы ошибкой счёта. */
@@ -1142,7 +1148,8 @@
     var best = bestProblem(id);
     tiles.appendChild(tile("Самый ценный плюс", best ? "+" + best.value : "—",
       best ? (best.u.sn === null ? "гроб " + best.u.id
-        : "серия " + seriesNoBySlot(best.u.sn) + ", задача " + best.u.id) : null));
+        : "серия " + seriesNoBySlot(best.u.sn) + ", задача " + best.u.id) : null,
+      "solid warm"));
     host.appendChild(tiles);
 
     var sh2 = el("div", "section-head");

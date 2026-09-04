@@ -114,6 +114,28 @@
      одного шага плотности — плюс светлая грань поверху и косой блик, те же три
      вещи, из которых собрана сама панель. Дальше всё различие между кнопками
      только в размере и в том, чем они показывают состояние. */
+  /* Плотные плашки. Единственные вывернутые блоки на странице: белый текст на
+     цвете там, где всё остальное — чернила по светлому. Заливка плотная
+     нарочно, 0.82 против 0.6 у панели: сквозь неё клетка почти не видна, и
+     плашка читается как предмет, а не как окно. Стеклом её оставляют косой
+     блик и светлая грань — те же, что у панели; пятно второго цвета из угла и
+     есть то, что отличает её от простой краски.
+
+     Приём работает, только пока таких блоков мало. Список мест, где он
+     разрешён, ведётся в README, и новое появляется вместо старого. */
+  --solid-edge: rgba(255, 255, 255, 0.26);
+  --solid-dim: rgba(255, 255, 255, 0.70);
+  --cold-bg: rgba(38, 30, 110, 0.82);
+  --cold-glow: rgba(120, 200, 255, 0.50);
+  --warm-bg: rgba(122, 38, 26, 0.82);
+  --warm-glow: rgba(255, 196, 120, 0.48);
+
+  /* Красная — удаление. Своя, а не --bad: у --bad есть вторая работа, он красит
+     текст и рамки, и делать его вдобавок заливкой под белыми буквами значит
+     выбирать один цвет на две задачи с разными требованиями к контрасту. */
+  --danger-bg: rgba(178, 30, 54, 0.94);
+  --danger-glow: rgba(255, 170, 130, 0.55);
+
   --glass: rgba(255, 255, 255, 0.52);
   --glass-on: rgba(255, 255, 255, 0.92);
   --glass-edge: rgba(11, 11, 11, 0.10);
@@ -177,6 +199,18 @@
     --shadow-1: 0 1px 2px rgba(0, 0, 0, .5), 0 10px 28px -14px rgba(0, 0, 0, .75);
     --shadow-2: 0 2px 8px rgba(0, 0, 0, .55), 0 28px 64px -28px rgba(0, 0, 0, .9);
     --paper: rgba(255, 255, 255, .055);
+    /* На тёмной подложке плашка светлее, а не темнее: тёмное на тёмном
+       пропадает. Прозрачность выше — под ней есть что показать. Красная тоже
+       темнее светлой темы: на --bad (он тут розовый) белые буквы не читаются. */
+    --solid-edge: rgba(255, 255, 255, 0.20);
+    --solid-dim: rgba(255, 255, 255, 0.66);
+    --cold-bg: rgba(58, 48, 142, 0.74);
+    --cold-glow: rgba(120, 200, 255, 0.34);
+    --warm-bg: rgba(140, 54, 38, 0.74);
+    --warm-glow: rgba(255, 196, 120, 0.32);
+    --danger-bg: rgba(190, 44, 66, 0.94);
+    --danger-glow: rgba(255, 190, 150, 0.38);
+
     --glass: rgba(255, 255, 255, 0.055);
     --glass-on: rgba(255, 255, 255, 0.155);
     --glass-edge: rgba(255, 255, 255, 0.14);
@@ -425,6 +459,53 @@ input[type="number"]::-webkit-inner-spin-button {
 .tile,
 .table-wrap,
 .conduit-split { background-color: var(--pane); }
+
+/* Плотная плашка. Собрана из того же, что и панель, — заливка, косой блик,
+   светлая грань поверху, — но заливка плотная и цветная, а текст вывернут в
+   белый. Пятно второго цвета лежит в углу под содержимым: резких краёв у него
+   нет, поэтому оно читается как свет, а не как фигура.
+
+   Цвет приходит двумя переменными, так что плашку можно направить куда угодно,
+   не трогая правило. Разрешённые места перечислены в README. */
+.solid,
+.icon-btn.del,
+.icon-btn.danger,
+.primary-btn.danger {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--solid-edge);
+  background-color: var(--solid-bg);
+  background-image:
+    linear-gradient(142deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 46%);
+  box-shadow: var(--shadow-2), inset 0 1px 0 var(--solid-edge);
+  color: #fff;
+}
+
+/* Пятно уходит под содержимое отрицательным слоем: у кнопки удаления внутри
+   голый крестик, и поднимать его нечем — а так поднимать и не нужно. */
+.solid::after,
+.icon-btn.del::after,
+.icon-btn.danger::after,
+.primary-btn.danger::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -58%;
+  right: -14%;
+  width: 66%;
+  padding-bottom: 66%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--solid-glow), transparent 68%);
+  pointer-events: none;
+}
+
+.solid.cold { --solid-bg: var(--cold-bg); --solid-glow: var(--cold-glow); }
+.solid.warm { --solid-bg: var(--warm-bg); --solid-glow: var(--warm-glow); }
+
+/* Подписи на плашке — приглушённый белый, а не серый: серый по цветному
+   читается грязью. */
+.solid .tile-label,
+.solid .tile-note { color: var(--solid-dim); }
 
 .card { padding: 14px 16px; }
 
@@ -827,7 +908,9 @@ table.data td.name { position: relative; }
 
 table.data td.name .name-box { position: relative; }
 
-.score { font-weight: 620; font-size: 16px; }
+/* Счёт — то, ради чего таблицу открывают, и между 31 у плитки и 15 у текста
+   не стояло ничего. Теперь стоит он. */
+.score { font-weight: 620; font-size: 19px; letter-spacing: -0.02em; }
 
 .muted { color: var(--ink-muted); }
 
@@ -1482,7 +1565,6 @@ select.input { padding-right: 6px; }
 
 .primary-btn:disabled { opacity: .45; cursor: default; }
 
-.primary-btn.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
 .ghost-btn.danger { color: var(--bad); border-color: var(--bad); }
 
 .icon-btn {
@@ -1495,16 +1577,20 @@ select.input { padding-right: 6px; }
 
 .icon-btn:hover { color: var(--bad); border-color: var(--bad); }
 
-/* Кнопки удаления залиты красным целиком — как «Удалить день». На телефоне
-   наведения нет вовсе, поэтому цвет должен быть виден сразу, до нажатия. */
-.icon-btn.del, .icon-btn.danger {
-  background: var(--bad);
-  border-color: var(--bad);
-  color: #fff;
+/* Кнопки удаления залиты красным целиком — на телефоне наведения нет вовсе, и
+   цвет должен быть виден сразу, до нажатия. Плашка у них та же, что у плиток:
+   плотная заливка, косой блик, тёплое пятно в углу. На кнопке в 34 пикселя
+   пятно занимает верхний угол и читается бликом — красное от этого выглядит
+   раскалённым, а не крашеным, что удалению как раз к лицу. */
+.icon-btn.del, .icon-btn.danger, .primary-btn.danger {
+  --solid-bg: var(--danger-bg);
+  --solid-glow: var(--danger-glow);
 }
 
-.icon-btn.del:hover, .icon-btn.danger:hover {
+.icon-btn.del:hover, .icon-btn.danger:hover,
+.primary-btn.danger:hover {
   color: #fff;
+  border-color: var(--solid-edge);
   filter: brightness(1.08);
 }
 
