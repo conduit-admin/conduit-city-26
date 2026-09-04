@@ -1583,8 +1583,9 @@
 
 
   function setupChrome() {
-    document.getElementById("brand-title").textContent = DATA.config.title;
-    document.getElementById("brand-sub").textContent = DATA.config.subtitle || "";
+    /* В шапке стоит знак, а не название: заполнять её из настроек больше нечем.
+       Название с подзаголовком остались у вкладки браузера — там они и нужны,
+       чтобы отличить страницу среди десятка открытых. */
     document.title = DATA.config.title + " — " + (DATA.config.subtitle || "");
 
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {

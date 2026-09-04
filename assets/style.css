@@ -136,9 +136,18 @@
   --danger-bg: rgba(178, 30, 54, 0.94);
   --danger-glow: rgba(255, 170, 130, 0.55);
 
-  --glass: rgba(255, 255, 255, 0.52);
+  /* Красный в знаке — единственный, который не значит ничего, кроме самого
+     знака: он часть логотипа и потому живёт отдельно от палитры разделов. */
+  --font-ui: "Segoe UI Variable Text", system-ui, -apple-system, "Segoe UI",
+             Roboto, sans-serif;
+  --font-display: "Segoe UI Variable Display", system-ui, -apple-system,
+                  "Segoe UI", Roboto, sans-serif;
+
+  --mark-red: #e0241f;
+
+  --glass: rgba(255, 255, 255, 0.66);
   --glass-on: rgba(255, 255, 255, 0.92);
-  --glass-edge: rgba(11, 11, 11, 0.10);
+  --glass-edge: rgba(11, 11, 11, 0.13);
   --glass-top: rgba(255, 255, 255, 0.95);
   --glass-sheen: rgba(255, 255, 255, 0.55);
 }
@@ -211,9 +220,11 @@
     --danger-bg: rgba(190, 44, 66, 0.94);
     --danger-glow: rgba(255, 190, 150, 0.38);
 
-    --glass: rgba(255, 255, 255, 0.055);
+    --mark-red: #ff4f42;
+
+    --glass: rgba(255, 255, 255, 0.085);
     --glass-on: rgba(255, 255, 255, 0.155);
-    --glass-edge: rgba(255, 255, 255, 0.14);
+    --glass-edge: rgba(255, 255, 255, 0.17);
     --glass-top: rgba(255, 255, 255, 0.10);
     --glass-sheen: rgba(255, 255, 255, 0.06);
     --bar: rgba(255, 255, 255, .11);
@@ -273,9 +284,15 @@ html {
   background-position: -1px -1px, -1px -1px, 0 0, 0 0, 0 0;
 }
 
+/* Две стопки вместо одной. Крупное и мелкое в интерфейсных гарнитурах рисуются
+   по-разному — узкое и плотное для текста, открытое и просторное для крупного,
+   — и там, где система даёт обе, глупо брать одну. Windows 11 даёт (Segoe UI
+   Variable), macOS и iOS переключают начертание сами внутри -apple-system,
+   Android отдаёт Roboto и там, и там. Ничего не скачивается: обе стопки
+   собраны из того, что на устройстве уже есть. */
 body {
   color: var(--ink);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-ui);
   font-size: 15px;
   line-height: 1.45;
   -webkit-text-size-adjust: 100%;
@@ -302,28 +319,52 @@ body {
   padding: 24px 0 16px;
 }
 
-/* Шапка страницы: сначала мелкая надпись вразрядку, под ней крупное название.
-   Порядок обратный привычному нарочно — мелкая строка читается как подзаголовок
-   сверху, и на контрасте двух наборов шапка держится без всяких украшений. */
-.brand-box { display: flex; flex-direction: column; gap: 5px; }
+/* Знак: «МЦ» набором и «:re» рисунком. Рисунком, а не шрифтом, нарочно —
+   начертание в знаке заданное, и подбирать под него гарнитуру, которая на чужом
+   телефоне окажется другой, бессмысленно.
 
-.brand {
-  font-size: 40px;
-  font-weight: 700;
-  letter-spacing: -0.042em;
-  line-height: .96;
+   Обе части стоят на одной строке обычным потоком, а не флексом: у встроенного
+   рисунка нижний край и так ложится на базовую линию строки, и низ виewBox
+   поставлен ровно по базовой линии букв — от этого «МЦ» и «re» стоят на одной
+   линии сами, без подгонки отступами. */
+.brand-box {
+  display: block;
+  font-family: var(--font-display);
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.brand-sub {
-  color: var(--ink-muted);
-  font-size: 10.5px;
-  font-weight: 650;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+.brand-mc {
+  font-size: 34px;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  margin-right: 12px;
 }
 
-/* В редакторе название короткое и служебное — ему столько места не нужно. */
-body.is-editor .brand { font-size: 30px; }
+.brand-re { height: 39px; width: auto; }
+
+/* Тонкая линия одной толщины на всё: так рисуют геометрические гротески, и
+   знак собран по тому же правилу. Торцы срезаны прямо — скруглённые сделали бы
+   его мягче, чем он есть. */
+.brand-re path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.6;
+}
+
+.re-ink { fill: currentColor; }
+.re-red { fill: var(--mark-red); }
+
+/* В редакторе знак тот же, поэтому его страницу помечает ромб — тот же знак и
+   цвет, что у админа в списке. Без него две страницы не различить с одного
+   взгляда, а перепутать их дорого. */
+body.is-editor .brand-box::after {
+  content: "◆";
+  margin-left: 10px;
+  font-size: 17px;
+  color: var(--admin);
+  vertical-align: 12px;
+}
 
 .spacer { flex: 1; }
 
@@ -610,9 +651,17 @@ input[type="number"]::-webkit-inner-spin-button {
   gap: 7px;
   /* Ярлыки отбора — скруглённые прямоугольники, а не пилюли: пилюли остались
      за полосой вкладок и мелкими действиями, и путать их незачем. */
-  border-radius: 11px;
-  font-size: 13px;
-  padding: 7px 12px;
+  border-radius: 12px;
+  /* Кегль и насыщенность подняты нарочно. На 13-м и обычном начертании ярлык
+     читался как системный виджет: набор мелкий, светлый и без характера, а их
+     на экране два десятка — из них и складывалось первое впечатление от
+     страницы. Отрицательный трекинг на этом кегле делает главное: строка
+     собирается в слово, а не рассыпается на буквы. */
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.008em;
+  color: var(--ink);
+  padding: 8px 13px;
 }
 
 /* Включено — стекло, выключено — пустая рамка: ни блика, ни грани, заливки
@@ -704,11 +753,12 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .chip.cat {
-  font-size: 14px;
-  font-weight: 620;
-  letter-spacing: -0.01em;
-  padding: 9px 14px;
-  border-radius: 13px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.022em;
+  padding: 9px 15px;
+  border-radius: 14px;
 }
 .chip.cat.partial { border-style: dashed; }
 
@@ -720,16 +770,17 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .chip[aria-pressed="true"].cat .chip-count { color: var(--ink-muted); }
 
-.subs { display: flex; flex-wrap: wrap; gap: 5px; }
+.subs { display: flex; flex-wrap: wrap; gap: 6px; }
 
+/* Подраздел мельче раздела, но не настолько, чтобы читаться сноской: 12-й был
+   именно сноской. Рамка у него теперь общая, стеклянная, — своя приглушённая
+   делала его блёклым рядом с разделом. */
 .chip.sub {
-  font-size: 12px;
-  padding: 5px 10px 5px 9px;
-  border-radius: 9px;
-  border-color: var(--border);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 11px 6px 10px;
+  border-radius: 10px;
 }
-
-.chip.sub[aria-pressed="true"] { color: var(--ink); }
 
 /* ── значки тем ─────────────────────────────────────────
    Рисунок лежит в спрайте (assets/icons.js), здесь только размер и толщина
@@ -796,6 +847,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .tile-value {
+  font-family: var(--font-display);
   font-size: 31px;
   font-weight: 640;
   letter-spacing: -0.035em;
@@ -910,7 +962,12 @@ table.data td.name .name-box { position: relative; }
 
 /* Счёт — то, ради чего таблицу открывают, и между 31 у плитки и 15 у текста
    не стояло ничего. Теперь стоит он. */
-.score { font-weight: 620; font-size: 19px; letter-spacing: -0.02em; }
+.score {
+  font-family: var(--font-display);
+  font-weight: 620;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
 
 .muted { color: var(--ink-muted); }
 
@@ -1167,6 +1224,7 @@ table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
 /* Заголовок раздела и подпись под ним расходятся по кеглю сильно и нарочно:
    на этом контрасте и держится вся страница, других украшений у неё нет. */
 .section-title {
+  font-family: var(--font-display);
   font-size: 21px;
   font-weight: 650;
   letter-spacing: -0.025em;
@@ -1721,14 +1779,6 @@ table.conduit .pcount {
 table.conduit tbody .pcount { font-size: 12px; }
 table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 
-/* Режим редактора помечен у заголовка тем же знаком и цветом, что и админ. */
-body.is-editor .brand::after {
-  content: "◆";
-  margin-left: 8px;
-  font-size: 0.8em;
-  color: var(--admin);
-}
-
 /* карточка сохранения */
 .savecard {
   display: flex;
@@ -2240,9 +2290,9 @@ body.is-editor .brand::after {
 
 @media (max-width: 560px) {
   .wrap { padding: 0 12px 48px; }
-  .brand { font-size: 32px; }
-  body.is-editor .brand { font-size: 26px; }
-  .brand-sub { letter-spacing: 0.14em; }
+  .brand-mc { font-size: 28px; margin-right: 10px; }
+  .brand-re { height: 32px; }
+  body.is-editor .brand-box::after { font-size: 14px; vertical-align: 10px; }
   .section-title { font-size: 19px; }
   .section-head.big .section-title { font-size: 27px; }
   .tile-value { font-size: 27px; }
