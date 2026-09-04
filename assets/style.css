@@ -19,6 +19,13 @@
   --border-strong: rgba(11, 11, 11, 0.16);
   --wash: rgba(255, 255, 255, 0.45);
 
+  /* Подложка тихих кнопок — пилюль без рамки. На тёмной теме это белая вуаль,
+     на светлой — чернильная: белое по белому не видно вовсе, и пилюля сливалась
+     с панелью. У кнопки без рамки подложка и есть её граница, поэтому она
+     обязана читаться в обеих темах. */
+  --quiet: rgba(11, 11, 11, 0.055);
+  --quiet-on: rgba(11, 11, 11, 0.10);
+
   --good: #067a3e;
   --bad: #d23b53;
 
@@ -218,6 +225,8 @@
     --border: rgba(255, 255, 255, 0.13);
     --border-strong: rgba(255, 255, 255, 0.26);
     --wash: rgba(255, 255, 255, 0.07);
+    --quiet: rgba(255, 255, 255, 0.075);
+    --quiet-on: rgba(255, 255, 255, 0.15);
     --good: #34d17f;
     --bad: #ff7a90;
 
@@ -772,7 +781,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .mini-btn {
   border: 0;
   border-radius: 999px;
-  background: var(--wash);
+  background: var(--quiet);
   box-shadow: none;
   color: var(--ink-2);
   font-size: 12.5px;
@@ -783,7 +792,7 @@ input[type="number"]::-webkit-inner-spin-button {
   white-space: nowrap;
 }
 
-.mini-btn:hover { background: var(--glass); color: var(--ink); }
+.mini-btn:hover { background: var(--quiet-on); color: var(--ink); }
 
 .chips {
   display: flex;
@@ -968,35 +977,44 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .subs { display: flex; flex-wrap: wrap; gap: 6px; }
 
-/* Подраздел собран как «все» и «ни одной»: пилюля без рамки, на приглушённой
-   подложке, строчными. Рамка со стеклом и тенью у него была от раздела — и
-   зря: раздел это плотная цветная плашка, подраздел ему подчинён, а
-   одинаковый материал ставил их вровень. Теперь три уровня видно сразу —
-   плашка, пилюля, подпись.
+/* Тихая пилюля. Один вид на три места: подраздел, «что считаем» и мелкие
+   действия («все», «ни одной»). Ни рамки, ни стекла, ни тени — только пилюля на
+   приглушённой подложке.
 
-   Разница с «все» и «ни одной» только в значке темы: он остаётся цветным и
-   держит связь подраздела со своим разделом. */
-.chip.sub {
+   Стекло с рамкой и тенью у них было от раздела, и зря: раздел это плотная
+   цветная плашка, а остальное ему подчинено — одинаковый материал ставил их
+   вровень. Теперь три уровня видно сразу: плашка, пилюля, подпись.
+
+   Отличает подраздел от прочих тихих кнопок только цветной значок темы: он и
+   держит связь со своим разделом. */
+.chip.sub,
+.chip.quiet {
   border: 0;
   border-radius: 999px;
-  background-color: var(--wash);
+  background-color: var(--quiet);
   background-image: none;
   box-shadow: none;
   color: var(--ink-2);
   font-size: 12.5px;
   font-weight: 560;
   letter-spacing: -0.005em;
-  gap: 6px;
-  padding: 8px 13px 8px 11px;
+  padding: 8px 13px;
 }
 
-.chip.sub[aria-pressed="true"] { color: var(--ink); }
-.chip.sub:hover { background-color: var(--glass); color: var(--ink); }
+/* У подраздела слева значок, и отступ с этой стороны меньше на его ширину. */
+.chip.sub { gap: 6px; padding-left: 11px; }
 
-/* Выключённый — та же пилюля без подложки и перечёркнутая. Общее правило
-   выключенного ярлыка гасит заливку и так, но подложка тут своя, --wash, и
-   гасить её нужно отдельно. */
-.chip.sub[aria-pressed="false"] {
+.chip.sub[aria-pressed="true"],
+.chip.quiet[aria-pressed="true"] { color: var(--ink); }
+
+.chip.sub:hover,
+.chip.quiet:hover { background-color: var(--quiet-on); color: var(--ink); }
+
+/* Выключённая — та же пилюля без подложки и перечёркнутая. Общее правило
+   выключенного ярлыка гасит заливку и так, но подложка тут своя, и гасить её
+   нужно отдельно. */
+.chip.sub[aria-pressed="false"],
+.chip.quiet[aria-pressed="false"] {
   background-color: transparent;
   color: var(--ink-muted);
 }

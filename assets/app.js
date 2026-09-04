@@ -636,7 +636,8 @@
     var c3 = el("div", "chips");
     KINDS.forEach(function (pair) {
       var on = state.kinds.has(pair[0]);
-      var b = el("button", "chip", pair[1]);
+      // тихая пилюля: тот же вид, что у подразделов и у «все» / «ни одной»
+      var b = el("button", "chip quiet", pair[1]);
       b.type = "button";
       b.setAttribute("aria-pressed", on ? "true" : "false");
       b.addEventListener("click", function () {
