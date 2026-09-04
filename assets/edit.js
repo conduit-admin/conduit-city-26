@@ -43,7 +43,6 @@
     confirmType: null,      // id раздела, у которого спрошено удаление
     confirmStudent: null,   // id ученика, у которого спрошено удаление
     confirmFile: null,      // имя файла зачёта, у которого спрошено удаление
-    sig: null,              // переключатель подписи; null — не трогали
     pickTheme: null,    // id задачи, у которой открыт выбор темы
     pickWeight: null,   // id задачи, у которой открыта своя цена
     pickDate: null,   // какая из двух дат правится: given | date
@@ -56,7 +55,7 @@
      сравнивать правку с данными сайта нельзя — минуту после сохранения они
      ещё старые, и всё выглядело бы несохранённым. */
   var SAVED = {
-    types: null, graves: null, days: {}, sig: null,
+    types: null, graves: null, days: {},
     roster: null, zachet: null
   };
 
@@ -791,7 +790,6 @@
     days.forEach(function (d) { jobs.push(putDayFile(d)); });
     gone.forEach(function (n) { jobs.push(dropDayFile(n)); });
     if (gravesDirty()) jobs.push(putGravesFile);
-    if (configDirty()) jobs.push(putConfigFile);
     if (zachetDirty()) jobs.push(putZachetFile);
     if (!jobs.length) return;
 
@@ -925,22 +923,10 @@
     });
   }
 
-  /* Настройки сайта живут в data/config.json — значит, видны всем и переживают
-     перезагрузку страницы. Файл читается заново перед записью и меняется
-     точечно: в нём же лежит отметка сборки, и затирать её правкой со старой
-     страницы нельзя. */
-  function sigOn() {
-    if (state.sig !== null) return state.sig;
-    if (SAVED.sig !== null) return SAVED.sig;
-    return !!(DATA.config.signature && DATA.config.signature.on);
-  }
-
-  function sigDirty() {
-    if (state.sig === null) return false;
-    var was = SAVED.sig !== null
-      ? SAVED.sig : !!(DATA.config.signature && DATA.config.signature.on);
-    return state.sig !== was;
-  }
+  /* Кому корона — то же, что и на сайте, и по той же причине задано здесь, а не
+     настройкой. Подпись под карточкой рисует сайт, редактору о ней знать
+     нечего. */
+  var HONOURED = "aksenova-elizaveta";
 
   /* Вес задачи = n − число решивших. n — сколько человек занималось по этой
      серии, то есть длина её списка: задачу, которую сдали все, никто не считает
@@ -974,24 +960,9 @@
     return w === null ? weightOf(solvers, base) : w;
   }
 
-  function configDirty() { return sigDirty(); }
-
-  /* Пишем только то, что правили. Обе настройки разом писать нельзя: значение
-     нетронутой берётся из памяти страницы, а она устаревает — правка одной
-     настройки откатывала бы чужое изменение другой. */
-  /* Файл читается заново и меняется точечно: в нём же лежит отметка сборки, и
-     затирать её правкой со старой страницы нельзя. */
-  function putConfigFile() {
-    var sig = state.sig;
-    return getFile("data/config.json").then(function (cur) {
-      if (!cur) throw new Error("нет data/config.json");
-      var cfg = JSON.parse(cur.text);
-      cfg.signature = cfg.signature || {};
-      cfg.signature.on = sig;
-      return putFile("data/config.json", JSON.stringify(cfg, null, 2) + "\n",
-        "Настройки: " + (sig ? "подпись включена" : "подпись выключена"), cur.sha);
-    }).then(function () { SAVED.sig = sig; });
-  }
+  /* Настраивать в data/config.json больше нечего, и редактор его не пишет
+     вовсе. Заодно исчез единственный путь, которым правка со старой страницы
+     могла затереть отметку сборки: она лежит в том же файле. */
 
   function putStudentsFile() {
     var payload = rosterPayload(roster());
@@ -2575,7 +2546,10 @@
       var box = el("span", "name-box");
       box.appendChild(el("span", "nm", st.name));
       if (DATA.config.admin === st.id) box.appendChild(el("i", "badge-admin", "◆"));
-      if (leader === st.id) box.appendChild(el("i", "badge-leader"));
+      // корона: у первого места и у неё, всегда — так же, как на сайте
+      if (leader === st.id || st.id === HONOURED) {
+        box.appendChild(el("i", "badge-leader"));
+      }
       cell.appendChild(box);
       tr.appendChild(cell);
       nBody.appendChild(tr);
@@ -3234,8 +3208,6 @@
     state.blobs = [];
     state.blobsGone = [];
     state.zachetTitle = "";
-    state.sig = null;
-    SAVED.sig = null;
     lastSeriesN = null;
     if (n !== null && dayBySlot(n)) openSeries(n);
     else render();
@@ -3294,7 +3266,6 @@
     });
     if (gravesDirty()) items.push("Гробарий");
     if (zachetDirty()) items.push("Зачёт");
-    if (configDirty()) items.push("Настройки");
 
     var problem = null;
     for (var i = 0; i < days.length && !problem; i++) {
@@ -3390,44 +3361,6 @@
     }));
     token.appendChild(row);
     host.appendChild(token);
-
-    host.appendChild(eggToggle());
-  }
-
-  /* Стоит особняком в самом низу и ничего не подписывает: включённое видно по
-     цвету. Как и всё прочее, уезжает только по кнопке сохранения. */
-  function eggToggle() {
-    var foot = el("div", "footrow");
-    var b = el("button", "egg-btn");
-    b.type = "button";
-    b.setAttribute("aria-pressed", sigOn() ? "true" : "false");
-    b.setAttribute("aria-label", "Подпись");
-
-    var NS = "http://www.w3.org/2000/svg";
-    /* Значок нарочно ничего не означает: пустой кружок против залитого. */
-    var svg = document.createElementNS(NS, "svg");
-    svg.setAttribute("viewBox", "0 0 16 16");
-    svg.setAttribute("width", "14");
-    svg.setAttribute("height", "14");
-    svg.setAttribute("aria-hidden", "true");
-    var circle = document.createElementNS(NS, "circle");
-    circle.setAttribute("cx", "8");
-    circle.setAttribute("cy", "8");
-    circle.setAttribute("r", "4.6");
-    circle.setAttribute("fill", sigOn() ? "currentColor" : "none");
-    circle.setAttribute("stroke", "currentColor");
-    circle.setAttribute("stroke-width", "1.6");
-    svg.appendChild(circle);
-    b.appendChild(svg);
-
-    b.addEventListener("click", function () {
-      state.sig = !sigOn();
-      state.note = "";
-      state.noteKind = "";
-      render();
-    });
-    foot.appendChild(b);
-    return foot;
   }
 
   function check() {
@@ -3782,11 +3715,6 @@
           JSON.stringify(zachetPayload(DATA.zachet.items))) {
         state.zachet = null;
         SAVED.zachet = null;
-      }
-      if (state.sig !== null && state.sig ===
-          !!(DATA.config.signature && DATA.config.signature.on)) {
-        state.sig = null;
-        SAVED.sig = null;
       }
       render();
     }).catch(function () { render(); });

@@ -39,10 +39,17 @@
 
   function isExercise(p) { return numPrefix(p.id) === 0; }
 
-  // подпись внизу карточки ученика: и кому, и что — из настроек
+  /* Кому корона и подпись. Оба — про одного человека, и заданы они здесь, а не
+     в настройках: настройка, у которой одно верное значение и то навсегда, —
+     не настройка, а лишний рычаг, который однажды дёрнут по ошибке.
+
+     Ключ — id ученика, а не имя: переименование в редакторе id не меняет,
+     поэтому и корона с подписью его переживают. */
+  var HONOURED = "aksenova-elizaveta";
+  var HONOUR = "Totus tuus";
+
   function signature(id) {
-    var s = DATA.config.signature;
-    return s && s.on && s.student === id && s.text ? s.text : null;
+    return id === HONOURED ? HONOUR : null;
   }
 
   /* Вес задачи = n − число решивших, где n — сколько человек занималось по этой
@@ -390,7 +397,10 @@
     FULL = computeRating(state.series, state.leaves, ALL_KINDS);
   }
 
+  /* Корона — у первого места и у неё, всегда. Если её обойдут, корон окажется
+     две: одна за место, другая просто так, и это ровно то, что имелось в виду. */
   function isLeader(id) {
+    if (id === HONOURED) return true;
     return !!FULL && FULL.rows.length > 0 &&
       FULL.place[id] === 1 && FULL.rows[0].score > 0;
   }
