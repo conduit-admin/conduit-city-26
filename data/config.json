@@ -10,7 +10,7 @@
   },
   "build": "202609041925",
   "signature": {
-    "on": false,
+    "on": true,
     "student": "",
     "text": "Totus tuus"
   }
