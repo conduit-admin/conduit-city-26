@@ -519,22 +519,16 @@
     host.appendChild(wrap);
   }
 
-  /* Плитки в карточке ученика разноцветные: каждая про своё, и ряд одинаковых
-     белых прямоугольников читался хуже, чем ряд разных. */
-  function tile(label, value, note, hue) {
-    var t = el("div", "tile" + (hue ? " tinted" : ""));
-    if (hue) t.style.setProperty("--tint", "var(--tint-" + hue + ")");
+  /* Плитки и панели одинаковы все до одной. Подкраска у них была — своя у
+     каждой, — и именно из-за неё страница выглядела пёстрой рядом с редактором,
+     где панель одна на всех. Панель держится формой и содержимым; когда цвет
+     понадобится, его добавят точечно и осознанно, а не всем подряд. */
+  function tile(label, value, note) {
+    var t = el("div", "tile");
     t.appendChild(el("div", "tile-label", label));
     t.appendChild(el("div", "tile-value", value));
     if (note) t.appendChild(el("div", "tile-note", note));
     return t;
-  }
-
-  // подкрасить панель: цвет приходит переменной, правила лежат в стилях
-  function tinted(node, hue) {
-    node.classList.add("tinted");
-    node.style.setProperty("--tint", "var(--tint-" + hue + ")");
-    return node;
   }
 
   function th(text, cls) { return el("th", cls, text); }
@@ -581,8 +575,6 @@
       var cat = el("button", "chip cat" + (on && on < leaves.length ? " partial" : ""));
       cat.type = "button";
       cat.setAttribute("aria-pressed", on ? "true" : "false");
-      // цвет раздела достаётся всему ярлыку, а не одному значку в нём
-      cat.style.setProperty("--accent", "var(--s" + t.slot + ")");
       cat.appendChild(mark(t.icon, t.slot));
       cat.appendChild(document.createTextNode(t.name));
       cat.addEventListener("click", function () {
@@ -600,7 +592,6 @@
           var b = el("button", "chip sub");
           b.type = "button";
           b.setAttribute("aria-pressed", state.leaves.has(l.key) ? "true" : "false");
-          b.style.setProperty("--accent", "var(--s" + t.slot + ")");
           b.appendChild(leafMark(l));
           b.appendChild(document.createTextNode(l.subName || t.name));
           b.addEventListener("click", function () {
@@ -623,12 +614,13 @@
     h3.appendChild(el("span", "filter-title", "Что считаем"));
     r3.appendChild(h3);
 
-    /* Не россыпь ярлыков, а один переключатель: набор здесь закрыт тремя
-       частями навсегда, и путать их с темами, которых десятки, незачем. */
-    var c3 = el("div", "seg");
+    /* Те же ярлыки, что и у тем: слитный переключатель здесь пробовали, но он
+       был единственным предметом такого вида на всей странице — и разъезжался,
+       когда включённая часть набирала вес шрифта и становилась шире. */
+    var c3 = el("div", "chips");
     KINDS.forEach(function (pair) {
       var on = state.kinds.has(pair[0]);
-      var b = el("button", "seg-btn", pair[1]);
+      var b = el("button", "chip", pair[1]);
       b.type = "button";
       b.setAttribute("aria-pressed", on ? "true" : "false");
       b.addEventListener("click", function () {
@@ -945,7 +937,7 @@
     host.appendChild(sh);
 
     if (s.pdf && s.pdf.file) {
-      var pcard = tinted(el("div", "card"), "b");
+      var pcard = el("div", "card");
       pcard.appendChild(pdfRow(s.pdf.file, "Серия " + seriesNo(s), s.pdf.size));
       host.appendChild(pcard);
     }
@@ -1027,13 +1019,13 @@
 
     var gpdf = DATA.graves && DATA.graves.pdf;
     if (gpdf && gpdf.file) {
-      var gcard = tinted(el("div", "card"), "c");
+      var gcard = el("div", "card");
       gcard.appendChild(pdfRow(gpdf.file,
         "Гробарий" + (gpdf.at ? " " + fullDate(gpdf.at) : ""), gpdf.size));
       host.appendChild(gcard);
     }
 
-    var card = tinted(el("div", "card"), "c");
+    var card = el("div", "card");
     list.slice().sort(function (a, b) {
       return graveNum(a.id) - graveNum(b.id);
     }).forEach(function (p) {
@@ -1095,7 +1087,7 @@
       return;
     }
 
-    var card = tinted(el("div", "card"), "d");
+    var card = el("div", "card");
     items.forEach(function (it) {
       var row = el("a", "lik-row");
       // зачёт лежит своей папкой: сборной свалки файлов лучше не заводить
@@ -1127,30 +1119,30 @@
     host.appendChild(sh);
 
     var tiles = el("div", "tiles");
-    tiles.appendChild(tile("Место", row.rank + " / " + DATA.students.length, null, "a"));
+    tiles.appendChild(tile("Место", row.rank + " / " + DATA.students.length));
     /* Потолок у каждого свой: серии, в списках которых его не было, в него не
        входят. С надбавками этого ученика — они начислены за его решения, и без
        них «11 из 6» выглядело бы ошибкой счёта. */
     tiles.appendChild(tile("Очки", num(row.score),
-      "из " + num(row.ceil + row.bonus), "b"));
-    tiles.appendChild(tile("Задачи", row.pluses + " / " + row.avail, null, "c"));
+      "из " + num(row.ceil + row.bonus)));
+    tiles.appendChild(tile("Задачи", row.pluses + " / " + row.avail));
 
     // половина задач — рубеж, который стоит отметить
     var share = row.avail ? row.pluses / row.avail : 0;
-    var pctTile = tile("Процент", pct(share), null, "d");
+    var pctTile = tile("Процент", pct(share));
     if (share >= 0.5) pctTile.className = "tile hi";
     tiles.appendChild(pctTile);
 
     var att = attendance(id);
     if (att.of) {
       tiles.appendChild(tile("Занятия", att.was + " / " + att.of,
-        att.was === att.of ? "ни одного пропуска" : null, "e"));
+        att.was === att.of ? "ни одного пропуска" : null));
     }
 
     var best = bestProblem(id);
     tiles.appendChild(tile("Самый ценный плюс", best ? "+" + best.value : "—",
       best ? (best.u.sn === null ? "гроб " + best.u.id
-        : "серия " + seriesNoBySlot(best.u.sn) + ", задача " + best.u.id) : null, "a"));
+        : "серия " + seriesNoBySlot(best.u.sn) + ", задача " + best.u.id) : null));
     host.appendChild(tiles);
 
     var sh2 = el("div", "section-head");

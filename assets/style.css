@@ -19,11 +19,6 @@
   --border-strong: rgba(11, 11, 11, 0.16);
   --wash: rgba(255, 255, 255, 0.45);
 
-  /* Включённая часть переключателя. Отдельный цвет, а не --surface: на тёмной
-     теме --surface темнее панели, и включённое выглядело бы утопленным, тогда
-     как на светлой — приподнятым. Здесь оно приподнято в обеих. */
-  --seg-on: #ffffff;
-
   --good: #067a3e;
   --bad: #d23b53;
 
@@ -115,17 +110,15 @@
   /* Полоска доли в строке рейтинга. */
   --bar: rgba(11, 11, 11, .085);
 
-  /* Оттенки блоков. Это не палитра тем — те значат раздел математики, и путать
-     их нельзя. Эти пять раскрашивают крупные панели.
-
-     Сейчас все пять белые: панель ими подсвечивается, а не красится. Слоты
-     оставлены нарочно — когда цвет понадобится точечно, достаточно будет
-     заменить нужный, и подкрасится ровно один блок. */
-  --tint-a: #ffffff;
-  --tint-b: #ffffff;
-  --tint-c: #ffffff;
-  --tint-d: #ffffff;
-  --tint-e: #ffffff;
+  /* Стекло кнопки. Панель под ней уже полупрозрачна, поэтому кнопке довольно
+     одного шага плотности — плюс светлая грань поверху и косой блик, те же три
+     вещи, из которых собрана сама панель. Дальше всё различие между кнопками
+     только в размере и в том, чем они показывают состояние. */
+  --glass: rgba(255, 255, 255, 0.52);
+  --glass-on: rgba(255, 255, 255, 0.92);
+  --glass-edge: rgba(11, 11, 11, 0.10);
+  --glass-top: rgba(255, 255, 255, 0.95);
+  --glass-sheen: rgba(255, 255, 255, 0.55);
 }
 
 /* Тёмная тема — свой набор шагов под тёмную подложку, а не инверсия светлой.
@@ -143,7 +136,6 @@
     --border: rgba(255, 255, 255, 0.13);
     --border-strong: rgba(255, 255, 255, 0.26);
     --wash: rgba(255, 255, 255, 0.07);
-    --seg-on: rgba(255, 255, 255, 0.17);
     --good: #34d17f;
     --bad: #ff7a90;
 
@@ -185,11 +177,11 @@
     --shadow-1: 0 1px 2px rgba(0, 0, 0, .5), 0 10px 28px -14px rgba(0, 0, 0, .75);
     --shadow-2: 0 2px 8px rgba(0, 0, 0, .55), 0 28px 64px -28px rgba(0, 0, 0, .9);
     --paper: rgba(255, 255, 255, .055);
-    --tint-a: #ffffff;
-    --tint-b: #ffffff;
-    --tint-c: #ffffff;
-    --tint-d: #ffffff;
-    --tint-e: #ffffff;
+    --glass: rgba(255, 255, 255, 0.055);
+    --glass-on: rgba(255, 255, 255, 0.155);
+    --glass-edge: rgba(255, 255, 255, 0.14);
+    --glass-top: rgba(255, 255, 255, 0.10);
+    --glass-sheen: rgba(255, 255, 255, 0.06);
     --bar: rgba(255, 255, 255, .11);
   }
 }
@@ -442,15 +434,6 @@ input[type="number"]::-webkit-inner-spin-button {
 
    Сейчас свет белый. Когда понадобится цвет, менять придётся одну переменную:
    у блока свой слот оттенка. */
-.tinted {
-  background-color: color-mix(in srgb, var(--tint) 12%, var(--pane));
-  background-image:
-    radial-gradient(56% 56% at 100% -16%,
-      color-mix(in srgb, var(--tint) 30%, transparent), transparent 70%),
-    linear-gradient(147deg, var(--sheen), transparent 44%);
-  border-color: color-mix(in srgb, var(--tint) 24%, var(--border));
-}
-
 /* карточка-предупреждение: данные не потеряны, но и не считаются */
 .card.warn { border-color: var(--accent-hi); background: var(--accent-wash); }
 
@@ -495,29 +478,44 @@ input[type="number"]::-webkit-inner-spin-button {
   color: var(--ink-muted);
 }
 
-/* Не голубая ссылка, а маленькая кнопка: голубой в этом интерфейсе занят под
-   цвет темы «Алгебра», и надпись читалась как ещё один ярлык темы. */
-/* Мелкое действие над отбором: «все», «ни одной», «последние 5». Рамка у него
-   была та же, что у ярлыка отбора, и в шапке раздела они спорили — одинаковый
-   вес у того, что выбирают, и у того, чем выбирают. Рамку сняли: приглушённой
-   подложки хватает, чтобы кнопку было видно, и не хватает, чтобы она тянула
-   внимание на себя. Отступы при этом выросли — площадь под палец от снятия
-   рамки не пострадала. */
-.mini-btn {
+/* ── стекло кнопок ──────────────────────────────────────
+   Одна поверхность на всё, что нажимают: ярлык отбора, мелкое действие, кнопку
+   редактора, квадратную кнопку, счётчик. Собрана она из того же, что и панель:
+   полупрозрачная заливка, косой блик, светлая грань поверху вместо тени.
+   Кнопки различаются размером и тем, чем показывают состояние, — но не
+   материалом, и оттого страница смотрится одним целым.
+
+   Рамка взята приглушённая: на стекле её работу делает грань, а тёмный контур
+   поверх прозрачной заливки выглядит наклейкой, а не гранью. */
+.chip, .mini-btn, .ghost-btn, .icon-btn, .icon-pick, .step-btn {
   appearance: none;
-  border: 0;
-  background: var(--wash);
+  font: inherit;
+  color: var(--ink-2);
+  background-color: var(--glass);
+  background-image: linear-gradient(158deg, var(--glass-sheen), transparent 62%);
+  border: 1px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 var(--glass-top);
+  cursor: pointer;
+}
+
+.chip:hover, .mini-btn:hover, .ghost-btn:hover,
+.icon-btn:hover, .icon-pick:hover, .step-btn:hover {
+  border-color: var(--ink-muted);
+  color: var(--ink);
+}
+
+/* Не голубая ссылка, а маленькая кнопка: голубой в этом интерфейсе занят под
+   цвет темы «Алгебра», и надпись читалась как ещё один ярлык темы. Мельче
+   ярлыка отбора и приглушённее по тексту: в шапке раздела она не должна
+   спорить с тем, что под ней. Материал при этом тот же. */
+.mini-btn {
   color: var(--ink-muted);
   border-radius: 999px;
-  font: inherit;
   font-size: 12px;
   line-height: 1;
   padding: 9px 14px;
-  cursor: pointer;
   white-space: nowrap;
 }
-
-.mini-btn:hover { background: var(--surface); color: var(--ink); }
 
 .chips {
   display: flex;
@@ -525,81 +523,29 @@ input[type="number"]::-webkit-inner-spin-button {
   gap: 6px;
 }
 
-/* «Что считаем» — не темы, а три грани одного вопроса, и набор их закрыт
-   навсегда. Поэтому не россыпь ярлыков, а один слитный переключатель: сразу
-   видно, что это одно решение из трёх частей, а не ещё десяток тем, которые
-   легко спутать с темами настоящими.
-
-   Дорожка утоплена, включённая часть приподнята над ней — тем же приёмом, что
-   и везде на странице: --wash тише, --surface плотнее. */
-.seg {
-  display: inline-flex;
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--wash);
-  max-width: 100%;
-  overflow: hidden;
-}
-
-/* Ширина у каждой части своя, по её слову: равные доли обрезали бы
-   «Упражнения» многоточием, а обрезанное слово в переключателе из трёх частей —
-   это потеря на ровном месте, места хватает и так. */
-.seg-btn {
-  appearance: none;
-  border: 0;
-  border-radius: 11px;
-  background: transparent;
-  color: var(--ink-muted);
-  font: inherit;
-  font-size: 13px;
-  line-height: 1;
-  padding: 9px 13px;
-  min-height: 34px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-/* Включённая часть залита, выключенная пуста. Зачёркивания здесь нет нарочно:
-   у ярлыка отбора оно значит «исключено», а тут ничего не исключают — тут
-   складывают, и невыбранное просто ещё не добавлено. */
-/* Обводка задана тенью, а не рамкой: рамка сдвинула бы соседние части на
-   пиксель при каждом переключении. Состояние держат сразу четыре вещи —
-   заливка, обводка, цвет текста и его насыщенность: одной заливки на стекле
-   мало, она сама полупрозрачна. */
-.seg-btn[aria-pressed="true"] {
-  background: var(--seg-on);
-  color: var(--ink);
-  font-weight: 560;
-  box-shadow: 0 0 0 1px var(--border-strong);
-}
-
-.seg-btn:hover { color: var(--ink); }
-
 .chip {
-  appearance: none;
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  border: 1px solid var(--border-strong);
-  background: var(--wash);
-  color: var(--ink-2);
   /* Ярлыки отбора — скруглённые прямоугольники, а не пилюли: пилюли остались
      за полосой вкладок и мелкими действиями, и путать их незачем. */
   border-radius: 11px;
-  font: inherit;
   font-size: 13px;
   padding: 7px 12px;
-  cursor: pointer;
-  transition: background .12s, color .12s, border-color .12s;
 }
 
-.chip:hover { background: var(--wash); }
+/* Включено — стекло, выключено — пустая рамка: ни блика, ни грани, заливки
+   нет вовсе, надпись перечёркнута. Пунктирной рамки здесь больше нет — другой
+   тип штриха выбивался из общего вида, а «исключено» сказано и без него.
 
+   Разница держится на заливке и цвете, но не на насыщенности шрифта: от смены
+   насыщенности слово меняет ширину, и соседние ярлыки при каждом нажатии
+   разъезжались. */
 .chip[aria-pressed="false"] {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
   color: var(--ink-muted);
-  border-style: dashed;
   text-decoration: line-through;
   text-decoration-thickness: 1px;
 }
@@ -608,10 +554,12 @@ input[type="number"]::-webkit-inner-spin-button {
 .chip[aria-pressed="false"] .ic { opacity: .28; }
 
 /* Выбор одного из вариантов — не фильтр: невыбранное здесь не «исключено»,
-   поэтому не зачёркивается. Выбранное обводится жирнее. */
+   поэтому не зачёркивается и стекла не теряет. Выбранное обводится жирнее. */
 .chip.pick[aria-pressed="false"] {
   color: var(--ink-2);
-  border-style: solid;
+  background-color: var(--glass);
+  background-image: linear-gradient(158deg, var(--glass-sheen), transparent 62%);
+  box-shadow: inset 0 1px 0 var(--glass-top);
   text-decoration: none;
 }
 
@@ -620,16 +568,8 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .chip.pick[aria-pressed="true"] {
   border-color: var(--ink);
-  background: var(--wash);
+  background-color: var(--glass-on);
   color: var(--ink);
-}
-
-/* «Что считаем» — не тема, цвета ему не положено: выбранное помечено плотной
-   рамкой и заливкой, и этого хватает, чтобы не спорить с ярлыками тем. */
-.filter-row .chips > .chip:not(.cat):not(.sub):not(.day)[aria-pressed="true"] {
-  border-color: var(--border-strong);
-  color: var(--ink);
-  background: var(--pane-2);
 }
 
 /* кнопка серии: номер и дата. Серий за год набирается много, поэтому кнопка
@@ -669,12 +609,9 @@ input[type="number"]::-webkit-inner-spin-button {
    пропадает: буква и есть пометка, цвет к ней только добавка. */
 .chip[aria-pressed="true"].day b { color: inherit; }
 
-/* Цвет раздела в ярлыке — только кружок. Заливать им весь ярлык пробовали:
-   десяток цветных плашек в ряд рябит и спорит с самим кондуитом, где цвет
-   что-то значит. Здесь от цвета нужен намёк, и он держится в рамке. */
-.chip.cat[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--border-strong));
-}
+/* Цвет раздела в ярлыке — только значок. Ни заливки, ни подкрашенной рамки:
+   и то и другое пробовали, десяток подкрашенных плашек в ряд рябит и спорит с
+   самим кондуитом, где цвет что-то значит. Рамка у всех кнопок одна. */
 
 /* темы: раздел и его подразделы */
 .tgroup {
@@ -790,12 +727,11 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-top: 2px;
 }
 
-/* плитка, отмечающая достижение: половина задач и выше. Стоит после подкраски
-   нарочно — своё золото она держит поверх любого оттенка. */
-.tile.hi {
-  border-color: var(--accent-hi);
-  background: var(--accent-wash);
-}
+/* Плитка, отмечающая достижение: половина задач и выше. Заливки у неё больше
+   нет — панели на странице все до одной одинаковы, и одна золотая посреди
+   пятёрки выбивалась бы ровно так же, как выбивалась прежняя подкраска.
+   Достижение сказано самим числом и рамкой, а это и есть то, что читают. */
+.tile.hi { border-color: var(--accent-hi); }
 
 .tile.hi .tile-value { color: var(--accent-hi); }
 .tile.hi .tile-label { color: var(--accent-hi); opacity: .85; }
@@ -1208,7 +1144,6 @@ table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
    не догадался. Заливки при этом нет: два десятка залитых квадратов в столбец
    зарябили бы список. */
 .icon-pick {
-  appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1216,16 +1151,10 @@ table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
   height: 30px;
   flex: none;
   padding: 0;
-  border: 1px solid var(--border-strong);
   border-radius: 9px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  transition: border-color .14s ease, background-color .14s ease;
 }
 
-.icon-pick:hover { border-color: var(--ink); }
-.icon-pick.open { border-color: var(--ink); background: var(--surface); }
+.icon-pick.open { border-color: var(--ink); background-color: var(--glass-on); }
 
 /* Ярлык в россыпи значков — без подписи: значок и выбирают глазами, а два
    десятка названий рядом превратили бы россыпь в список. */
@@ -1405,7 +1334,7 @@ td .date { margin-left: 8px; font-size: 12px; }
 /* Отклик на касание. На телефоне подсветка касания погашена нарочно, поэтому
    без этого кнопки кажутся мёртвыми: нажал — и ничего. Сжатие берём
    преобразованием, оно не трогает разметку и ничего не сдвигает вокруг. */
-.chip, .ghost-btn, .primary-btn, .icon-btn, .mini-btn, .seg-btn,
+.chip, .ghost-btn, .primary-btn, .icon-btn, .mini-btn, .icon-pick,
 .tab, .cal-day, .cal-nav, .banner-close, .picker-btn,
 .step-btn, .step-val, .wchip {
   transition: background-color .14s ease, color .14s ease,
@@ -1520,28 +1449,22 @@ select.input { padding-right: 6px; }
    делают, и делают пальцем. Отсюда 40 в высоту, как у поля ввода и у главной
    кнопки: в строке редактора они стоят рядом и должны стоять вровень. */
 .ghost-btn {
-  appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
   color: var(--ink);
   border-radius: var(--radius-sm);
-  font: inherit;
   font-size: 14px;
   font-weight: 560;
   line-height: 1;
   padding: 9px 15px;
   min-height: 40px;
-  cursor: pointer;
   white-space: nowrap;
 }
 
-.ghost-btn:hover { border-color: var(--ink); }
 .ghost-btn:disabled { opacity: .38; cursor: default; }
-.ghost-btn:disabled:hover { border-color: var(--border-strong); }
+.ghost-btn:disabled:hover { border-color: var(--glass-edge); }
 
 /* Плюс — отдельный знак, а не первый символ подписи: крупнее текста и тише по
    цвету, поэтому читается как знак действия, а «задача» остаётся словом. Он же
@@ -1563,17 +1486,11 @@ select.input { padding-right: 6px; }
 .ghost-btn.danger { color: var(--bad); border-color: var(--bad); }
 
 .icon-btn {
-  appearance: none;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--ink-muted);
   border-radius: var(--radius-sm);
-  font: inherit;
   font-size: 17px;
   line-height: 1;
   width: 34px;
   min-height: 34px;
-  cursor: pointer;
 }
 
 .icon-btn:hover { color: var(--bad); border-color: var(--bad); }
@@ -1990,7 +1907,10 @@ body.is-editor .brand::after {
 
 .mini-btn:disabled { opacity: .4; cursor: default; }
 
-.mini-btn:disabled:hover { background: var(--wash); color: var(--ink-muted); }
+.mini-btn:disabled:hover {
+  border-color: var(--glass-edge);
+  color: var(--ink-muted);
+}
 
 /* ── гроборешения ──────────────────────────────────────── */
 
@@ -2005,25 +1925,18 @@ body.is-editor .brand::after {
 }
 
 .step-btn {
-  appearance: none;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--ink-2);
   border-radius: var(--radius-sm);
-  font: inherit;
   font-size: 19px;
   line-height: 1;
   width: 34px;
   min-height: 34px;
-  cursor: pointer;
 }
 
-.step-btn:hover { color: var(--ink); border-color: var(--ink); }
 .step-btn:disabled { opacity: .35; cursor: default; }
 
 .step-btn:disabled:hover {
   color: var(--ink-2);
-  border-color: var(--border-strong);
+  border-color: var(--glass-edge);
 }
 
 /* Показание, а не кнопка: нажимать на само число некуда. Ноль приглушён,

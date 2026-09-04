@@ -2489,7 +2489,6 @@
       var b = el("button", "chip pick cat");
       b.type = "button";
       b.setAttribute("aria-pressed", t.id === p.type ? "true" : "false");
-      b.style.setProperty("--accent", "var(--s" + t.slot + ")");
       b.appendChild(mark(t.icon, t.slot));
       b.appendChild(document.createTextNode(t.name));
       b.addEventListener("click", function () {
@@ -2508,7 +2507,6 @@
       t.subs.forEach(function (s) {
         var b = el("button", "chip sub pick");
         b.type = "button";
-        b.style.setProperty("--accent", "var(--s" + t.slot + ")");
         b.setAttribute("aria-pressed", s.id === p.sub ? "true" : "false");
         b.appendChild(mark(s.icon || t.icon, t.slot));
         b.appendChild(document.createTextNode(s.name));
