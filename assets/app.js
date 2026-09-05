@@ -16,7 +16,6 @@
   var LEAVES = [];    // [{key, catId, catName, subId, subName, slot, label}]
   var LEAF = {};      // key -> лист
   var NAME = {};      // id -> имя; в этой карте есть и выбывшие из списка
-  var FULL = null;    // рейтинг по всему сразу — им определяется первый в нём
 
   var state = {
     view: "rating",
@@ -52,11 +51,60 @@
     return id === HONOURED ? HONOUR : null;
   }
 
-  /* Вес задачи = n − число решивших, где n — сколько человек занималось по этой
-     серии. Список у каждой серии свой, поэтому и n у них разное: задача, которую
-     давали десятерым, и задача на весь кружок стоят по-разному — и правильно.
-     Гробы считаются от всего списка: они не привязаны к занятию. */
+  /* Корона — только у неё. Первого в рейтинге и так видно местом, и второго
+     знака ему не нужно; корона же говорит не «сейчас впереди», а совсем другое,
+     и двух разных смыслов на одном значке быть не должно. */
+  function isHonoured(id) { return id === HONOURED; }
+
+  /* Вес задачи = n − число решивших, где n — сколько человек стояло за задачей:
+     задача, которую давали десятерым, и задача на весь кружок стоят по-разному —
+     и правильно. Единица снизу — на пустой список: n = 0 обнулило бы всё.
+
+     Чем считать n, у каждой серии решается отдельно: обычно это её список, но
+     бывает и иначе — задачу разбирали при половине зала, серию раздали всему
+     кружку, цену назначили руками. Способ выбирается в редакторе и лежит в файле
+     серии; не выбран — берётся общий, из настроек. */
+  var N_MODES = ["roster", "present", "all"];
+
   function baseOf(list) { return Math.max((list || []).length, 1); }
+
+  /* Настройка приводится к одному виду. Всё непонятное читается как «не задано»:
+     считать по случайному числу, попавшему в поле, хуже, чем по общему правилу. */
+  function scoringOf(x) {
+    if (!x) return null;
+    if (x.mode === "fixed") {
+      var n = x.n;
+      return typeof n === "number" && isFinite(n) && n >= 1
+        ? { mode: "fixed", n: Math.round(n) } : null;
+    }
+    return N_MODES.indexOf(x.mode) !== -1 ? { mode: x.mode } : null;
+  }
+
+  // общий способ; по умолчанию — список серии, как было до всякой настройки
+  function defaultScoring() {
+    return scoringOf(DATA.config.scoring) || { mode: "roster" };
+  }
+
+  function scoringFor(s) { return scoringOf(s && s.scoring) || defaultScoring(); }
+
+  /* n серии по выбранному способу. Отметок посещения может не быть вовсе — у
+     серий, записанных до того, как их стали ставить; тогда «по пришедшим»
+     читается как её список: пришли все, кто в нём есть. */
+  function baseFor(s) {
+    var sc = scoringFor(s);
+    if (sc.mode === "fixed") return sc.n;
+    if (sc.mode === "all") return baseOf(DATA.students);
+    if (sc.mode === "present" && attended(s)) return baseOf(s.present);
+    return baseOf(rosterOf(s));
+  }
+
+  /* Гроб к занятию не привязан: ни списка, ни пришедших у него нет, и оба этих
+     способа читаются для гробов как «вся группа». Назначенное число — считается:
+     оно про цену задач вообще, а не про состав какого-то занятия. */
+  function gravesBase() {
+    var sc = defaultScoring();
+    return sc.mode === "fixed" ? sc.n : baseOf(DATA.students);
+  }
 
   /* Ниже одного очка вес не опускается. Задача, которую взяли все, всё-таки
      была решена: обнулять её значило бы, что плюс за неё не стоит ничего — а он
@@ -230,7 +278,7 @@
     var box = el("span", "name-box");
     box.appendChild(el("span", "nm", student.name));
     if (isAdmin(student.id)) box.appendChild(el("i", "badge-admin", "◆"));
-    if (isLeader(student.id)) box.appendChild(el("i", "badge-leader"));
+    if (isHonoured(student.id)) box.appendChild(el("i", "badge-leader"));
     node.appendChild(box);
     return node;
   }
@@ -332,7 +380,7 @@
     DATA.series.forEach(function (s) {
       if (!held(s)) return;    // занятие ещё не прошло — считать нечего
       var ids = rosterOf(s);
-      var base = baseOf(ids);
+      var base = baseFor(s);
       s.problems.forEach(function (p) {
         /* Решившие — только из списка серии. Плюс человека, которого в этом
            списке нет, остался от прежнего состава: он лежит в файле, но в счёт
@@ -380,7 +428,7 @@
         solverSet: new Set(solvers),
         roster: null,          // гроб доступен всем: он не привязан к занятию
         bonus: bonus,
-        weight: priceOf(p, solvers.length, baseOf(DATA.students))
+        weight: priceOf(p, solvers.length, gravesBase())
       });
     });
 
@@ -391,22 +439,9 @@
     var live = realSeries();
     state.openSeries = live.length ? live[live.length - 1].n
       : (DATA.series.length ? DATA.series[DATA.series.length - 1].n : GRAVES);
-
-    /* Первый считается по всему сразу и не зависит от фильтров: он помечен
-       одинаково на любой вкладке и при любом отборе. */
-    FULL = computeRating(state.series, state.leaves, ALL_KINDS);
-  }
-
-  /* Корона — у первого места и у неё, всегда. Если её обойдут, корон окажется
-     две: одна за место, другая просто так, и это ровно то, что имелось в виду. */
-  function isLeader(id) {
-    if (id === HONOURED) return true;
-    return !!FULL && FULL.rows.length > 0 &&
-      FULL.place[id] === 1 && FULL.rows[0].score > 0;
   }
 
   var KINDS = [["problem", "Задачи"], ["exercise", "Упражнения"], ["grave", "Гробы"]];
-  var ALL_KINDS = new Set(KINDS.map(function (p) { return p[0]; }));
 
   function catLeaves(catId) {
     return LEAVES.filter(function (l) { return l.catId === catId; });

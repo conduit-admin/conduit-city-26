@@ -32,6 +32,7 @@
     series: null,       // открытая серия, она же элемент days
     graves: null,       // правка гробария, пока не сохранена
     typesEdit: null,    // правка тем, пока не сохранена
+    scoring: null,      // общий способ считать n, пока не сохранён
     busy: false,
     note: "",
     noteKind: "",       // good | bad | ""
@@ -56,7 +57,7 @@
      ещё старые, и всё выглядело бы несохранённым. */
   var SAVED = {
     types: null, graves: null, days: {},
-    roster: null, zachet: null
+    roster: null, zachet: null, scoring: null
   };
 
 
@@ -445,6 +446,7 @@
     var d = JSON.parse(JSON.stringify({
       n: s.n, series: seriesNo(s), date: s.date,
       given: givenOf(s), held: isHeld(s),
+      scoring: scoringOf(s.scoring) || undefined,
       roster: ids, present: presentIds(s),
       problems: s.problems || [], solved: s.solved || {},
       pdf: s.pdf || undefined
@@ -703,6 +705,10 @@
       payload.pdf = { file: d.pdf.file, size: d.pdf.size, at: d.pdf.at };
     }
 
+    // способ считать n — только у серии, которая считается не как все прочие
+    var sc = scoringOf(d.scoring);
+    if (sc) payload.scoring = sc;
+
     /* Пишем весь список серии и вдобавок чужие непустые отметки: человека могли
        убрать из списка, и стирать заодно его плюсы — не дело записи одной серии.
        Они не считаются нигде, но лежат на месте и вернутся вместе с ним. */
@@ -787,6 +793,7 @@
     // список учеников уходит следом: на него ссылается всё остальное
     if (rosterDirty()) jobs.push(putStudentsFile);
     if (typesDirty()) jobs.push(putTypesFile);
+    if (scoringDirty()) jobs.push(putConfigFile);
     days.forEach(function (d) { jobs.push(putDayFile(d)); });
     gone.forEach(function (n) { jobs.push(dropDayFile(n)); });
     if (gravesDirty()) jobs.push(putGravesFile);
@@ -928,18 +935,70 @@
      нечего. */
   var HONOURED = "aksenova-elizaveta";
 
-  /* Вес задачи = n − число решивших. n — сколько человек занималось по этой
-     серии, то есть длина её списка: задачу, которую сдали все, никто не считает
-     за достижение, а задача-одиночка стоит почти в цену всей группы. Список у
-     каждой серии свой, поэтому и n у них разное.
+  /* Вес задачи = n − число решивших. n — сколько человек стояло за задачей:
+     задачу, которую сдали все, никто не считает за достижение, а задача-одиночка
+     стоит почти в цену всей группы. Единица снизу — на пустой список: n = 0
+     обнулило бы всё.
 
-     Гробы к занятию не привязаны и считаются от всего списка группы. Единица
-     снизу — для пустого списка: n = 0 обнулило бы всё. */
+     Чем считать n, у каждой серии решается отдельно: обычно это её список, но
+     бывает и иначе — задачу разбирали при половине зала, серию раздали всему
+     кружку, цену назначили руками. Не выбрано у серии — берётся общий способ,
+     он же и решает, как считать серии, которых это не касалось. */
+  var N_MODES = ["roster", "present", "all"];
+
+  var N_NAMES = {
+    roster: "по списку серии",
+    present: "по пришедшим",
+    all: "по всей группе",
+    fixed: "своё число"
+  };
+
   function baseOf(list) { return Math.max((list || []).length, 1); }
 
-  function seriesBase(d) { return baseOf(rosterIds(d)); }
+  /* Настройка приводится к одному виду. Всё непонятное читается как «не задано»:
+     считать по случайному числу, попавшему в поле, хуже, чем по общему правилу.
+     Правило то же на сайте — иначе редактор показывал бы одну цену, а страница
+     другую. */
+  function scoringOf(x) {
+    if (!x) return null;
+    if (x.mode === "fixed") {
+      var n = x.n;
+      return typeof n === "number" && isFinite(n) && n >= 1
+        ? { mode: "fixed", n: Math.round(n) } : null;
+    }
+    return N_MODES.indexOf(x.mode) !== -1 ? { mode: x.mode } : null;
+  }
 
-  function gravesBase() { return baseOf(roster()); }
+  // общий способ из файла; по умолчанию — список серии, как было до настройки
+  function configScoring() {
+    return scoringOf(DATA.config.scoring) || { mode: "roster" };
+  }
+
+  /* Свой, ещё не сохранённый, — потом уже отправленный, — потом тот, что стоит
+     в файле: тот же порядок, что и у прочих правок. */
+  function defaultScoring() {
+    return state.scoring || SAVED.scoring || configScoring();
+  }
+
+  function scoringFor(d) { return scoringOf(d && d.scoring) || defaultScoring(); }
+
+  function baseFor(d) {
+    var sc = scoringFor(d);
+    if (sc.mode === "fixed") return sc.n;
+    if (sc.mode === "all") return baseOf(roster());
+    if (sc.mode === "present") return baseOf(presentIds(d));
+    return baseOf(rosterIds(d));
+  }
+
+  function seriesBase(d) { return baseFor(d); }
+
+  /* Гроб к занятию не привязан: ни списка, ни пришедших у него нет, и оба этих
+     способа читаются для гробов как «вся группа». Назначенное число — считается:
+     оно про цену задач вообще, а не про состав какого-то занятия. */
+  function gravesBase() {
+    var sc = defaultScoring();
+    return sc.mode === "fixed" ? sc.n : baseOf(roster());
+  }
 
   /* Ниже одного очка вес не опускается — то же правило, что и на сайте. Задачу,
      которую взяли все, обнулять не за что: она была решена, просто всеми. */
@@ -960,9 +1019,27 @@
     return w === null ? weightOf(solvers, base) : w;
   }
 
-  /* Настраивать в data/config.json больше нечего, и редактор его не пишет
-     вовсе. Заодно исчез единственный путь, которым правка со старой страницы
-     могла затереть отметку сборки: она лежит в том же файле. */
+  function scoringDirty() {
+    if (!state.scoring) return false;
+    return JSON.stringify(state.scoring) !==
+      JSON.stringify(SAVED.scoring || configScoring());
+  }
+
+  /* Общий способ живёт в data/config.json — значит, виден всем и переживает
+     перезагрузку страницы. В том же файле лежит отметка сборки, поэтому файл
+     читается заново перед самой записью и правится точечно: страница, открытая
+     полчаса назад, не должна вернуть на место старую отметку. */
+  function putConfigFile() {
+    var sc = state.scoring;
+    return getFile("data/config.json").then(function (cur) {
+      if (!cur) throw new Error("нет data/config.json");
+      var cfg = JSON.parse(cur.text);
+      cfg.scoring = sc;
+      return putFile("data/config.json", JSON.stringify(cfg, null, 2) + "\n",
+        "Очки: n " + (sc.mode === "fixed" ? "= " + sc.n : N_NAMES[sc.mode]),
+        cur.sha);
+    }).then(function () { SAVED.scoring = sc; });
+  }
 
   function putStudentsFile() {
     var payload = rosterPayload(roster());
@@ -2133,7 +2210,87 @@
     host.appendChild(sh4);
     host.appendChild(rosterCard(state.series));
 
+    /* Способ считать n — сразу за списком: чаще всего n от списка и берётся, и
+       смотрят на них в один заход. */
+    var sh5 = el("div", "section-head");
+    sh5.appendChild(el("span", "section-title", "Очки"));
+    host.appendChild(sh5);
+    host.appendChild(scoringCard(state.series));
+
     host.appendChild(deleteBar());
+  }
+
+  /* Кнопки выбора способа. Они одни на два места — на серию и на настройки:
+     разъехавшись, одно и то же читалось бы как разные вещи. Общий способ выбрать
+     «как везде» не может: он сам и есть «везде», отсюда второй признак. */
+  function scoringChips(sel, withDefault, seed, onPick) {
+    var chips = el("div", "chips");
+
+    function pick(text, on, val) {
+      var b = el("button", "chip pick", text);
+      b.type = "button";
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.addEventListener("click", function () { onPick(val); });
+      chips.appendChild(b);
+    }
+
+    if (withDefault) pick("как везде", !sel, null);
+    N_MODES.forEach(function (m) {
+      pick(N_NAMES[m], !!sel && sel.mode === m, { mode: m });
+    });
+    /* Своё число заводится с того, что сейчас и так считается: чаще всего его
+       правят на пару человек, а не набирают с нуля. */
+    pick(N_NAMES.fixed, !!sel && sel.mode === "fixed",
+      { mode: "fixed", n: sel && sel.mode === "fixed" ? sel.n : seed });
+    return chips;
+  }
+
+  function scoringInput(sel, onSet) {
+    var inp = el("input");
+    inp.type = "number";
+    inp.inputMode = "numeric";
+    // n = 0 обнулило бы все цены разом, и вернуть их было бы неоткуда
+    inp.min = "1";
+    inp.value = sel.n;
+    inp.className = "input short";
+    inp.addEventListener("change", function () {
+      var v = parseInt(inp.value, 10);
+      if (!v || v < 1) { inp.value = sel.n; return; }
+      onSet(v);
+    });
+    var row = el("div", "frow gap");
+    row.appendChild(field("n", inp, "narrow"));
+    return row;
+  }
+
+  /* Способ этой серии. Не выбран — серия идёт за общим и пойдёт за ним дальше,
+     если тот поменяют; выбран — живёт своей ценой и на настройки не смотрит. */
+  function scoringCard(d) {
+    var card = el("div", "card");
+    var own = scoringOf(d.scoring);
+    var eff = scoringFor(d);
+
+    card.appendChild(scoringChips(own, true, baseFor(d), function (val) {
+      if (val) d.scoring = val;
+      else delete d.scoring;
+      touch();
+      render();
+    }));
+
+    if (own && own.mode === "fixed") {
+      card.appendChild(scoringInput(own, function (v) {
+        d.scoring = { mode: "fixed", n: v };
+        touch();
+        render();
+      }));
+    }
+
+    card.appendChild(el("div", "savecard-note",
+      "вес задачи = n − число решивших, но не меньше 1"));
+    card.appendChild(el("div", "savecard-note",
+      "сейчас n = " + baseFor(d) + " · " + N_NAMES[eff.mode] +
+      (own ? "" : " · как везде")));
+    return card;
   }
 
   /* Пока занятие не прошло, сайт показывает серию и её листок, но не кондуит:
@@ -2195,8 +2352,6 @@
       chips.appendChild(b);
     });
     card.appendChild(chips);
-    card.appendChild(el("div", "savecard-note",
-      "цена задачи считается от этого списка: n = " + seriesBase(d)));
     return card;
   }
 
@@ -2515,7 +2670,6 @@
     var solved = d.solved;
     var rows = seriesRows(d);
     var base = seriesBase(d);
-    var leader = leaderId();
     var split = el("div", "conduit-split");
 
     function marked(sid, pid) {
@@ -2551,10 +2705,8 @@
       var box = el("span", "name-box");
       box.appendChild(el("span", "nm", st.name));
       if (DATA.config.admin === st.id) box.appendChild(el("i", "badge-admin", "◆"));
-      // корона: у первого места и у неё, всегда — так же, как на сайте
-      if (leader === st.id || st.id === HONOURED) {
-        box.appendChild(el("i", "badge-leader"));
-      }
+      // корона: только у неё — так же, как на сайте
+      if (st.id === HONOURED) box.appendChild(el("i", "badge-leader"));
       cell.appendChild(box);
       tr.appendChild(cell);
       nBody.appendChild(tr);
@@ -2696,46 +2848,6 @@
     return rosterIds(d).map(function (id) {
       return { id: id, name: nameOf(id) };
     }).sort(function (a, b) { return a.name.localeCompare(b.name, "ru"); });
-  }
-
-  /* Первый в рейтинге — по всем сериям, которые уже на сайте, так же как на публичной
-     странице. Открытая правка сюда не входит: иначе метка прыгала бы на каждый
-     поставленный плюс. */
-  function leaderId() {
-    var score = {};
-    roster().forEach(function (s) { score[s.id] = 0; });
-    DATA.series.forEach(function (s) {
-      if (!isHeld(s)) return;    // занятие ещё не прошло — считать нечего
-      var ids = rosterIds(s);
-      var base = baseOf(ids);
-      (s.problems || []).forEach(function (p) {
-        var solvers = ids.filter(function (id) {
-          var list = s.solved[id];
-          return list && list.indexOf(p.id) !== -1;
-        });
-        var weight = priceOf(p, solvers.length, base);
-        solvers.forEach(function (id) {
-          if (score[id] !== undefined) score[id] += weight;
-        });
-      });
-    });
-
-    // гробы с надбавками — тоже очки, и на сайте они считаются так же
-    var taken = readSolutions(DATA.graves);
-    ((DATA.graves && DATA.graves.problems) || []).forEach(function (p) {
-      var mine = taken.filter(function (x) { return x.problem === p.id; });
-      var weight = priceOf(p, mine.length, gravesBase());
-      mine.forEach(function (x) {
-        if (score[x.student] === undefined) return;
-        score[x.student] += weight + solutionBonus(x);
-      });
-    });
-
-    var best = null;
-    Object.keys(score).forEach(function (id) {
-      if (score[id] > 0 && (!best || score[id] > score[best])) best = id;
-    });
-    return best;
   }
 
   // ── вид: темы ───────────────────────────────────────────
@@ -3207,6 +3319,8 @@
     SAVED.days = {};
     state.typesEdit = null;
     SAVED.types = null;
+    state.scoring = null;
+    SAVED.scoring = null;
     state.graves = null;
     SAVED.graves = null;
     state.series = null;
@@ -3280,6 +3394,7 @@
     var items = [];
     if (rosterDirty()) items.push("Ученики");
     if (typesDirty()) items.push("Темы");
+    if (scoringDirty()) items.push("Очки");
     days.forEach(function (d) { items.push(dayLabel(d)); });
     gone.forEach(function (n) {
       items.push((state.removed[n] || "Серия") + " · удалить");
@@ -3343,6 +3458,11 @@
       host.appendChild(rev);
     }
 
+    var shScore = el("div", "section-head");
+    shScore.appendChild(el("span", "section-title", "Очки"));
+    host.appendChild(shScore);
+    host.appendChild(scoringDefaultCard());
+
     var sh = el("div", "section-head");
     sh.appendChild(el("span", "section-title", "Доступ"));
     host.appendChild(sh);
@@ -3381,6 +3501,37 @@
     }));
     token.appendChild(row);
     host.appendChild(token);
+  }
+
+  /* Общий способ считать n: по нему идут все серии, у которых своего нет. Стоит
+     он рядом с токеном, а не в серии, потому что серии не касается вовсе —
+     касается всех сразу. */
+  function scoringDefaultCard() {
+    var card = el("div", "card");
+    var cur = defaultScoring();
+
+    card.appendChild(scoringChips(cur, false, baseOf(roster()), function (val) {
+      state.scoring = val;
+      state.note = "";
+      state.noteKind = "";
+      render();
+    }));
+
+    if (cur.mode === "fixed") {
+      card.appendChild(scoringInput(cur, function (v) {
+        state.scoring = { mode: "fixed", n: v };
+        state.note = "";
+        state.noteKind = "";
+        render();
+      }));
+    }
+
+    card.appendChild(el("div", "savecard-note",
+      "так считаются серии, у которых способ не выбран свой"));
+    card.appendChild(el("div", "savecard-note", cur.mode === "fixed"
+      ? "по этому же числу считаются гробы"
+      : "гробы считаются по всей группе: ни списка, ни пришедших у них нет"));
+    return card;
   }
 
   function check() {
@@ -3717,6 +3868,11 @@
           JSON.stringify(state.typesEdit) === JSON.stringify(DATA.types)) {
         state.typesEdit = null;
         SAVED.types = null;
+      }
+      if (state.scoring &&
+          JSON.stringify(state.scoring) === JSON.stringify(configScoring())) {
+        state.scoring = null;
+        SAVED.scoring = null;
       }
       if (state.graves &&
           JSON.stringify(gravesPayload(state.graves)) ===
