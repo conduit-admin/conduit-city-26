@@ -1055,7 +1055,7 @@
       head.appendChild(el("b", "grave-num", p.id));
       var theme = el("span", "grave-theme");
       theme.appendChild(leafMark(leaf));
-      theme.appendChild(document.createTextNode(leaf ? leaf.label : "без темы"));
+      theme.appendChild(el("span", "ell", leaf ? leaf.label : "без темы"));
       head.appendChild(theme);
       block.appendChild(head);
 
@@ -1277,7 +1277,7 @@
 
     var label = el("span", "pline-name");
     if (mark) label.appendChild(mark);
-    label.appendChild(document.createTextNode(name));
+    label.appendChild(el("span", "ell", name));
     line.appendChild(label);
 
     line.appendChild(meter(stat.total ? stat.got / stat.total : 0, slot, small));

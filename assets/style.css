@@ -1550,7 +1550,20 @@ table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
    строки оно не сработало бы, текст в ней — безымянный кусок между
    предметами. */
 .subline-name { display: flex; align-items: center; gap: 9px; min-width: 0; }
-.subline-name .ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Обрезание длинного текста многоточием. Стоит на самом тексте, а не на
+   строке, которая его держит: строка эта — гибкий контейнер со значком слева,
+   а в нём текст лежит безымянным куском, и до безымянного text-overflow не
+   достаёт. Обрезка тогда происходит, но многоточия не рисуется — слово просто
+   обрывается на середине буквы.
+
+   Отсюда правило: там, где рядом с текстом стоит значок, текст заворачивается
+   в свой span с этим классом. */
+.ell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Кнопка выбора значка: сам значок и есть её содержимое. Рамка взята заметная,
    а не бликовая: бликовая (--border) на светлой теме сливается с карточкой, и
@@ -1625,9 +1638,6 @@ table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
   align-items: center;
   gap: 7px;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-weight: 560;
 }
 
@@ -2395,9 +2405,6 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   align-items: center;
   gap: 7px;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: 12.5px;
   color: var(--ink-2);
 }
