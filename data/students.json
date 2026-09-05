@@ -36,10 +36,6 @@
     "name": "Габов Марк"
   },
   {
-    "id": "gogin-timofey",
-    "name": "Гогин Тимофей"
-  },
-  {
     "id": "gulev-maksim",
     "name": "Гулев Максим"
   },
@@ -66,10 +62,6 @@
   {
     "id": "kostylev-konstantin",
     "name": "Костылев Константин"
-  },
-  {
-    "id": "kuzichev-maksim",
-    "name": "Кузичев Максим"
   },
   {
     "id": "larionova-natalya",
@@ -138,5 +130,21 @@
   {
     "id": "shirtanova-valeriya",
     "name": "Ширтанова Валерия"
+  },
+  {
+    "id": "burovik-nelli",
+    "name": "Буровик Нелли"
+  },
+  {
+    "id": "zhuchkov-saveliy",
+    "name": "Жучков Савелий"
+  },
+  {
+    "id": "gavrilov-aleksandr",
+    "name": "Гаврилов Александр"
+  },
+  {
+    "id": "kuchinskaya-ekaterina",
+    "name": "Кучинская Екатерина"
   }
 ]
