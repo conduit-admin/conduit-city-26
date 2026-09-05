@@ -56,7 +56,13 @@
       "sub": "graphs"
     }
   ],
-  "solutions": [],
+  "solutions": [
+    {
+      "student": "titov-viktor",
+      "problem": "Г7",
+      "bonus": 0
+    }
+  ],
   "pdf": {
     "file": "grobariy.pdf",
     "size": 124035,
