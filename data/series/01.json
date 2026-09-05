@@ -15,7 +15,6 @@
     "budyanskiy-mihail",
     "velichko-platon",
     "gabov-mark",
-    "gogin-timofey",
     "gulev-maksim",
     "zarechnyuk-georgiy",
     "karonov-mihail",
@@ -23,7 +22,6 @@
     "kovalev-artem",
     "korsunov-bogdan",
     "kostylev-konstantin",
-    "kuzichev-maksim",
     "larionova-natalya",
     "lyubimov-slaven",
     "malyshev-saveliy",
@@ -33,34 +31,33 @@
     "ponomareva-eva",
     "saharov-kirill",
     "strelkov-sergey",
-    "titov-viktor",
     "titov-dmitriy",
-    "ushakov-sevastyan",
     "shipilov-andrey",
     "shirtanova-valeriya",
     "pogorelov-denis",
     "rudakova-vasilisa",
-    "celikov-aleksandr"
+    "celikov-aleksandr",
+    "gavrilov-aleksandr",
+    "zhuchkov-saveliy",
+    "burovik-nelli",
+    "kuchinskaya-ekaterina",
+    "ushakov-sevastyan",
+    "titov-viktor"
   ],
   "present": [
     "aksenova-elizaveta",
-    "andrienko-igor",
     "arhipov-aleksandr",
     "afanasev-igor",
     "babain-yuriy",
     "boyko-gleb",
     "budyanskiy-mihail",
     "velichko-platon",
-    "gabov-mark",
-    "gogin-timofey",
-    "gulev-maksim",
     "zarechnyuk-georgiy",
     "karonov-mihail",
     "karev-denis",
     "kovalev-artem",
     "korsunov-bogdan",
     "kostylev-konstantin",
-    "kuzichev-maksim",
     "larionova-natalya",
     "lyubimov-slaven",
     "malyshev-saveliy",
@@ -69,15 +66,18 @@
     "osipova-viktoriya",
     "ponomareva-eva",
     "saharov-kirill",
-    "strelkov-sergey",
-    "titov-viktor",
     "titov-dmitriy",
-    "ushakov-sevastyan",
     "shipilov-andrey",
     "shirtanova-valeriya",
     "pogorelov-denis",
     "rudakova-vasilisa",
-    "celikov-aleksandr"
+    "celikov-aleksandr",
+    "gavrilov-aleksandr",
+    "zhuchkov-saveliy",
+    "burovik-nelli",
+    "kuchinskaya-ekaterina",
+    "ushakov-sevastyan",
+    "titov-viktor"
   ],
   "problems": [
     {
@@ -131,7 +131,6 @@
   ],
   "solved": {
     "aksenova-elizaveta": [
-      "0",
       "1",
       "2",
       "3",
@@ -140,172 +139,177 @@
       "6",
       "7"
     ],
-    "andrienko-igor": [
-      "1",
-      "3",
-      "6",
-      "7"
-    ],
+    "andrienko-igor": [],
     "arhipov-aleksandr": [
-      "0",
-      "1",
-      "6"
+      "1"
     ],
     "afanasev-igor": [
+      "1",
       "2",
+      "3",
       "4",
+      "5",
       "7"
     ],
     "babain-yuriy": [
-      "1",
-      "2",
-      "6"
+      "3"
     ],
     "boyko-gleb": [
       "3",
-      "5"
+      "4"
     ],
     "budyanskiy-mihail": [
-      "0",
       "1",
+      "2",
       "3",
+      "4",
       "5",
-      "7"
+      "6"
     ],
     "velichko-platon": [
       "1",
-      "2",
-      "6"
-    ],
-    "gabov-mark": [
-      "0",
-      "4"
-    ],
-    "gogin-timofey": [
-      "1",
-      "4",
-      "6",
-      "7"
-    ],
-    "gulev-maksim": [
       "3",
-      "7"
+      "5"
     ],
+    "gabov-mark": [],
+    "gulev-maksim": [],
     "zarechnyuk-georgiy": [
       "1",
-      "4",
-      "5",
-      "7"
+      "3",
+      "4"
     ],
     "karonov-mihail": [
-      "0",
-      "2",
-      "4",
-      "6"
-    ],
-    "karev-denis": [
-      "0",
       "1",
       "3",
-      "7"
+      "4",
+      "5"
+    ],
+    "karev-denis": [
+      "1",
+      "3",
+      "4",
+      "5"
     ],
     "kovalev-artem": [
       "1",
-      "2",
       "3",
       "5"
     ],
     "korsunov-bogdan": [
-      "5"
+      "3"
     ],
     "kostylev-konstantin": [
-      "1",
       "3",
-      "6"
+      "4"
     ],
-    "kuzichev-maksim": [],
     "larionova-natalya": [
-      "0",
       "1",
       "3",
+      "4",
       "5",
       "6"
     ],
     "lyubimov-slaven": [
-      "2",
-      "5",
-      "7"
-    ],
-    "malyshev-saveliy": [
-      "0",
-      "1"
-    ],
-    "mahrov-aleksandr": [
-      "0",
+      "1",
       "3",
-      "5",
-      "6"
+      "5"
     ],
-    "novoselov-maksim": [],
-    "osipova-viktoriya": [
+    "malyshev-saveliy": [],
+    "mahrov-aleksandr": [
+      "1",
+      "3",
       "4",
-      "7"
+      "5"
+    ],
+    "novoselov-maksim": [
+      "5"
+    ],
+    "osipova-viktoriya": [
+      "1",
+      "3",
+      "4",
+      "5"
     ],
     "ponomareva-eva": [
-      "0",
-      "7"
+      "1",
+      "3"
     ],
     "saharov-kirill": [
-      "2",
-      "3",
-      "6"
+      "3"
     ],
-    "strelkov-sergey": [
-      "0",
-      "5",
-      "7"
-    ],
-    "titov-viktor": [
-      "0",
+    "strelkov-sergey": [],
+    "titov-dmitriy": [
       "1",
       "2",
       "3",
+      "4",
+      "5",
       "6",
       "7"
     ],
-    "titov-dmitriy": [
-      "2",
-      "3"
-    ],
-    "ushakov-sevastyan": [
-      "0",
-      "3",
-      "4",
-      "6"
-    ],
     "shipilov-andrey": [
       "1",
-      "3"
+      "3",
+      "5"
     ],
     "shirtanova-valeriya": [
-      "0",
+      "1",
       "3",
-      "5",
-      "7"
+      "5"
     ],
     "pogorelov-denis": [
+      "1",
       "3",
-      "6"
+      "4",
+      "5"
     ],
     "rudakova-vasilisa": [
       "1",
       "3",
-      "5",
-      "7"
+      "4",
+      "5"
     ],
     "celikov-aleksandr": [
       "1",
+      "3",
+      "5",
+      "6"
+    ],
+    "gavrilov-aleksandr": [],
+    "zhuchkov-saveliy": [
+      "1",
+      "3"
+    ],
+    "burovik-nelli": [
+      "1",
       "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "kuchinskaya-ekaterina": [
+      "1",
+      "2",
+      "3",
+      "5"
+    ],
+    "ushakov-sevastyan": [
+      "1",
+      "3",
+      "4"
+    ],
+    "titov-viktor": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "gogin-timofey": [
+      "1",
       "4",
       "6",
       "7"
