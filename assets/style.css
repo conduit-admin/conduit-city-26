@@ -180,10 +180,16 @@
      выбирать один цвет на две задачи с разными требованиями к контрасту. */
   --danger-bg: rgba(178, 30, 54, 0.94);
   --danger-glow: rgba(255, 170, 130, 0.55);
-  /* Листок и файлы зачёта. Тон уведён в сине-зелёный: из восьми цветов разделов
-     ни один сюда не попадает, а листок разделом и не является. */
+  /* Листок серии и вопросы зачёта. Тон сине-зелёный: разделом листок не
+     является, и цвет ему нужен свой. */
   --sheet-bg: rgba(15, 76, 92, 0.94);
   --sheet-glow: rgba(120, 220, 235, 0.44);
+
+  /* Ответы зачёта — другой цвет, чем вопросы: на одной странице лежат две стопки
+     файлов, и разница между ними должна быть видна раньше, чем прочитан
+     заголовок. */
+  --ans-bg: rgba(52, 34, 96, 0.94);
+  --ans-glow: rgba(190, 160, 255, 0.40);
 
   /* Красный в знаке — единственный, который не значит ничего, кроме самого
      знака: он часть логотипа и потому живёт отдельно от палитры разделов. */
@@ -300,6 +306,8 @@
     --danger-glow: rgba(255, 190, 150, 0.38);
     --sheet-bg: rgba(20, 88, 106, 0.90);
     --sheet-glow: rgba(120, 220, 235, 0.30);
+    --ans-bg: rgba(64, 44, 116, 0.88);
+    --ans-glow: rgba(190, 160, 255, 0.30);
 
     --mark-red: #ff4f42;
 
@@ -645,6 +653,7 @@ input[type="number"]::-webkit-inner-spin-button {
    не трогая правило. Разрешённые места перечислены в README. */
 .solid,
 .lik-row,
+.thanks,
 .chip.cat[aria-pressed="true"],
 .icon-btn.del,
 .icon-btn.danger,
@@ -663,6 +672,7 @@ input[type="number"]::-webkit-inner-spin-button {
    голый крестик, и поднимать его нечем — а так поднимать и не нужно. */
 .solid::after,
 .lik-row::after,
+.thanks::after,
 .chip.cat[aria-pressed="true"]::after,
 .icon-btn.del::after,
 .icon-btn.danger::after,
@@ -687,6 +697,8 @@ input[type="number"]::-webkit-inner-spin-button {
 .solid .tile-label,
 .solid .tile-note,
 .lik-row .lik-meta { color: var(--solid-dim); }
+
+.thanks > * { position: relative; }
 
 .card { padding: 14px 16px; }
 
@@ -740,32 +752,30 @@ input[type="number"]::-webkit-inner-spin-button {
   color: var(--ink-muted);
 }
 
-/* ── стекло кнопок ──────────────────────────────────────
+/* ── материал кнопок ────────────────────────────────────
    Одна поверхность на всё, что нажимают: ярлык отбора, мелкое действие, кнопку
-   редактора, квадратную кнопку, счётчик. Собрана она из того же, что и панель:
-   полупрозрачная заливка, косой блик, светлая грань поверху вместо тени.
-   Кнопки различаются размером и тем, чем показывают состояние, — но не
-   материалом, и оттого страница смотрится одним целым.
+   редактора, квадратную кнопку, счётчик. Ни рамки, ни стекла, ни тени — только
+   приглушённая подложка, и та своего цвета в каждой теме.
 
-   Рамка взята приглушённая: на стекле её работу делает грань, а тёмный контур
-   поверх прозрачной заливки выглядит наклейкой, а не гранью. */
+   Стекло с рамкой и грань поверху тут были и держались долго, но кончилось это
+   тем, что кнопка спорила по весу с панелью, на которой лежит. Плотность
+   осталась ровно там, где она что-то значит: у плашки раздела, у файла, у
+   выбранной серии. Остальное — тихая подложка. */
 .chip, .mini-btn, .ghost-btn, .icon-btn, .icon-pick, .step-btn {
   appearance: none;
   font: inherit;
   color: var(--ink-2);
-  background-color: var(--glass);
-  background-image: linear-gradient(158deg, var(--glass-sheen), transparent 62%);
-  border: 1px solid var(--glass-edge);
-  box-shadow:
-    inset 0 1px 0 var(--glass-top),
-    0 1px 2px var(--btn-near),
-    0 5px 12px -7px var(--btn-far);
+  background-color: var(--quiet);
+  background-image: none;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
   cursor: pointer;
 }
 
 .chip:hover, .mini-btn:hover, .ghost-btn:hover,
 .icon-btn:hover, .icon-pick:hover, .step-btn:hover {
-  border-color: var(--ink-muted);
+  background-color: var(--quiet-on);
   color: var(--ink);
 }
 
@@ -847,9 +857,7 @@ input[type="number"]::-webkit-inner-spin-button {
    она не должна. Общий вид взят от отбора, без стекла. */
 .chip.pick[aria-pressed="false"]:not(.day) {
   color: var(--ink-2);
-  background-color: var(--glass);
-  background-image: linear-gradient(158deg, var(--glass-sheen), transparent 62%);
-  box-shadow: inset 0 1px 0 var(--glass-top);
+  background-color: var(--quiet);
   text-decoration: none;
 }
 
@@ -861,8 +869,7 @@ input[type="number"]::-webkit-inner-spin-button {
    и без исключения он белым не становился: у правила выбора три класса против
    двух у правила дня, и оно перебивало его независимо от порядка в файле. */
 .chip.pick[aria-pressed="true"]:not(.cat):not(.day) {
-  border-color: var(--ink);
-  background-color: var(--glass-on);
+  background-color: var(--quiet-on);
   color: var(--ink);
 }
 
@@ -1558,10 +1565,9 @@ table.conduit tfoot tr.weights td { color: var(--ink-2); font-weight: 560; }
   height: 30px;
   flex: none;
   padding: 0;
-  border-radius: 9px;
 }
 
-.icon-pick.open { border-color: var(--ink); background-color: var(--glass-on); }
+.icon-pick.open { background-color: var(--ink); color: var(--ink-inv); }
 
 /* Ярлык в россыпи значков — без подписи: значок и выбирают глазами, а два
    десятка названий рядом превратили бы россыпь в список. */
@@ -1861,17 +1867,16 @@ select.input { padding-right: 6px; }
   justify-content: center;
   gap: 7px;
   color: var(--ink);
-  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 560;
   line-height: 1;
-  padding: 9px 15px;
+  padding: 9px 17px;
   min-height: 40px;
   white-space: nowrap;
 }
 
 .ghost-btn:disabled { opacity: .38; cursor: default; }
-.ghost-btn:disabled:hover { border-color: var(--glass-edge); }
+.ghost-btn:disabled:hover { background-color: var(--quiet); }
 
 /* Плюс — отдельный знак, а не первый символ подписи: крупнее текста и тише по
    цвету, поэтому читается как знак действия, а «задача» остаётся словом. Он же
@@ -1892,7 +1897,6 @@ select.input { padding-right: 6px; }
 .ghost-btn.danger { color: var(--bad); border-color: var(--bad); }
 
 .icon-btn {
-  border-radius: var(--radius-sm);
   font-size: 17px;
   line-height: 1;
   width: 34px;
@@ -2292,7 +2296,7 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 
 .mini-btn:disabled { opacity: .4; cursor: default; }
 
-.mini-btn:disabled:hover { color: var(--ink-muted); }
+.mini-btn:disabled:hover { color: var(--ink-muted); background: var(--quiet); }
 
 /* ── гроборешения ──────────────────────────────────────── */
 
@@ -2307,7 +2311,6 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 }
 
 .step-btn {
-  border-radius: var(--radius-sm);
   font-size: 19px;
   line-height: 1;
   width: 34px;
@@ -2316,10 +2319,7 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 
 .step-btn:disabled { opacity: .35; cursor: default; }
 
-.step-btn:disabled:hover {
-  color: var(--ink-2);
-  border-color: var(--glass-edge);
-}
+.step-btn:disabled:hover { color: var(--ink-2); background-color: var(--quiet); }
 
 /* Показание, а не кнопка: нажимать на само число некуда. Ноль приглушён,
    поставленное — нет, так с одного взгляда видно, кому баллы уже дописаны. */
@@ -2457,6 +2457,11 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   cursor: pointer;
 }
 
+.lik-row.lik-ans {
+  --solid-bg: var(--ans-bg);
+  --solid-glow: var(--ans-glow);
+}
+
 .lik-row > * { position: relative; }
 .lik-row:last-child { margin-bottom: 0; }
 .lik-row:hover { filter: brightness(1.08); }
@@ -2477,6 +2482,21 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 }
 
 .lik-meta { font-size: 12px; color: var(--ink-muted); }
+
+/* Посвящение на вкладке зачёта. Плашка тёплая — та же, что у «Самого ценного
+   плюса»: благодарность и должна быть тёплой. Стоит между вопросами и ответами
+   нарочно — читается ровно перед тем, за что благодарят. */
+.thanks {
+  --solid-bg: var(--warm-bg);
+  --solid-glow: var(--warm-glow);
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.thanks b { font-weight: 620; }
 
 /* Стрелка вместо слова «скачать». Слово объясняло то, что и так очевидно:
    строка одна, действие у неё одно, и заходят сюда ровно за ним. Стрелка на
@@ -2569,6 +2589,10 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 /* Строка с числом посередине: имя — сколько плюсов — крестик. Обычная строка
    подраздела двухколоночная, здесь колонок три. */
 .subline.wide { grid-template-columns: 1fr auto auto; }
+
+/* У файла зачёта колонок четыре: к имени, размеру и крестику добавилась отметка
+   «вопросы». */
+.subline.wide.four { grid-template-columns: 1fr auto auto auto; }
 .subline.wide .subline-val { color: var(--ink-2); font-size: 13.5px; }
 .subline .badge { margin-left: 8px; }
 

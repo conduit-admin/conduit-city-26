@@ -1168,7 +1168,10 @@
 
   function zachetPayload(list) {
     return (list || []).map(function (it) {
-      return { title: it.title, file: it.file, size: it.size, at: it.at };
+      var out = { title: it.title, file: it.file, size: it.size, at: it.at };
+      // отметка есть только у списка вопросов, у прочих поля нет вовсе
+      if (it.questions) out.questions = true;
+      return out;
     });
   }
 
@@ -3111,12 +3114,27 @@
 
   function zachetRow(it) {
     var path = ZACHET_DIR + it.file;
-    var line = el("div", "subline wide");
+    var line = el("div", "subline wide four");
 
     var main = el("span", "subline-name");
     main.appendChild(document.createTextNode(it.title));
     if (stagedBlob(path)) main.appendChild(el("i", "badge", "новый"));
     line.appendChild(main);
+
+    /* Отметка «вопросы». На сайте список вопросов стоит первым и отдельно от
+       ответов, и знать, который из файлов он, нужно оттуда. Отметка одна на весь
+       зачёт: назначая её одному файлу, снимаем со всех прочих. */
+    var ask = el("button", "chip quiet", "вопросы");
+    ask.type = "button";
+    ask.setAttribute("aria-pressed", it.questions ? "true" : "false");
+    ask.addEventListener("click", function () {
+      var on = !it.questions;
+      zachetList().forEach(function (x) { delete x.questions; });
+      if (on) it.questions = true;
+      touchZachet();
+      render();
+    });
+    line.appendChild(ask);
 
     line.appendChild(el("span", "subline-val muted", fileSize(it.size)));
 

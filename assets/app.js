@@ -1095,6 +1095,39 @@
 
   /* Список файлов и больше ничего: сюда заходят с одной целью — забрать pdf,
      поэтому вся строка и есть кнопка скачивания. */
+  /* Кому мы обязаны ответами. Стоит между вопросами и ответами нарочно: читается
+     ровно перед тем, за что благодарят. */
+  var THANKS = "Ответы на вопросы зачёта основаны на конспектах Елизаветы " +
+    "Аксеновой. Преклоняю голову и призываю читателей быть благодарными.";
+
+  /* Список вопросов помечен в самом файле. Отметки может не оказаться вовсе —
+     у старых записей её нет, — и тогда вопросами считается первый файл: он и
+     заводится первым. */
+  function questionFiles(items) {
+    var marked = items.filter(function (it) { return it.questions; });
+    if (marked.length) return marked;
+    return items.length ? [items[0]] : [];
+  }
+
+  /* Строка файла зачёта. Вопросы и ответы отличаются цветом плашки: на одной
+     странице лежат две стопки, и разница должна быть видна раньше, чем прочитан
+     заголовок. */
+  function zachetRow(it, cls) {
+    var row = el("a", "lik-row" + (cls ? " " + cls : ""));
+    // зачёт лежит своей папкой: сборной свалки файлов лучше не заводить
+    row.href = "data/zachet/" + encodeURIComponent(it.file);
+    // без этого телефон открывает pdf во вкладке, а его просили скачать
+    row.setAttribute("download", it.title + ".pdf");
+
+    var main = el("span", "lik-main");
+    main.appendChild(el("span", "lik-title", it.title));
+    main.appendChild(el("span", "lik-meta",
+      "PDF" + (fileSize(it.size) ? " · " + fileSize(it.size) : "")));
+    row.appendChild(main);
+    row.appendChild(el("span", "lik-get", "\u2193"));
+    return row;
+  }
+
   function viewZachet(host) {
     var items = zachet();
     if (!items.length) {
@@ -1104,24 +1137,28 @@
       return;
     }
 
-    var card = el("div", "card");
-    items.forEach(function (it) {
-      var row = el("a", "lik-row");
-      // зачёт лежит своей папкой: сборной свалки файлов лучше не заводить
-      row.href = "data/zachet/" + encodeURIComponent(it.file);
-      // без этого телефон открывает pdf во вкладке, а его просили скачать
-      row.setAttribute("download", it.title + ".pdf");
+    var asked = questionFiles(items);
+    var answers = items.filter(function (it) { return asked.indexOf(it) === -1; });
 
-      var main = el("span", "lik-main");
-      main.appendChild(el("span", "lik-title", it.title));
-      main.appendChild(el("span", "lik-meta",
-        "PDF" + (fileSize(it.size) ? " · " + fileSize(it.size) : "")));
-      row.appendChild(main);
+    if (asked.length) {
+      var qcard = el("div", "card");
+      asked.forEach(function (it) { qcard.appendChild(zachetRow(it, "lik-ask")); });
+      host.appendChild(qcard);
+    }
 
-      row.appendChild(el("span", "lik-get", "↓"));
-      card.appendChild(row);
-    });
-    host.appendChild(card);
+    var thanks = el("div", "thanks");
+    thanks.appendChild(el("span", null, THANKS));
+    host.appendChild(thanks);
+
+    if (answers.length) {
+      var sh = el("div", "section-head");
+      sh.appendChild(el("span", "section-title", "Ответы"));
+      host.appendChild(sh);
+
+      var acard = el("div", "card");
+      answers.forEach(function (it) { acard.appendChild(zachetRow(it, "lik-ans")); });
+      host.appendChild(acard);
+    }
   }
 
   // ── вид: ученики ────────────────────────────────────────

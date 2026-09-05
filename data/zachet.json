@@ -4,7 +4,8 @@
       "title": "Список вопросов",
       "file": "spisok-voprosov.pdf",
       "size": 160715,
-      "at": "2026-09-04"
+      "at": "2026-09-04",
+      "questions": true
     },
     {
       "title": "Интегралы и первообразные",
