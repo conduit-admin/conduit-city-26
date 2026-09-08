@@ -97,15 +97,9 @@
       "exercise": false
     },
     {
-      "id": "3а",
+      "id": "3",
       "type": "algebra",
-      "sub": "funkcionalnye-uravneniya",
-      "exercise": false
-    },
-    {
-      "id": "3б",
-      "type": "algebra",
-      "sub": "funkcionalnye-uravneniya",
+      "sub": "matematicheskiy-analiz",
       "exercise": false
     },
     {
