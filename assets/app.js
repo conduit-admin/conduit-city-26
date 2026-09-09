@@ -489,10 +489,7 @@
     });
     rows.forEach(function (r, i) { r.rank = i + 1; });
 
-    var place = {};
-    rows.forEach(function (r) { place[r.id] = r.rank; });
-
-    return { rows: rows, available: available, ceiling: ceiling, place: place };
+    return { rows: rows, available: available, ceiling: ceiling };
   }
 
   function filtered() { return computeRating(state.series, state.leaves, state.kinds); }
@@ -577,19 +574,6 @@
   }
 
   function th(text, cls) { return el("th", cls, text); }
-
-  /* Места без последней из выбранных серий — чтобы показать, кто на ней
-     поднялся, а кто опустился. Считается по тому же отбору: «прошлое» здесь
-     значит «то же самое, но без последнего занятия». Одна серия ни с чем не
-     сравнивается, и стрелок тогда нет вовсе. */
-  function prevPlaces() {
-    var live = realSeries().filter(function (x) { return state.series.has(x.n); });
-    if (live.length < 2) return null;
-    var without = new Set();
-    state.series.forEach(function (n) { without.add(n); });
-    without.delete(live[live.length - 1].n);
-    return computeRating(without, state.leaves, state.kinds).place;
-  }
 
   // ── фильтры ─────────────────────────────────────────────
 
@@ -738,7 +722,6 @@
     if (!UNITS.length) return viewEmpty(host);
 
     var f = renderFilters(host);
-    var prev = prevPlaces();
 
     /* Ширины колонок закреплены: при автоматической раскладке они зависят от
        самого длинного числа в столбце, и таблица переезжала при каждом
@@ -766,13 +749,6 @@
       var rank = el("td", "rank" + (r.rank <= 3 ? " rank-top" : "") +
         (r.rank === 1 ? " rank-1" : ""));
       rank.appendChild(el("b", "rank-num", r.rank));
-      /* Стрелка рисуется рамкой, а не знаком: шрифт на телефоне может не знать
-         нужный глиф, а треугольник из рамок есть всегда. */
-      if (prev && prev[r.id]) {
-        var d = prev[r.id] - r.rank;
-        if (d) rank.appendChild(el("span", "delta " + (d > 0 ? "up" : "down"),
-          String(Math.abs(d))));
-      }
       tr.appendChild(rank);
 
       tr.dataset.id = r.id;
