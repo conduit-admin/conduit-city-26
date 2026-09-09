@@ -56,6 +56,26 @@
      и двух разных смыслов на одном значке быть не должно. */
   function isHonoured(id) { return id === HONOURED; }
 
+  /* Кто посмел встать выше Лизы. Считается по текущему отбору, поэтому набор
+     живой: переключил фильтр — и обидчики другие.
+
+     Лениво и один раз за отрисовку: имя рисуется в шести местах, а пересчёт
+     рейтинга не бесплатный. Кэш сбрасывается в paint. */
+  var rivalsCache = null;
+
+  function rivals() {
+    if (rivalsCache) return rivalsCache;
+    rivalsCache = new Set();
+    var rows = filtered().rows;
+    var mine = 0;
+    rows.forEach(function (r) { if (r.id === HONOURED) mine = r.rank; });
+    // Лизы нет в отборе или она первая — обижаться не на кого
+    if (mine) rows.forEach(function (r) {
+      if (r.rank < mine) rivalsCache.add(r.id);
+    });
+    return rivalsCache;
+  }
+
   /* Вес задачи = n − число решивших, где n — сколько человек стояло за задачей:
      задача, которую давали десятерым, и задача на весь кружок стоят по-разному —
      и правильно. Единица снизу — на пустой список: n = 0 обнулило бы всё.
@@ -276,7 +296,8 @@
   function nameCell(tag, cls, student) {
     var node = el(tag, cls);
     var box = el("span", "name-box");
-    box.appendChild(el("span", "nm", student.name));
+    box.appendChild(el("span", rivals().has(student.id) ? "nm nm-rival" : "nm",
+      student.name));
     if (isAdmin(student.id)) box.appendChild(el("i", "badge-admin", "◆"));
     if (isHonoured(student.id)) box.appendChild(el("i", "badge-leader"));
     node.appendChild(box);
@@ -1609,6 +1630,7 @@
      как страница складывается, особенно на рейтинге, где строк три десятка. */
   function paint() {
     var main = document.getElementById("main");
+    rivalsCache = null;
     clear(main);
     syncTabs();
 
