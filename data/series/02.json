@@ -15,7 +15,6 @@
     "budyanskiy-mihail",
     "burovik-nelli",
     "velichko-platon",
-    "gabov-mark",
     "gavrilov-aleksandr",
     "gulev-maksim",
     "zhuchkov-saveliy",
@@ -42,7 +41,9 @@
     "ushakov-sevastyan",
     "celikov-aleksandr",
     "shipilov-andrey",
-    "shirtanova-valeriya"
+    "shirtanova-valeriya",
+    "konstantinov-egor",
+    "tulenceva-marina"
   ],
   "present": [
     "aksenova-elizaveta",
@@ -53,7 +54,6 @@
     "budyanskiy-mihail",
     "burovik-nelli",
     "velichko-platon",
-    "gabov-mark",
     "gavrilov-aleksandr",
     "gulev-maksim",
     "zhuchkov-saveliy",
@@ -79,7 +79,9 @@
     "ushakov-sevastyan",
     "celikov-aleksandr",
     "shipilov-andrey",
-    "shirtanova-valeriya"
+    "shirtanova-valeriya",
+    "konstantinov-egor",
+    "tulenceva-marina"
   ],
   "problems": [
     {
@@ -170,7 +172,6 @@
       "2",
       "4"
     ],
-    "gabov-mark": [],
     "gavrilov-aleksandr": [
       "4"
     ],
@@ -289,6 +290,17 @@
     "shirtanova-valeriya": [
       "1",
       "4"
+    ],
+    "konstantinov-egor": [
+      "1",
+      "2",
+      "4"
+    ],
+    "tulenceva-marina": [
+      "1",
+      "3",
+      "4",
+      "6"
     ]
   },
   "pdf": {
