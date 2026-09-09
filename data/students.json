@@ -28,16 +28,24 @@
     "name": "Будянский Михаил"
   },
   {
+    "id": "burovik-nelli",
+    "name": "Буровик Нелли"
+  },
+  {
     "id": "velichko-platon",
     "name": "Величко Платон"
   },
   {
-    "id": "gabov-mark",
-    "name": "Габов Марк"
+    "id": "gavrilov-aleksandr",
+    "name": "Гаврилов Александр"
   },
   {
     "id": "gulev-maksim",
     "name": "Гулев Максим"
+  },
+  {
+    "id": "zhuchkov-saveliy",
+    "name": "Жучков Савелий"
   },
   {
     "id": "zarechnyuk-georgiy",
@@ -62,6 +70,10 @@
   {
     "id": "kostylev-konstantin",
     "name": "Костылев Константин"
+  },
+  {
+    "id": "kuchinskaya-ekaterina",
+    "name": "Кучинская Екатерина"
   },
   {
     "id": "larionova-natalya",
@@ -132,19 +144,11 @@
     "name": "Ширтанова Валерия"
   },
   {
-    "id": "burovik-nelli",
-    "name": "Буровик Нелли"
+    "id": "tulenceva-marina",
+    "name": "Туленцева Марина"
   },
   {
-    "id": "zhuchkov-saveliy",
-    "name": "Жучков Савелий"
-  },
-  {
-    "id": "gavrilov-aleksandr",
-    "name": "Гаврилов Александр"
-  },
-  {
-    "id": "kuchinskaya-ekaterina",
-    "name": "Кучинская Екатерина"
+    "id": "konstantinov-egor",
+    "name": "Константинов Егор"
   }
 ]
