@@ -108,6 +108,11 @@
         "id": "klassika-2",
         "name": "Классика",
         "icon": "column"
+      },
+      {
+        "id": "kombinatornaya-teoriya-chisel",
+        "name": "Комбинаторная теория чисел",
+        "icon": "none"
       }
     ]
   }
