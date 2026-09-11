@@ -112,8 +112,8 @@
     },
     {
       "id": "5",
-      "type": "algebra",
-      "sub": "lineynaya-algebra",
+      "type": "comb",
+      "sub": "podschet",
       "exercise": false
     },
     {
