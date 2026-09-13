@@ -337,6 +337,14 @@
     return Array.isArray(items) ? items : [];
   }
 
+  /* Задачники — листки прошлых лет целиком, отдельной стопкой. Со счётом они
+     не связаны так же, как зачёт: это архив, к которому отсылают номера задач
+     вроде «Лаг10-2-1». Список в data/zadachniki.json, файлы — в data/zadachniki/. */
+  function zadachniki() {
+    var items = DATA.zadachniki && DATA.zadachniki.items;
+    return Array.isArray(items) ? items : [];
+  }
+
   /* Размер словами: килобайты до мегабайта, дальше мегабайты с десятой. Точный
      байт никому не нужен — важно понять, ждать ли загрузку с телефона. */
   function fileSize(n) {
@@ -1120,13 +1128,15 @@
     return items.length ? [items[0]] : [];
   }
 
-  /* Строка файла зачёта. Вопросы и ответы отличаются цветом плашки: на одной
-     странице лежат две стопки, и разница должна быть видна раньше, чем прочитан
-     заголовок. */
-  function zachetRow(it, cls) {
+  /* Строка приложенного файла. Вопросы и ответы зачёта отличаются цветом
+     плашки: на одной странице лежат две стопки, и разница должна быть видна
+     раньше, чем прочитан заголовок.
+
+     `dir` — папка файла. Каждая стопка лежит своей папкой: сборной свалки
+     файлов лучше не заводить. */
+  function fileRow(dir, it, cls) {
     var row = el("a", "lik-row" + (cls ? " " + cls : ""));
-    // зачёт лежит своей папкой: сборной свалки файлов лучше не заводить
-    row.href = "data/zachet/" + encodeURIComponent(it.file);
+    row.href = "data/" + dir + "/" + encodeURIComponent(it.file);
     // без этого телефон открывает pdf во вкладке, а его просили скачать
     row.setAttribute("download", it.title + ".pdf");
 
@@ -1153,7 +1163,7 @@
 
     if (asked.length) {
       var qcard = el("div", "card");
-      asked.forEach(function (it) { qcard.appendChild(zachetRow(it, "lik-ask")); });
+      asked.forEach(function (it) { qcard.appendChild(fileRow("zachet", it, "lik-ask")); });
       host.appendChild(qcard);
     }
 
@@ -1167,9 +1177,23 @@
       host.appendChild(sh);
 
       var acard = el("div", "card");
-      answers.forEach(function (it) { acard.appendChild(zachetRow(it, "lik-ans")); });
+      answers.forEach(function (it) { acard.appendChild(fileRow("zachet", it, "lik-ans")); });
       host.appendChild(acard);
     }
+  }
+
+  function viewZadachniki(host) {
+    var items = zadachniki();
+    if (!items.length) {
+      var none = el("div", "card");
+      none.appendChild(el("div", "section-title", "Пока пусто"));
+      host.appendChild(none);
+      return;
+    }
+
+    var card = el("div", "card");
+    items.forEach(function (it) { card.appendChild(fileRow("zadachniki", it, "lik-ans")); });
+    host.appendChild(card);
   }
 
   // ── вид: ученики ────────────────────────────────────────
@@ -1617,6 +1641,7 @@
       else viewRating(main);
     } else if (state.view === "series") viewSeries(main);
     else if (state.view === "zachet") viewZachet(main);
+    else if (state.view === "zadachniki") viewZadachniki(main);
 
   }
 
@@ -1683,6 +1708,8 @@
     DATA.graves.solved = DATA.graves.solved || {};
     DATA.zachet = DATA.zachet || { items: [] };
     DATA.zachet.items = DATA.zachet.items || [];
+    DATA.zadachniki = DATA.zadachniki || { items: [] };
+    DATA.zadachniki.items = DATA.zadachniki.items || [];
     /* Выбывшего помечают, а не стирают: в общем списке и в рейтинге его больше
        нет, но имя нужно — оно стоит в кондуитах тех серий, где он занимался. */
     NAME = {};
@@ -1717,9 +1744,12 @@
     var days = get("series/manifest.json").catch(function () { return null; });
     // файлов зачёта может не быть вовсе — это не повод не открыть сайт
     var zach = get("zachet.json").catch(function () { return { items: [] }; });
+    // задачников тоже может не быть — это не повод не открыть сайт
+    var zad = get("zadachniki.json").catch(function () { return { items: [] }; });
 
     return Promise.all([
-      get("config.json"), get("types.json"), get("students.json"), days, soft, zach
+      get("config.json"), get("types.json"), get("students.json"), days, soft,
+      zach, zad
     ]).then(function (res) {
       var files = res[3] && Array.isArray(res[3].series) ? res[3].series : [];
       /* Пропавший файл серии не должен ронять страницу целиком: раз в списке
@@ -1730,7 +1760,8 @@
       })).then(function (series) {
         return {
           config: res[0], types: res[1], students: res[2],
-          series: series.filter(Boolean), graves: res[4], zachet: res[5]
+          series: series.filter(Boolean), graves: res[4], zachet: res[5],
+          zadachniki: res[6]
         };
       });
     });
