@@ -1478,8 +1478,14 @@ td.cell {
 table.conduit.names,
 table.conduit.cells:not(.edit) { pointer-events: none; }
 
+/* Граница остаётся распоркой, но не рисуется: саму черту ведёт ::before
+   панели, во всю её ширину. Пока граница была видимой, черт получалось две —
+   короткая внутри таблицы и длинная поверх поля, и шли они впритык друг к
+   другу, потому что фон псевдоэлемента отсчитывается от padding-box, а у
+   панели есть своя нижняя граница в пиксель. Убирать `border-top` совсем
+   нельзя: на нём стоит высота строк подвала. */
 table.conduit tfoot td {
-  border-top: 1px solid var(--grid);
+  border-top: 1px solid transparent;
   text-align: center;
   color: var(--ink-muted);
   font-size: 11px;
