@@ -191,6 +191,12 @@
   --ans-bg: rgba(52, 34, 96, 0.94);
   --ans-glow: rgba(190, 160, 255, 0.40);
 
+  /* Архив — задачники прошлых лет. Свой цвет, потому что вкладка своя: зелёный
+     не спорит ни с бирюзовыми вопросами, ни с фиолетовыми ответами зачёта,
+     а по смыслу это вообще другая стопка — не к чему вести, а что перебирать. */
+  --arch-bg: rgba(22, 74, 58, 0.94);
+  --arch-glow: rgba(130, 232, 180, 0.42);
+
   /* Красный в знаке — единственный, который не значит ничего, кроме самого
      знака: он часть логотипа и потому живёт отдельно от палитры разделов. */
   --font-ui: "Golos Text", "Segoe UI Variable Text", system-ui, -apple-system,
@@ -308,6 +314,8 @@
     --sheet-glow: rgba(120, 220, 235, 0.30);
     --ans-bg: rgba(64, 44, 116, 0.88);
     --ans-glow: rgba(190, 160, 255, 0.30);
+    --arch-bg: rgba(30, 88, 68, 0.88);
+    --arch-glow: rgba(130, 232, 180, 0.30);
 
     --mark-red: #ff4f42;
 
@@ -1248,6 +1256,33 @@ table.data td.name .name-box { position: relative; }
   height: 1px;
   background: var(--grid);
   pointer-events: none;
+}
+
+/* Черты подвала — «Решили» и «Вес» — тем же способом, что и черта заголовков.
+   Своими границами у tfoot они доходили только до края таблицы: на широком
+   экране половины стоят посередине, справа и слева остаётся поле, и линии
+   обрывались на пустом месте, тогда как верхняя шла от края до края.
+
+   Рисуются двумя слоями фона, отмеренными от низа панели: снизу вверх — строка
+   «Вес», над ней «Решили». Высота строки подвала одна на обе и вынесена в
+   переменную, иначе черты разъедутся со строками при первой же её правке. */
+.conduit-split {
+  --foot-row: 24px;
+}
+
+.conduit-split::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--grid), var(--grid))
+      left 0 bottom var(--foot-row) / 100% 1px no-repeat,
+    linear-gradient(var(--grid), var(--grid))
+      left 0 bottom calc(var(--foot-row) * 2) / 100% 1px no-repeat;
 }
 
 /* Обе половины стоят посередине панели, а не прижаты влево. Растягивать
@@ -2442,6 +2477,11 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   --solid-glow: var(--ans-glow);
 }
 
+.lik-row.lik-arch {
+  --solid-bg: var(--arch-bg);
+  --solid-glow: var(--arch-glow);
+}
+
 .lik-row > * { position: relative; }
 .lik-row:last-child { margin-bottom: 0; }
 .lik-row:hover { filter: brightness(1.08); }
@@ -2494,6 +2534,149 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   border: 1px solid var(--solid-edge);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
+}
+
+/* ── зачёт: подтемы ────────────────────────────────────── */
+
+/* Подтемы перечислены все, включая те, к которым ответа ещё нет: экран должен
+   отвечать не только «что есть», но и «сколько осталось». Готовая подтема
+   отличается кнопкой, неготовая — подписью вместо неё; строка одна и та же,
+   поэтому список читается ровно, а не рвётся на две стопки. */
+/* Названия разделов зачёта длинные — «IV. Комбинаторика и теория
+   вероятностей». Общий заголовок раздела набран в одну строку нарочно, но там
+   он короткий; здесь запрет на перенос выталкивал подпись за край экрана
+   и давал горизонтальную прокрутку на телефоне. Снимаем его только своим. */
+.zt-part-head .section-title { white-space: normal; min-width: 0; }
+.zt-part-head .section-note { flex: none; }
+
+.zt-topic { border-bottom: 1px solid var(--grid); }
+.zt-topic:last-child { border-bottom: 0; }
+
+.zt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap);
+  padding: 9px 2px;
+  cursor: pointer;
+  list-style: none;
+}
+
+/* Родной треугольник <details> убран в обоих движках: вместо него своя
+   галочка, которая поворачивается. */
+.zt-head::-webkit-details-marker { display: none; }
+.zt-head { -webkit-tap-highlight-color: transparent; }
+
+.zt-head::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin: 0 1px;
+  border-right: 1.6px solid var(--ink-muted);
+  border-bottom: 1.6px solid var(--ink-muted);
+  transform: rotate(-45deg);
+  transition: transform .16s ease;
+}
+
+.zt-topic[open] > .zt-head::before { transform: rotate(45deg); }
+
+.zt-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.zt-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.zt-code {
+  flex: none;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+
+.zt-title {
+  font-size: 14.5px;
+  font-weight: 560;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.zt-meta {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  padding-left: 30px;
+}
+
+/* Кнопка скачивания у подтемы — тот же фиолетовый, что у ответов зачёта:
+   это они и есть. Архив прошлых лет красится своим цветом, см. --arch-bg. */
+.zt-get {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+  line-height: 1;
+  text-decoration: none;
+  color: #fff;
+  border-radius: 999px;
+  background: var(--ans-bg);
+  box-shadow: inset 0 1px 0 var(--solid-edge);
+}
+
+.zt-get:hover { filter: brightness(1.12); }
+
+/* Подтема без ответа — приглушённая строка: список идёт ровно, но глаз сразу
+   отделяет готовое от незакрытого, не читая подписи. */
+.zt-empty .zt-title { color: var(--ink-2); font-weight: 500; }
+
+.zt-qs {
+  margin: 0 0 10px;
+  padding: 2px 0 0 30px;
+  list-style: none;
+}
+
+.zt-q {
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.zt-qcode {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  padding-top: 1px;
+  min-width: 34px;
+}
+
+.zt-qtext { min-width: 0; }
+
+/* Формулы приходят готовой разметкой со стороны сборки: библиотеки для них
+   на этой странице нет, и заводить её ради двух десятков коротких выражений
+   незачем. Курсив отделяет их от текста вопроса. */
+.zt-qtext .m { font-style: italic; }
+.zt-qtext .m sup,
+.zt-qtext .m sub { font-style: normal; font-size: 0.75em; }
+
+@media (max-width: 560px) {
+  .zt-meta, .zt-qs { padding-left: 0; }
+  .zt-qcode { min-width: 30px; }
+  .zt-title { font-size: 14px; }
 }
 
 /* ── плюсы по сериям ───────────────────────────────────── */

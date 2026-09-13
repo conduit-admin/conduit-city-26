@@ -26,7 +26,6 @@
   var state = {
     view: "series",
     roster: null,       // правка списка учеников, пока не сохранена
-    zachet: null,       // правка списка файлов зачёта, пока не сохранена
     days: {},           // слот -> рабочая копия серии
     removed: {},        // слот -> подпись серии, помеченной к удалению
     series: null,       // открытая серия, она же элемент days
@@ -57,7 +56,7 @@
      ещё старые, и всё выглядело бы несохранённым. */
   var SAVED = {
     types: null, graves: null, days: {},
-    roster: null, zachet: null, scoring: null
+    roster: null, scoring: null
   };
 
 
@@ -797,7 +796,6 @@
     days.forEach(function (d) { jobs.push(putDayFile(d)); });
     gone.forEach(function (n) { jobs.push(dropDayFile(n)); });
     if (gravesDirty()) jobs.push(putGravesFile);
-    if (zachetDirty()) jobs.push(putZachetFile);
     if (!jobs.length) return;
 
     // список серий правим последним и одной записью
@@ -1227,67 +1225,6 @@
     card.appendChild(el("div", "savecard-note",
       "pdf до " + fileSize(PDF_MAX) + "; уедет по кнопке сохранения"));
     return card;
-  }
-
-  // ── зачёт ───────────────────────────────────────────────
-
-  /* Приложенные pdf: список в data/zachet.json, сами файлы в data/zachet/.
-     Со счётом они не связаны — это просто раздаточный материал. */
-  var ZACHET_DIR = "data/zachet/";
-
-  function zachetList() {
-    if (!state.zachet) {
-      state.zachet = JSON.parse(JSON.stringify(
-        (DATA.zachet && DATA.zachet.items) || []));
-    }
-    return state.zachet;
-  }
-
-  function zachetPayload(list) {
-    return (list || []).map(function (it) {
-      var out = { title: it.title, file: it.file, size: it.size, at: it.at };
-      // отметка есть только у списка вопросов, у прочих поля нет вовсе
-      if (it.questions) out.questions = true;
-      return out;
-    });
-  }
-
-  function zachetDirty() {
-    if (!state.zachet) return false;
-    var was = SAVED.zachet ||
-      JSON.stringify(zachetPayload((DATA.zachet && DATA.zachet.items) || []));
-    return JSON.stringify(zachetPayload(state.zachet)) !== was;
-  }
-
-  function addZachet(title, f, data) {
-    var taken = zachetList().map(function (it) { return it.file; });
-    var name = pdfName(title, taken, "zachet");
-    stageBlob(ZACHET_DIR + name, data, f.size, title);
-    zachetList().push({
-      title: title, file: name, size: f.size, at: todayISO()
-    });
-    touchZachet();
-  }
-
-  function removeZachet(name) {
-    dropBlob(ZACHET_DIR + name);
-    state.zachet = zachetList().filter(function (x) { return x.file !== name; });
-    state.confirmFile = null;
-    touchZachet();
-  }
-
-  function touchZachet() {
-    state.note = "";
-    state.noteKind = "";
-  }
-
-  function putZachetFile() {
-    var payload = zachetPayload(zachetList());
-    return getFile("data/zachet.json").then(function (cur) {
-      return putFile("data/zachet.json", JSON.stringify({ items: payload }, null, 2) + "\n",
-        "Зачёт: " + withNum(payload.length, "файл", "файла", "файлов"),
-        cur && cur.sha);
-    }).then(function () { SAVED.zachet = JSON.stringify(payload); });
   }
 
   function needToken() {
@@ -3172,94 +3109,6 @@
     return line;
   }
 
-  // ── вид: зачёт ──────────────────────────────────────────
-
-  /* Файлы к зачёту: pdf, которые надо раздать. Выбранный файл читается прямо
-     здесь и лежит в памяти страницы, пока не нажато «Сохранить». */
-  function viewZachet(host) {
-    if (!DATA.zachetOk) return host.appendChild(brokenCard("список зачёта"));
-
-    var list = zachetList();
-    var card = el("div", "card");
-    list.forEach(function (it) { card.appendChild(zachetRow(it)); });
-    if (!list.length) card.appendChild(el("div", "block-none", "Пока пусто."));
-    host.appendChild(card);
-
-    var sh = el("div", "section-head");
-    sh.appendChild(el("span", "section-title", "Новый файл"));
-    host.appendChild(sh);
-
-    var add = el("div", "card");
-
-    var titleIn = el("input");
-    titleIn.className = "input";
-    titleIn.placeholder = "название";
-    titleIn.value = state.zachetTitle || "";
-    titleIn.addEventListener("input", function () {
-      state.zachetTitle = titleIn.value;
-    });
-    add.appendChild(field("Название", titleIn));
-
-    /* Своя кнопка вместо системного поля: у того подпись «файл не выбран» на
-       чужом языке и вид, который не подчинить. Настоящее поле спрятано. */
-    var file = el("input");
-    file.type = "file";
-    file.accept = "application/pdf,.pdf";
-    file.className = "hidden-file";
-    file.addEventListener("change", function () {
-      readPdf(file.files && file.files[0], function (data, f) {
-        addZachet(String(state.zachetTitle || "").trim() ||
-          f.name.replace(/\.pdf$/i, ""), f, data);
-        state.zachetTitle = "";
-        render();
-      });
-    });
-
-    var row = el("div", "frow gap");
-    row.appendChild(button("Выбрать pdf", "ghost-btn", function () { file.click(); }));
-    row.appendChild(file);
-    add.appendChild(row);
-    add.appendChild(el("div", "savecard-note",
-      "pdf до " + fileSize(PDF_MAX) + "; уедет по кнопке сохранения"));
-    host.appendChild(add);
-  }
-
-  function zachetRow(it) {
-    var path = ZACHET_DIR + it.file;
-    var line = el("div", "subline wide four");
-
-    var main = el("span", "subline-name");
-    main.appendChild(document.createTextNode(it.title));
-    if (stagedBlob(path)) main.appendChild(el("i", "badge", "новый"));
-    line.appendChild(main);
-
-    /* Отметка «вопросы». На сайте список вопросов стоит первым и отдельно от
-       ответов, и знать, который из файлов он, нужно оттуда. Отметка одна на весь
-       зачёт: назначая её одному файлу, снимаем со всех прочих. */
-    var ask = el("button", "chip quiet", "вопросы");
-    ask.type = "button";
-    ask.setAttribute("aria-pressed", it.questions ? "true" : "false");
-    ask.addEventListener("click", function () {
-      var on = !it.questions;
-      zachetList().forEach(function (x) { delete x.questions; });
-      if (on) it.questions = true;
-      touchZachet();
-      render();
-    });
-    line.appendChild(ask);
-
-    line.appendChild(el("span", "subline-val muted", fileSize(it.size)));
-
-    line.appendChild(deleteCell(state.confirmFile === path, function () {
-      state.confirmFile = path;
-      render();
-    }, function () {
-      removeZachet(it.file);
-      render();
-    }));
-    return line;
-  }
-
   // ── вид: сохранение ─────────────────────────────────────
 
   /* Единственное место, откуда что-либо уезжает в репозиторий. Правки во всех
@@ -3337,11 +3186,8 @@
     state.pickWeight = null;
     state.roster = null;
     SAVED.roster = null;
-    state.zachet = null;
-    SAVED.zachet = null;
     state.blobs = [];
     state.blobsGone = [];
-    state.zachetTitle = "";
     lastSeriesN = null;
     if (n !== null && dayBySlot(n)) openSeries(n);
     else render();
@@ -3400,7 +3246,6 @@
       items.push((state.removed[n] || "Серия") + " · удалить");
     });
     if (gravesDirty()) items.push("Гробарий");
-    if (zachetDirty()) items.push("Зачёт");
 
     var problem = null;
     for (var i = 0; i < days.length && !problem; i++) {
@@ -3744,7 +3589,6 @@
 
     if (state.view === "series") viewSeries(main);
     else if (state.view === "graves") viewGraves(main);
-    else if (state.view === "zachet") viewZachet(main);
     else if (state.view === "themes") viewThemes(main);
     else if (state.view === "students") viewStudents(main);
     else if (state.view === "save") viewSave(main);
@@ -3804,15 +3648,8 @@
       daysOk = false;
       return null;
     });
-    var zachetOk = true;
-    var zach = get("zachet.json").catch(function (e) {
-      // файла может не быть вовсе — это не порча данных, а пустой список
-      if (!e || e.status !== 404) zachetOk = false;
-      return { items: [] };
-    });
-
     return Promise.all([
-      get("config.json"), get("types.json"), get("students.json"), days, soft, zach
+      get("config.json"), get("types.json"), get("students.json"), days, soft
     ]).then(function (res) {
       /* Ученики стоят по алфавиту: в кондуите ищут человека, а не место.
          Сравнивается полное имя, поэтому однофамильцы идут по именам. */
@@ -3835,8 +3672,6 @@
           return {
             config: res[0], types: res[1], students: res[2],
             series: series, daysOk: daysOk, gravesOk: gravesOk,
-            zachetOk: zachetOk,
-            zachet: { items: (res[5] && res[5].items) || [] },
             graves: {
               pdf: res[4].pdf,
               problems: res[4].problems || [],
@@ -3885,12 +3720,6 @@
           JSON.stringify(rosterPayload(DATA.students))) {
         state.roster = null;
         SAVED.roster = null;
-      }
-      if (state.zachet && !blobsDirty() &&
-          JSON.stringify(zachetPayload(state.zachet)) ===
-          JSON.stringify(zachetPayload(DATA.zachet.items))) {
-        state.zachet = null;
-        SAVED.zachet = null;
       }
       render();
     }).catch(function () { render(); });

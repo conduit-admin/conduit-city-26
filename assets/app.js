@@ -329,15 +329,7 @@
     return u.weight + ((u.bonus && u.bonus[id]) || 0);
   }
 
-  /* Зачёт — приложенные pdf. Со счётом они никак не связаны: это просто файлы,
-     которые надо раздать. Список лежит в data/zachet.json, сами файлы — в
-     data/zachet/. */
-  function zachet() {
-    var items = DATA.zachet && DATA.zachet.items;
-    return Array.isArray(items) ? items : [];
-  }
-
-  /* Задачники — листки прошлых лет целиком, отдельной стопкой. Со счётом они
+  /* Архив — листки прошлых лет целиком, отдельной стопкой. Со счётом они
      не связаны так же, как зачёт: это архив, к которому отсылают номера задач
      вроде «Лаг10-2-1». Список в data/zadachniki.json, файлы — в data/zadachniki/. */
   function zadachniki() {
@@ -1119,13 +1111,9 @@
   var THANKS = "Ответы на вопросы зачёта основаны на конспектах Елизаветы " +
     "Аксеновой. Преклоняю голову и призываю читателей быть благодарными.";
 
-  /* Список вопросов помечен в самом файле. Отметки может не оказаться вовсе —
-     у старых записей её нет, — и тогда вопросами считается первый файл: он и
-     заводится первым. */
-  function questionFiles(items) {
-    var marked = items.filter(function (it) { return it.questions; });
-    if (marked.length) return marked;
-    return items.length ? [items[0]] : [];
+  function zachetParts() {
+    var p = DATA.zachet && DATA.zachet.parts;
+    return Array.isArray(p) ? p : [];
   }
 
   /* Строка приложенного файла. Вопросы и ответы зачёта отличаются цветом
@@ -1149,21 +1137,78 @@
     return row;
   }
 
+  /* Одна подтема: заголовок со ссылкой на файл и свёрнутый список вопросов.
+
+     Свёрнуто нарочно. Вопросов сто сорок семь, и развёрнутыми они превращают
+     страницу в простыню, по которой не найти нужную подтему. В свёрнутом виде
+     экран — это оглавление зачёта: двадцать семь строк, у каждой видно, сколько
+     вопросов и есть ли ответ. Раскрывается родным <details>, без скрипта:
+     ломаться нечему, и работает до того, как страница досчитает рейтинг. */
+  function zachetTopic(t) {
+    var box = el("details", "zt-topic" + (t.file ? "" : " zt-empty"));
+    var head = el("summary", "zt-head");
+
+    var main = el("span", "zt-main");
+    var line = el("span", "zt-line");
+    line.appendChild(el("span", "zt-code", t.code));
+    line.appendChild(el("span", "zt-title", t.title));
+    main.appendChild(line);
+
+    var meta = plural(t.questions.length, "вопрос", "вопроса", "вопросов");
+    meta = t.questions.length + " " + meta;
+    /* Состояние ответа идёт этой же строкой, а не подписью справа: справа она
+       отжимала заголовок, и на телефоне длинные названия ломались пополам
+       ради трёх слов. Здесь она стоит там же, где у готовой подтемы вес
+       файла, — то есть на своём месте по смыслу. */
+    meta += t.file
+      ? " · PDF" + (fileSize(t.size) ? " · " + fileSize(t.size) : "")
+      : " · файл ещё не готов";
+    main.appendChild(el("span", "zt-meta" + (t.file ? "" : " zt-meta-none"), meta));
+    head.appendChild(main);
+
+    if (t.file) {
+      /* Ссылка живёт внутри summary: нажатие на неё не должно заодно
+         раскрывать список — за файлом и за вопросами приходят порознь. */
+      var get = el("a", "zt-get", "↓");
+      get.href = "data/zachet/" + encodeURIComponent(t.file);
+      get.setAttribute("download", t.title + ".pdf");
+      get.title = "Скачать «" + t.title + "»";
+      get.addEventListener("click", function (e) { e.stopPropagation(); });
+      head.appendChild(get);
+    }
+
+    box.appendChild(head);
+
+    var list = el("ol", "zt-qs");
+    t.questions.forEach(function (q) {
+      var li = el("li", "zt-q");
+      li.appendChild(el("span", "zt-qcode", q.code));
+      var txt = el("span", "zt-qtext");
+      /* Текст вопроса приходит готовым html: формулы переведены в <sup>/<sub>
+         и юникод на стороне сборки, потому что рендерить их здесь нечем. */
+      txt.innerHTML = q.html;
+      li.appendChild(txt);
+      list.appendChild(li);
+    });
+    box.appendChild(list);
+    return box;
+  }
+
   function viewZachet(host) {
-    var items = zachet();
-    if (!items.length) {
+    var parts = zachetParts();
+    if (!parts.length) {
       var none = el("div", "card");
       none.appendChild(el("div", "section-title", "Пока пусто"));
       host.appendChild(none);
       return;
     }
 
-    var asked = questionFiles(items);
-    var answers = items.filter(function (it) { return asked.indexOf(it) === -1; });
-
-    if (asked.length) {
+    var v = DATA.zachet && DATA.zachet.voprosy;
+    if (v) {
       var qcard = el("div", "card");
-      asked.forEach(function (it) { qcard.appendChild(fileRow("zachet", it, "lik-ask")); });
+      qcard.appendChild(fileRow("zachet", {
+        file: v.file, size: v.size, title: "Список вопросов",
+      }, "lik-ask"));
       host.appendChild(qcard);
     }
 
@@ -1171,15 +1216,19 @@
     thanks.appendChild(el("span", null, THANKS));
     host.appendChild(thanks);
 
-    if (answers.length) {
-      var sh = el("div", "section-head");
-      sh.appendChild(el("span", "section-title", "Ответы"));
+    parts.forEach(function (p) {
+      var ready = p.topics.filter(function (t) { return t.file; }).length;
+
+      var sh = el("div", "section-head zt-part-head");
+      sh.appendChild(el("span", "section-title", p.code + ". " + p.title));
+      sh.appendChild(el("span", "section-note",
+        ready + " из " + p.topics.length));
       host.appendChild(sh);
 
-      var acard = el("div", "card");
-      answers.forEach(function (it) { acard.appendChild(fileRow("zachet", it, "lik-ans")); });
-      host.appendChild(acard);
-    }
+      var card = el("div", "card");
+      p.topics.forEach(function (t) { card.appendChild(zachetTopic(t)); });
+      host.appendChild(card);
+    });
   }
 
   function viewZadachniki(host) {
@@ -1192,7 +1241,7 @@
     }
 
     var card = el("div", "card");
-    items.forEach(function (it) { card.appendChild(fileRow("zadachniki", it, "lik-ans")); });
+    items.forEach(function (it) { card.appendChild(fileRow("zadachniki", it, "lik-arch")); });
     host.appendChild(card);
   }
 
@@ -1706,8 +1755,8 @@
     DATA.graves = DATA.graves || { problems: [], solved: {} };
     DATA.graves.problems = DATA.graves.problems || [];
     DATA.graves.solved = DATA.graves.solved || {};
-    DATA.zachet = DATA.zachet || { items: [] };
-    DATA.zachet.items = DATA.zachet.items || [];
+    DATA.zachet = DATA.zachet || { parts: [] };
+    DATA.zachet.parts = DATA.zachet.parts || [];
     DATA.zadachniki = DATA.zadachniki || { items: [] };
     DATA.zadachniki.items = DATA.zadachniki.items || [];
     /* Выбывшего помечают, а не стирают: в общем списке и в рейтинге его больше
@@ -1743,7 +1792,7 @@
        откроется. Пусть любая порча данных отнимает часть, а не всё. */
     var days = get("series/manifest.json").catch(function () { return null; });
     // файлов зачёта может не быть вовсе — это не повод не открыть сайт
-    var zach = get("zachet.json").catch(function () { return { items: [] }; });
+    var zach = get("zachet.json").catch(function () { return { parts: [] }; });
     // задачников тоже может не быть — это не повод не открыть сайт
     var zad = get("zadachniki.json").catch(function () { return { items: [] }; });
 
