@@ -458,7 +458,9 @@
        "code": "3.7.5",
        "html": "Число решений <i class=\"m\">x<sup>2</sup> + y<sup>2</sup> = n</i> (10-43-4)"
       }
-     ]
+     ],
+     "file": "gauss.pdf",
+     "size": 346858
     },
     {
      "code": "3.8",
