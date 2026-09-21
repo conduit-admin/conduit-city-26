@@ -137,16 +137,17 @@
       d: '<path d="M6.4 5.4h11.2"/><path d="M9 8.2v7.6M12 8.2v7.6M15 8.2v7.6"/>' +
          '<path d="M6.4 18.6h11.2"/>'
     },
-    numline: {
-      /* Числовая прямая с делениями, и на ней отмечено каждое второе:
-         подмножество целых чисел, прогрессия. Отмеченные точки крупнее
-         делений, чтобы читались как выбор, а не как ещё одна шкала. */
-      name: "точки на числовой прямой",
-      d: '<path d="M3 13h18"/>' +
-         '<path d="M8.5 11v4M15.5 11v4"/>' +
-         '<circle cx="5" cy="13" r="1.9" fill="currentColor" stroke="none"/>' +
-         '<circle cx="12" cy="13" r="1.9" fill="currentColor" stroke="none"/>' +
-         '<circle cx="19" cy="13" r="1.9" fill="currentColor" stroke="none"/>'
+    figurate: {
+      /* Треугольное число: 1 + 2 + 3 точек. Расстановка точек, а не линия —
+         прямая с точками в размере значка читалась гусеницей. Точки крупные,
+         шаг широкий: шесть мелких сливались бы в пятно. */
+      name: "треугольник из точек",
+      d: '<circle cx="12" cy="6" r="1.9" fill="currentColor" stroke="none"/>' +
+         '<circle cx="8.6" cy="12" r="1.9" fill="currentColor" stroke="none"/>' +
+         '<circle cx="15.4" cy="12" r="1.9" fill="currentColor" stroke="none"/>' +
+         '<circle cx="5.2" cy="18" r="1.9" fill="currentColor" stroke="none"/>' +
+         '<circle cx="12" cy="18" r="1.9" fill="currentColor" stroke="none"/>' +
+         '<circle cx="18.8" cy="18" r="1.9" fill="currentColor" stroke="none"/>'
     },
     none: {
       /* Тема не выбрана. Пустой квадрат нарочно повторяет форму прежнего
@@ -162,7 +163,7 @@
     "x", "le", "poly", "seq", "integral", "matrix", "func",
     "triangle", "incircle", "cube", "triless",
     "branch", "turns", "graph", "grid", "hull", "tally", "die",
-    "congr", "column", "numline",
+    "congr", "column", "figurate",
     "none"
   ];
 
