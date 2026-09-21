@@ -1110,6 +1110,12 @@
      ровно перед тем, за что благодарят. */
   var THANKS = "Ответы на вопросы зачёта основаны на конспектах Елизаветы " +
     "Аксеновой. Преклоняю голову и призываю читателей быть благодарными.";
+  /* Итог: все ответы написаны. Стоит сразу под посвящением, другим цветом —
+     благодарность про людей, эта плашка про состояние дел. Адрес в конце —
+     телеграм, поэтому он ссылка, а не просто текст. */
+  var DONE = "Все файлы готовы! Успешной подготовки к зачёту. " +
+    "Вопросы, замечания, предложения: ";
+  var DONE_TG = "MathDzeta";
 
   function zachetParts() {
     var p = DATA.zachet && DATA.zachet.parts;
@@ -1215,6 +1221,15 @@
     var thanks = el("div", "thanks");
     thanks.appendChild(el("span", null, THANKS));
     host.appendChild(thanks);
+
+    var done = el("div", "thanks done");
+    done.appendChild(el("span", null, DONE));
+    var tg = el("a", null, "@" + DONE_TG);
+    tg.href = "https://t.me/" + DONE_TG;
+    tg.target = "_blank";
+    tg.rel = "noopener";
+    done.appendChild(tg);
+    host.appendChild(done);
 
     parts.forEach(function (p) {
       var ready = p.topics.filter(function (t) { return t.file; }).length;
