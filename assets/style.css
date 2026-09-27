@@ -2624,8 +2624,11 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 
 /* «5++» — та же пилюля, но раз в несколько секунд по ней проходит блик,
    а вокруг мигают искры. Выше этой оценки нет, и это единственное место
-   на странице, которое движется само. Блик тронут золотом короны: чисто
-   белый на светлой теме по светлой подложке не виден вовсе. */
+   на странице, которое движется само.
+
+   Блик — бесцветный свет. Лежит поверх цифр, поэтому и на светлой теме
+   он виден: проходя, высветляет тёмные знаки, хотя по светлой подложке
+   белое само по себе не читается. */
 .gchip.gx::after {
   content: "";
   position: absolute;
@@ -2634,8 +2637,7 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   left: 0;
   width: 45%;
   background: linear-gradient(100deg, transparent,
-    color-mix(in srgb, var(--leader) 45%, rgba(255, 255, 255, 0.7)) 50%,
-    transparent);
+    rgba(255, 255, 255, 0.78) 50%, transparent);
   transform: translateX(-140%) skewX(-18deg);
   animation: chipSheen 4.2s ease-in-out 0.6s infinite;
   pointer-events: none;
@@ -2649,8 +2651,9 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   38%, 100% { transform: translateX(290%) skewX(-18deg); }
 }
 
-/* Искра — четырёхлучевая звёздочка, вырезанная из квадрата. Появляется,
-   чуть поворачивается и гаснет; у каждой своя задержка и свой период,
+/* Искры двух видов. Звёздочка — четыре луча, вырезанные из квадрата:
+   появляется, чуть поворачивается и гаснет. Пылинка — точка, которая
+   всплывает из-под пилюли и тает. У каждой своя задержка и свой период,
    поэтому они не мигают хором. */
 .spark {
   position: absolute;
@@ -2659,18 +2662,52 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   width: var(--s);
   height: var(--s);
   margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
-  background: color-mix(in srgb, var(--leader) 70%, #fff);
+  background: var(--c);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.spark.star {
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%,
                      50% 100%, 38% 62%, 0 50%, 38% 38%);
-  opacity: 0;
   animation: sparkTwinkle var(--p) ease-in-out var(--d) infinite;
-  pointer-events: none;
+}
+
+.spark.dot {
+  border-radius: 50%;
+  animation: moteRise var(--p) ease-out var(--d) infinite;
 }
 
 @keyframes sparkTwinkle {
   0%, 100% { opacity: 0; transform: scale(0.2) rotate(0deg); }
   45% { opacity: 1; transform: scale(1) rotate(45deg) translateY(-1px); }
   70% { opacity: 0; transform: scale(0.5) rotate(90deg) translateY(-2px); }
+}
+
+@keyframes moteRise {
+  0% { opacity: 0; transform: translateY(0) scale(0.6); }
+  30% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-18px) scale(1); }
+}
+
+/* Шесть оттенков фиолетового, от индиго до фуксии, по кругу. Фиолетовый —
+   цвет зачёта на всей странице, поэтому новым цветом это не считается.
+   На светлой теме оттенки глубже, на тёмной светлее: искра того же тона,
+   что и подложка, пропадает. */
+.spark:nth-of-type(6n + 1) { --c: #7c3aed; }
+.spark:nth-of-type(6n + 2) { --c: #a855f7; }
+.spark:nth-of-type(6n + 3) { --c: #c026d3; }
+.spark:nth-of-type(6n + 4) { --c: #6366f1; }
+.spark:nth-of-type(6n + 5) { --c: #9333ea; }
+.spark:nth-of-type(6n + 6) { --c: #8b5cf6; }
+
+@media (prefers-color-scheme: dark) {
+  .spark:nth-of-type(6n + 1) { --c: #a78bfa; }
+  .spark:nth-of-type(6n + 2) { --c: #d8b4fe; }
+  .spark:nth-of-type(6n + 3) { --c: #f0abfc; }
+  .spark:nth-of-type(6n + 4) { --c: #a5b4fc; }
+  .spark:nth-of-type(6n + 5) { --c: #c084fc; }
+  .spark:nth-of-type(6n + 6) { --c: #ddd6fe; }
 }
 
 @media (min-width: 1000px) {
