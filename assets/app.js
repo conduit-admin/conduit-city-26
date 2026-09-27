@@ -1249,19 +1249,59 @@
   }
 
   /* Клетка оценки. Плюс рисуется как в кондуите — залитым квадратом, пусто —
-     пустым; всё остальное (5, 4+, «зач») — текстом в той же клетке.
+     пустым; оценка — пилюлей, едва подкрашенной по баллу: 5 зелёная, 4 синяя,
+     3 охристая, 2 красная. Плюс оттенок чуть сгущает, минус чуть гасит.
+     Подкраска — подсказка, а не светофор: читается число, цвет только
+     помогает глазу собрать таблицу.
+
+     «5++» — особая: золото короны, блик и искры. Выше неё ничего нет.
 
      Дефисы в файле, как их набрали, а на экране — знак минуса: два дефиса
      подряд в «3--» сливаются в тире, и оценка читается как «3—». */
+  var SPARKS = [
+    // x и y в процентах от пилюли, размер в пикселях, задержка и период в секундах
+    [-9, 22, 7, 0, 2.6], [106, 14, 6, 0.7, 2.9], [20, -26, 5, 1.3, 2.4],
+    [82, -22, 7, 2.0, 2.8], [98, 96, 5, 0.4, 2.5], [6, 110, 6, 1.7, 3.0],
+    [52, -34, 4, 2.4, 2.7], [62, 124, 5, 1.0, 2.6]
+  ];
+
   function gradeMark(v) {
     if (v === null || v === undefined || v === "") return el("div", "mark");
     if (v === "+") return el("div", "mark on", "+");
-    return el("div", "mark grade", String(v).replace(/-/g, "−"));
+
+    var text = String(v).trim();
+    var m = text.match(/^(\d)\s*(\+\+|\+|--|-)?/);
+    var cls = "gchip";
+    if (m) {
+      cls += " g" + m[1];
+      if (m[2] === "++" && m[1] === "5") cls += " gx";
+      else if (m[2] && m[2].charAt(0) === "+") cls += " up";
+      else if (m[2]) cls += " down";
+    }
+
+    var box = el("div", "gchip-box");
+    box.appendChild(el("div", cls, text.replace(/-/g, "−")));
+    if (cls.indexOf(" gx") !== -1) {
+      SPARKS.forEach(function (s) {
+        var sp = el("i", "spark");
+        sp.style.setProperty("--x", s[0] + "%");
+        sp.style.setProperty("--y", s[1] + "%");
+        sp.style.setProperty("--s", s[2] + "px");
+        sp.style.setProperty("--d", s[3] + "s");
+        sp.style.setProperty("--p", s[4] + "s");
+        box.appendChild(sp);
+      });
+    }
+    return box;
   }
 
   /* Таблица оценок собрана как кондуит — фамилии слева, клетки справа,
      прокрутка вбок у клеток, — но без подвала «решили / вес»: считать по
-     оценкам нечего. Порядок строк — по алфавиту, как в ведомости. */
+     оценкам нечего. Порядок строк — по алфавиту, как в ведомости.
+
+     Шапки нет, пока ей нечего сказать: у единственного столбца без подписи
+     «Ученик» над фамилиями и черта под ним были только рамкой вокруг
+     пустоты. Появятся подписи столбцов или итог — появится и шапка. */
   function gradeTables(g) {
     var rows = byName(g.rows.map(function (r) {
       return { id: r.id, name: (r.id && NAME[r.id]) || r.name || r.id || "—", src: r };
@@ -1269,15 +1309,18 @@
     var hasTotal = rows.some(function (r) {
       return r.src.total !== undefined && r.src.total !== null && r.src.total !== "";
     });
+    var head = hasTotal || g.columns.some(function (c) { return c.code; });
 
-    var split = el("div", "conduit-split grades");
+    var split = el("div", "conduit-split grades" + (head ? "" : " headless"));
 
     var names = el("table", "conduit names");
-    var nHead = el("thead");
-    var nhr = el("tr");
-    nhr.appendChild(el("th", "pname", "Ученик"));
-    nHead.appendChild(nhr);
-    names.appendChild(nHead);
+    if (head) {
+      var nHead = el("thead");
+      var nhr = el("tr");
+      nhr.appendChild(el("th", "pname"));
+      nHead.appendChild(nhr);
+      names.appendChild(nHead);
+    }
     var nBody = el("tbody");
     rows.forEach(function (r) {
       var tr = el("tr", "crow");
@@ -1289,20 +1332,22 @@
 
     var scroll = el("div", "conduit-scroll");
     var cells = el("table", "conduit cells");
-    var thead = el("thead");
-    var hr = el("tr");
-    g.columns.forEach(function (c) {
-      var th = el("th", "phead-cell");
-      var box = el("div", "phead");
-      var id = el("div", "phead-id", c.code);
-      if (c.title) id.title = c.title;
-      box.appendChild(id);
-      th.appendChild(box);
-      hr.appendChild(th);
-    });
-    if (hasTotal) hr.appendChild(el("th", "pcount", g.total || "итог"));
-    thead.appendChild(hr);
-    cells.appendChild(thead);
+    if (head) {
+      var thead = el("thead");
+      var hr = el("tr");
+      g.columns.forEach(function (c) {
+        var th = el("th", "phead-cell");
+        var box = el("div", "phead");
+        var id = el("div", "phead-id", c.code);
+        if (c.title) id.title = c.title;
+        box.appendChild(id);
+        th.appendChild(box);
+        hr.appendChild(th);
+      });
+      if (hasTotal) hr.appendChild(el("th", "pcount", g.total || "итог"));
+      thead.appendChild(hr);
+      cells.appendChild(thead);
+    }
 
     var tbody = el("tbody");
     rows.forEach(function (r) {

@@ -2576,9 +2576,14 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 .conduit-split.grades::before { display: none; }
 .conduit-split.grades table.conduit.names { border-right: 0; }
 
-/* Оценка в клетке — текстом, в той же рамке, что пустая клетка кондуита:
-   клетка остаётся клеткой, а в ней читается число. Столбец шире задачного:
-   в нём стоят «5++» и «3--», а над ним слово, а не номер задачи. */
+/* Без шапки нет и черты под ней. Сверху и снизу — воздух вместо шапки: он же
+   даёт место искрам у первой строки, иначе их срезал бы край прокрутки.
+   Отступ одинаковый у обеих половин, иначе строки разъедутся. */
+.conduit-split.grades.headless::after { display: none; }
+.conduit-split.grades .conduit-scroll { padding: 10px 12px; }
+.conduit-split.grades table.conduit.names { margin: 10px 0; }
+
+/* Столбец шире задачного: в нём стоят «5++» и «3--», а не плюс. */
 .conduit-split.grades td.cell,
 .conduit-split.grades thead th:not(.pname):not(.pcount) {
   width: 64px;
@@ -2587,27 +2592,133 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 
 .conduit-split.grades .phead { width: 64px; }
 
-.mark.grade {
-  width: auto;
-  min-width: 30px;
-  padding: 0 7px;
-  color: var(--ink);
-  font-size: 15px;
-  font-weight: 620;
+/* Пилюля оценки. Стекло того же рода, что у панелей, — светлый блик поверху
+   и тонкий обод, — но подкрашенное краской по баллу, и очень слабо: 14 %
+   на заливку, 30 % на обод. Цвет — подсказка, читается всё равно число.
+   Текст той же краской, сведённой с чернилами, чтобы не спорил с фамилией. */
+.gchip-box {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.gchip {
+  --tint: var(--s8);
+  --t: 14%;
+  --e: 30%;
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
   /* у минуса в Golos нет полей: без разрядки «3−−» читается «3—» */
-  letter-spacing: 0.1em;
-  text-indent: 0.1em;
+  letter-spacing: 0.08em;
+  text-indent: 0.08em;
+  color: color-mix(in srgb, var(--tint) 72%, var(--ink));
+  background:
+    linear-gradient(180deg, var(--chip-hi), transparent 62%),
+    color-mix(in srgb, var(--tint) var(--t), transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tint) var(--e), transparent),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.gchip { --chip-hi: rgba(255, 255, 255, 0.55); }
+
+@media (prefers-color-scheme: dark) {
+  .gchip { --chip-hi: rgba(255, 255, 255, 0.07); }
+}
+
+/* Краски из общего набора: зелень, лазурь, охра, киноварь — от хорошего
+   к плохому через тёплое. Плюс сгущает оттенок, минус гасит. */
+.gchip.g5 { --tint: var(--s3); }
+.gchip.g4 { --tint: var(--s1); }
+.gchip.g3 { --tint: var(--s4); }
+.gchip.g2 { --tint: var(--s2); }
+.gchip.up { --t: 20%; --e: 40%; }
+.gchip.down { --t: 9%; --e: 22%; }
+
+/* «5++» — золото короны. Мягкое свечение вокруг, медленный блик по
+   пилюле раз в несколько секунд и искры по краям. Выше этой оценки нет,
+   и это единственное место в таблице, которое движется само. */
+.gchip.gx {
+  --tint: var(--leader);
+  --t: 22%;
+  --e: 55%;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tint) var(--e), transparent),
+    0 0 14px color-mix(in srgb, var(--leader) 30%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.gchip.gx::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(100deg, transparent,
+    rgba(255, 255, 255, 0.55) 50%, transparent);
+  transform: translateX(-140%) skewX(-18deg);
+  animation: chipSheen 4.2s ease-in-out 0.6s infinite;
+  pointer-events: none;
+}
+
+/* Сдвиг в долях самого блика: он в 45 % ширины пилюли, так что −140 %
+   и 290 % — это из-за левого края и за правый. Через transform, а не left:
+   иначе каждый кадр пересчитывал бы раскладку. */
+@keyframes chipSheen {
+  0% { transform: translateX(-140%) skewX(-18deg); }
+  38%, 100% { transform: translateX(290%) skewX(-18deg); }
+}
+
+/* Искра — четырёхлучевая звёздочка, вырезанная из квадрата. Появляется,
+   чуть поворачивается и гаснет; у каждой своя задержка и свой период,
+   поэтому они не мигают хором. */
+.spark {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
+  background: color-mix(in srgb, var(--leader) 70%, #fff);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%,
+                     50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+  animation: sparkTwinkle var(--p) ease-in-out var(--d) infinite;
+  pointer-events: none;
+}
+
+@keyframes sparkTwinkle {
+  0%, 100% { opacity: 0; transform: scale(0.2) rotate(0deg); }
+  45% { opacity: 1; transform: scale(1) rotate(45deg) translateY(-1px); }
+  70% { opacity: 0; transform: scale(0.5) rotate(90deg) translateY(-2px); }
 }
 
 @media (min-width: 1000px) {
   .conduit-split.grades td.cell,
   .conduit-split.grades thead th:not(.pname):not(.pcount) {
-    width: 76px;
-    min-width: 76px;
+    width: 80px;
+    min-width: 80px;
   }
 
-  .conduit-split.grades .phead { width: 76px; }
-  .mark.grade { min-width: 40px; font-size: 19px; }
+  .conduit-split.grades .phead { width: 80px; }
+  .gchip { min-width: 58px; height: 34px; font-size: 17px; }
+}
+
+/* Без движения искр нет вовсе: застывшая звёздочка читалась бы соринкой. */
+@media (prefers-reduced-motion: reduce) {
+  .spark, .gchip.gx::after { display: none; }
 }
 
 /* ── зачёт: подтемы ────────────────────────────────────── */
