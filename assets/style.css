@@ -661,7 +661,6 @@ input[type="number"]::-webkit-inner-spin-button {
    не трогая правило. Разрешённые места перечислены в README. */
 .solid,
 .lik-row,
-.thanks,
 .chip.cat[aria-pressed="true"],
 .icon-btn.del,
 .icon-btn.danger,
@@ -680,7 +679,6 @@ input[type="number"]::-webkit-inner-spin-button {
    голый крестик, и поднимать его нечем — а так поднимать и не нужно. */
 .solid::after,
 .lik-row::after,
-.thanks::after,
 .chip.cat[aria-pressed="true"]::after,
 .icon-btn.del::after,
 .icon-btn.danger::after,
@@ -705,8 +703,6 @@ input[type="number"]::-webkit-inner-spin-button {
 .solid .tile-label,
 .solid .tile-note,
 .lik-row .lik-meta { color: var(--solid-dim); }
-
-.thanks > * { position: relative; }
 
 .card { padding: 14px 16px; }
 
@@ -1795,6 +1791,16 @@ td .date { margin-left: 8px; font-size: 12px; }
    отклик глушился бы анимацией входа, у которой вес селектора выше. */
 .tap.tap { animation: tap .19s cubic-bezier(.2, .8, .3, 1); }
 
+/* Плашка с файлом — строка во всю ширину панели, и общее сжатие до 0,92
+   на ней читалось рывком: край уезжал на полтора десятка пикселей. Ей —
+   своё, едва заметное: отклик должен быть, но не прыжок. */
+@keyframes tapWide {
+  0% { transform: scale(.985); }
+  100% { transform: scale(1); }
+}
+
+.lik-row.tap.tap { animation: tapWide .24s cubic-bezier(.25, .7, .3, 1); }
+
 /* строку рейтинга не сжимаем — по ширине экрана это выглядит рывком; вместо
    этого она отзывается подсветкой */
 tr.clickable.tap.tap { animation: none; }
@@ -2509,36 +2515,6 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 
 .lik-meta { font-size: 12px; color: var(--ink-muted); }
 
-/* Посвящение на вкладке зачёта. Плашка тёплая — та же, что у «Самого ценного
-   плюса»: благодарность и должна быть тёплой. Стоит между вопросами и ответами
-   нарочно — читается ровно перед тем, за что благодарят. */
-.thanks {
-  --solid-bg: var(--warm-bg);
-  --solid-glow: var(--warm-glow);
-  padding: 16px 18px;
-  border-radius: var(--radius);
-  margin-bottom: 14px;
-  font-size: 14.5px;
-  line-height: 1.5;
-}
-
-.thanks b { font-weight: 620; }
-
-/* Вторая плашка под посвящением — итог: все ответы написаны. Холодная, как
-   «Место»: благодарность выше про людей, эта про состояние дел, и две тёплые
-   подряд слились бы в одну. Ссылка на ней белая — цветная по цвету пропадает. */
-.thanks.done {
-  --solid-bg: var(--cold-bg);
-  --solid-glow: var(--cold-glow);
-}
-
-.thanks.done a {
-  color: #fff;
-  font-weight: 620;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
 /* Стрелка вместо слова «скачать». Слово объясняло то, что и так очевидно:
    строка одна, действие у неё одно, и заходят сюда ровно за ним. Стрелка на
    плашке занимает угол и не спорит с названием файла. */
@@ -2594,8 +2570,11 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 /* ── зачёт: оценки ─────────────────────────────────────── */
 
 /* Таблица оценок — тот же кондуит, но без подвала «решили / вес»: две черты
-   подвала рисует ::before панели, здесь их проводить не над чем. */
+   подвала рисует ::before панели, здесь их проводить не над чем. Черты между
+   фамилиями и клетками тоже нет: в кондуите она отделяет неподвижный столбец
+   от прокручиваемых, а здесь столбец оценки один и прокручивать нечего. */
 .conduit-split.grades::before { display: none; }
+.conduit-split.grades table.conduit.names { border-right: 0; }
 
 /* Оценка в клетке — текстом, в той же рамке, что пустая клетка кондуита:
    клетка остаётся клеткой, а в ней читается число. Столбец шире задачного:

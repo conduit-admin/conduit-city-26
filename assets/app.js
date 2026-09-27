@@ -1107,17 +1107,6 @@
 
   /* Список файлов и больше ничего: сюда заходят с одной целью — забрать pdf,
      поэтому вся строка и есть кнопка скачивания. */
-  /* Кому мы обязаны ответами. Стоит между вопросами и ответами нарочно: читается
-     ровно перед тем, за что благодарят. */
-  var THANKS = "Ответы на вопросы зачёта основаны на конспектах Елизаветы " +
-    "Аксеновой. Преклоняю голову и призываю читателей быть благодарными.";
-  /* Итог: все ответы написаны. Стоит сразу под посвящением, другим цветом —
-     благодарность про людей, эта плашка про состояние дел. Адрес в конце —
-     телеграм, поэтому он ссылка, а не просто текст. */
-  var DONE = "Все файлы готовы! Успешной подготовки к зачёту. " +
-    "Вопросы, замечания, предложения: ";
-  var DONE_TG = "MathDzeta";
-
   function zachetParts() {
     var p = DATA.zachet && DATA.zachet.parts;
     return Array.isArray(p) ? p : [];
@@ -1202,7 +1191,9 @@
   }
 
   /* Содержимое зачёта — то, что раскрывается под его кнопкой в архиве:
-     список вопросов, посвящение, подтемы по разделам и в конце оценки. */
+     список вопросов, подтемы по разделам и в конце оценки. Посвящение и
+     «все файлы готовы» стояли здесь, пока зачёт был впереди; в архиве им
+     не место. */
   function zachetBody(host) {
     var parts = zachetParts();
     var v = DATA.zachet && DATA.zachet.voprosy;
@@ -1213,19 +1204,6 @@
       }, "lik-ask"));
       host.appendChild(qcard);
     }
-
-    var thanks = el("div", "thanks");
-    thanks.appendChild(el("span", null, THANKS));
-    host.appendChild(thanks);
-
-    var done = el("div", "thanks done");
-    done.appendChild(el("span", null, DONE));
-    var tg = el("a", null, "@" + DONE_TG);
-    tg.href = "https://t.me/" + DONE_TG;
-    tg.target = "_blank";
-    tg.rel = "noopener";
-    done.appendChild(tg);
-    host.appendChild(done);
 
     parts.forEach(function (p) {
       var ready = p.topics.filter(function (t) { return t.file; }).length;
@@ -1371,7 +1349,9 @@
 
   function archToggle(key, title, note) {
     var open = state.openArchive === key;
-    var row = el("button", "lik-row lik-arch arch-toggle");
+    /* Цвет — фиолетовый ответов зачёта, а не зелёный задачников: строка
+       та же плашка, но за ней не файл, а раздел, и это видно до чтения. */
+    var row = el("button", "lik-row lik-ans arch-toggle");
     row.type = "button";
     row.setAttribute("aria-expanded", open ? "true" : "false");
     var main = el("span", "lik-main");
