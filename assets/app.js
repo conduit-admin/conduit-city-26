@@ -1249,12 +1249,12 @@
   }
 
   /* Клетка оценки. Плюс рисуется как в кондуите — залитым квадратом, пусто —
-     пустым; оценка — пилюлей, едва подкрашенной по баллу: 5 зелёная, 4 синяя,
-     3 охристая, 2 красная. Плюс оттенок чуть сгущает, минус чуть гасит.
-     Подкраска — подсказка, а не светофор: читается число, цвет только
-     помогает глазу собрать таблицу.
+     пустым; оценка — тихой пилюлей, той же, что у подразделов в отборе:
+     подложка без рамки, без блика и тени. Подкраска по баллу была и убрана —
+     читается число, а цвет спорил с ним.
 
-     «5++» — особая: золото короны, блик и искры. Выше неё ничего нет.
+     «5++» — особая: по пилюле раз в несколько секунд проходит блик, вокруг
+     мигают искры. Выше этой оценки нет.
 
      Дефисы в файле, как их набрали, а на экране — знак минуса: два дефиса
      подряд в «3--» сливаются в тире, и оценка читается как «3—». */
@@ -1270,18 +1270,12 @@
     if (v === "+") return el("div", "mark on", "+");
 
     var text = String(v).trim();
-    var m = text.match(/^(\d)\s*(\+\+|\+|--|-)?/);
-    var cls = "gchip";
-    if (m) {
-      cls += " g" + m[1];
-      if (m[2] === "++" && m[1] === "5") cls += " gx";
-      else if (m[2] && m[2].charAt(0) === "+") cls += " up";
-      else if (m[2]) cls += " down";
-    }
+    var best = /^5\s*\+\+$/.test(text);
 
     var box = el("div", "gchip-box");
-    box.appendChild(el("div", cls, text.replace(/-/g, "−")));
-    if (cls.indexOf(" gx") !== -1) {
+    box.appendChild(el("div", "gchip" + (best ? " gx" : ""),
+      text.replace(/-/g, "−")));
+    if (best) {
       SPARKS.forEach(function (s) {
         var sp = el("i", "spark");
         sp.style.setProperty("--x", s[0] + "%");
@@ -1310,6 +1304,7 @@
       return r.src.total !== undefined && r.src.total !== null && r.src.total !== "";
     });
     var head = hasTotal || g.columns.some(function (c) { return c.code; });
+    if (!head && g.columns.length === 1) return gradeList(rows);
 
     var split = el("div", "conduit-split grades" + (head ? "" : " headless"));
 
@@ -1369,6 +1364,23 @@
     scroll.appendChild(cells);
     split.appendChild(scroll);
     return split;
+  }
+
+  /* Одна оценка на человека — не таблица, а ведомость: фамилия слева, оценка
+     у правого края строки. Две таблицы кондуита тут давали узкую полоску
+     посреди широкой панели. Список же на широком экране сам встаёт в две-три
+     колонки — по алфавиту сверху вниз, как в бумажной ведомости, — а на
+     телефоне идёт одной, во всю ширину. */
+  function gradeList(rows) {
+    var list = el("div", "card grade-list");
+    rows.forEach(function (r) {
+      var row = el("div", "grade-row");
+      row.appendChild(nameCell("span", "grade-name", r));
+      var marks = Array.isArray(r.src.marks) ? r.src.marks : [];
+      row.appendChild(gradeMark(marks[0]));
+      list.appendChild(row);
+    });
+    return list;
   }
 
   // ── вид: архив ──────────────────────────────────────────

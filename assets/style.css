@@ -2592,10 +2592,10 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 
 .conduit-split.grades .phead { width: 64px; }
 
-/* Пилюля оценки. Стекло того же рода, что у панелей, — светлый блик поверху
-   и тонкий обод, — но подкрашенное краской по баллу, и очень слабо: 14 %
-   на заливку, 30 % на обод. Цвет — подсказка, читается всё равно число.
-   Текст той же краской, сведённой с чернилами, чтобы не спорил с фамилией. */
+/* Пилюля оценки — тихая пилюля подразделов из отбора: приглушённая подложка,
+   без рамки, без блика и тени. Стекло с ободом и подкраска по баллу тут были
+   и убраны: на элементе в тридцать пунктов свет и тень читаются не объёмом,
+   а грязью, а цвет спорил с числом. */
 .gchip-box {
   position: relative;
   display: inline-flex;
@@ -2603,62 +2603,29 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
 }
 
 .gchip {
-  --tint: var(--s8);
-  --t: 14%;
-  --e: 30%;
   position: relative;
   overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 50px;
-  height: 28px;
-  padding: 0 10px;
+  min-width: 46px;
+  height: 30px;
+  padding: 0 12px;
   border-radius: 999px;
-  font-family: var(--font-display);
-  font-size: 14.5px;
-  font-weight: 650;
+  background: var(--quiet);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   /* у минуса в Golos нет полей: без разрядки «3−−» читается «3—» */
   letter-spacing: 0.08em;
   text-indent: 0.08em;
-  color: color-mix(in srgb, var(--tint) 72%, var(--ink));
-  background:
-    linear-gradient(180deg, var(--chip-hi), transparent 62%),
-    color-mix(in srgb, var(--tint) var(--t), transparent);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--tint) var(--e), transparent),
-    0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.gchip { --chip-hi: rgba(255, 255, 255, 0.55); }
-
-@media (prefers-color-scheme: dark) {
-  .gchip { --chip-hi: rgba(255, 255, 255, 0.07); }
-}
-
-/* Краски из общего набора: зелень, лазурь, охра, киноварь — от хорошего
-   к плохому через тёплое. Плюс сгущает оттенок, минус гасит. */
-.gchip.g5 { --tint: var(--s3); }
-.gchip.g4 { --tint: var(--s1); }
-.gchip.g3 { --tint: var(--s4); }
-.gchip.g2 { --tint: var(--s2); }
-.gchip.up { --t: 20%; --e: 40%; }
-.gchip.down { --t: 9%; --e: 22%; }
-
-/* «5++» — золото короны. Мягкое свечение вокруг, медленный блик по
-   пилюле раз в несколько секунд и искры по краям. Выше этой оценки нет,
-   и это единственное место в таблице, которое движется само. */
-.gchip.gx {
-  --tint: var(--leader);
-  --t: 22%;
-  --e: 55%;
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--tint) var(--e), transparent),
-    0 0 14px color-mix(in srgb, var(--leader) 30%, transparent),
-    0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
+/* «5++» — та же пилюля, но раз в несколько секунд по ней проходит блик,
+   а вокруг мигают искры. Выше этой оценки нет, и это единственное место
+   на странице, которое движется само. Блик тронут золотом короны: чисто
+   белый на светлой теме по светлой подложке не виден вовсе. */
 .gchip.gx::after {
   content: "";
   position: absolute;
@@ -2667,7 +2634,8 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   left: 0;
   width: 45%;
   background: linear-gradient(100deg, transparent,
-    rgba(255, 255, 255, 0.55) 50%, transparent);
+    color-mix(in srgb, var(--leader) 45%, rgba(255, 255, 255, 0.7)) 50%,
+    transparent);
   transform: translateX(-140%) skewX(-18deg);
   animation: chipSheen 4.2s ease-in-out 0.6s infinite;
   pointer-events: none;
@@ -2713,7 +2681,33 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   }
 
   .conduit-split.grades .phead { width: 80px; }
-  .gchip { min-width: 58px; height: 34px; font-size: 17px; }
+  .gchip { min-width: 52px; height: 32px; font-size: 14.5px; }
+}
+
+/* Ведомость: фамилия слева, оценка у правого края строки. На широком экране
+   колонки — до трёх, не уже 250 пунктов каждая, по алфавиту сверху вниз; на
+   телефоне одна, во всю ширину. Строка не рвётся между колонками. Черт между
+   строками нет: ряд держит пилюля у правого края, линейка была бы лишней. */
+.grade-list {
+  columns: 3 250px;
+  column-gap: 40px;
+  padding: 8px 18px;
+}
+
+.grade-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  break-inside: avoid;
+}
+
+.grade-name {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
 }
 
 /* Без движения искр нет вовсе: застывшая звёздочка читалась бы соринкой. */
