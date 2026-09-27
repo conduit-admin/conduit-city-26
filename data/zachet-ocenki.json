@@ -1,0 +1,32 @@
+{
+ "columns": [
+  { "code": "оценка", "title": "Оценка за зачёт 26.09.2026" }
+ ],
+ "rows": [
+  { "id": "aksenova-elizaveta", "marks": ["5++"] },
+  { "id": "afanasev-igor", "marks": ["5+"] },
+  { "id": "budyanskiy-mihail", "marks": ["5"] },
+  { "id": "velichko-platon", "marks": ["3"] },
+  { "id": "gulev-maksim", "marks": ["3"] },
+  { "id": "zarechnyuk-georgiy", "marks": ["4-"] },
+  { "id": "karonov-mihail", "marks": ["3+"] },
+  { "id": "karev-denis", "marks": ["4"] },
+  { "id": "kovalev-artem", "marks": ["3--"] },
+  { "id": "korsunov-bogdan", "marks": ["2"] },
+  { "id": "kostylev-konstantin", "marks": ["4-"] },
+  { "id": "larionova-natalya", "marks": ["5"] },
+  { "id": "lyubimov-slaven", "marks": ["3"] },
+  { "id": "mahrov-aleksandr", "marks": ["5"] },
+  { "id": "novoselov-maksim", "marks": ["3"] },
+  { "id": "osipova-viktoriya", "marks": ["4-"] },
+  { "id": "pogorelov-denis", "marks": ["4"] },
+  { "id": "rudakova-vasilisa", "marks": ["3"] },
+  { "id": "strelkov-sergey", "marks": ["4"] },
+  { "id": "titov-viktor", "marks": ["5"] },
+  { "id": "titov-dmitriy", "marks": ["4"] },
+  { "id": "ushakov-sevastyan", "marks": ["3"] },
+  { "id": "celikov-aleksandr", "marks": ["3--"] },
+  { "id": "shipilov-andrey", "marks": ["3"] },
+  { "id": "shirtanova-valeriya", "marks": ["5"] }
+ ]
+}

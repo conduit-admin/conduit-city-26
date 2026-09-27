@@ -2557,6 +2557,80 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   background: rgba(255, 255, 255, 0.12);
 }
 
+/* ── архив: раздел, который раскрывается ──────────────── */
+
+/* Зачёт в архиве — не файл, а раздел: строка та же зелёная плашка, что
+   у задачников (стопка одна, и цвет один), но вместо стрелки вниз — галочка,
+   которая поворачивается. Кнопка, а не ссылка, поэтому снимаем с неё всё
+   системное: рамку, шрифт, выравнивание. */
+.arch-toggle {
+  width: 100%;
+  border-width: 0;
+  font: inherit;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.arch-chev::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-top: -3px;
+  border-right: 1.8px solid #fff;
+  border-bottom: 1.8px solid #fff;
+  transform: rotate(45deg);
+  transition: transform .16s ease, margin .16s ease;
+}
+
+.arch-toggle[aria-expanded="true"] .arch-chev::before {
+  margin-top: 3px;
+  transform: rotate(225deg);
+}
+
+/* Раскрытое содержимое стоит сразу под списком, без зазора крупнее
+   обычного: читается продолжением строки, которую раскрыли. */
+.arch-body { margin-top: 14px; }
+
+/* ── зачёт: оценки ─────────────────────────────────────── */
+
+/* Таблица оценок — тот же кондуит, но без подвала «решили / вес»: две черты
+   подвала рисует ::before панели, здесь их проводить не над чем. */
+.conduit-split.grades::before { display: none; }
+
+/* Оценка в клетке — текстом, в той же рамке, что пустая клетка кондуита:
+   клетка остаётся клеткой, а в ней читается число. Столбец шире задачного:
+   в нём стоят «5++» и «3--», а над ним слово, а не номер задачи. */
+.conduit-split.grades td.cell,
+.conduit-split.grades thead th:not(.pname):not(.pcount) {
+  width: 64px;
+  min-width: 64px;
+}
+
+.conduit-split.grades .phead { width: 64px; }
+
+.mark.grade {
+  width: auto;
+  min-width: 30px;
+  padding: 0 7px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 620;
+  /* у минуса в Golos нет полей: без разрядки «3−−» читается «3—» */
+  letter-spacing: 0.1em;
+  text-indent: 0.1em;
+}
+
+@media (min-width: 1000px) {
+  .conduit-split.grades td.cell,
+  .conduit-split.grades thead th:not(.pname):not(.pcount) {
+    width: 76px;
+    min-width: 76px;
+  }
+
+  .conduit-split.grades .phead { width: 76px; }
+  .mark.grade { min-width: 40px; font-size: 19px; }
+}
+
 /* ── зачёт: подтемы ────────────────────────────────────── */
 
 /* Подтемы перечислены все, включая те, к которым ответа ещё нет: экран должен

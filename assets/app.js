@@ -23,7 +23,8 @@
     series: new Set(),
     kinds: new Set(["problem", "exercise", "grave"]),
     openSeries: 1,
-    openStudent: null
+    openStudent: null,
+    openArchive: null     // какой раздел архива раскрыт; пока один — зачёт
   };
 
   var GRAVES = "graves";   // такая же «серия» в списке кондуитов, только без даты
@@ -1200,15 +1201,10 @@
     return box;
   }
 
-  function viewZachet(host) {
+  /* Содержимое зачёта — то, что раскрывается под его кнопкой в архиве:
+     список вопросов, посвящение, подтемы по разделам и в конце оценки. */
+  function zachetBody(host) {
     var parts = zachetParts();
-    if (!parts.length) {
-      var none = el("div", "card");
-      none.appendChild(el("div", "section-title", "Пока пусто"));
-      host.appendChild(none);
-      return;
-    }
-
     var v = DATA.zachet && DATA.zachet.voprosy;
     if (v) {
       var qcard = el("div", "card");
@@ -1244,11 +1240,156 @@
       p.topics.forEach(function (t) { card.appendChild(zachetTopic(t)); });
       host.appendChild(card);
     });
+
+    var g = zachetGrades();
+    if (g) {
+      var gh = el("div", "section-head");
+      gh.appendChild(el("span", "section-title", "Оценки"));
+      gh.appendChild(el("span", "section-note",
+        g.rows.length + " " + plural(g.rows.length, "ученик", "ученика", "учеников")));
+      host.appendChild(gh);
+      host.appendChild(gradeTables(g));
+    }
   }
 
-  function viewZadachniki(host) {
+  /* Оценки за зачёт — отдельный файл, data/zachet-ocenki.json: zachet.json
+     перестраивает выкладка из хранилища владельца, и лежи оценки в нём, их
+     стёрла бы первая же выкладка.
+
+       { "columns": [{ "code": "I", "title": "Анализ" }, …],
+         "total": "итог",
+         "rows": [{ "id": "ivanov-artem", "marks": ["5", "4", …], "total": "5" }] }
+
+     Столбцы любые — по разделам, по вопросам, одна оценка на всех: таблица
+     берёт их из файла. «total» необязателен; есть он — справа встаёт итоговый
+     столбец. Ученик задан id, как в сериях, и имя берётся из общего списка
+     (в нём есть и выбывшие); у строки без id имя стоит полем name. */
+  function zachetGrades() {
+    var g = DATA.zachetGrades;
+    if (!g || !Array.isArray(g.columns) || !Array.isArray(g.rows)) return null;
+    return g.rows.length ? g : null;
+  }
+
+  /* Клетка оценки. Плюс рисуется как в кондуите — залитым квадратом, пусто —
+     пустым; всё остальное (5, 4+, «зач») — текстом в той же клетке.
+
+     Дефисы в файле, как их набрали, а на экране — знак минуса: два дефиса
+     подряд в «3--» сливаются в тире, и оценка читается как «3—». */
+  function gradeMark(v) {
+    if (v === null || v === undefined || v === "") return el("div", "mark");
+    if (v === "+") return el("div", "mark on", "+");
+    return el("div", "mark grade", String(v).replace(/-/g, "−"));
+  }
+
+  /* Таблица оценок собрана как кондуит — фамилии слева, клетки справа,
+     прокрутка вбок у клеток, — но без подвала «решили / вес»: считать по
+     оценкам нечего. Порядок строк — по алфавиту, как в ведомости. */
+  function gradeTables(g) {
+    var rows = byName(g.rows.map(function (r) {
+      return { id: r.id, name: (r.id && NAME[r.id]) || r.name || r.id || "—", src: r };
+    }));
+    var hasTotal = rows.some(function (r) {
+      return r.src.total !== undefined && r.src.total !== null && r.src.total !== "";
+    });
+
+    var split = el("div", "conduit-split grades");
+
+    var names = el("table", "conduit names");
+    var nHead = el("thead");
+    var nhr = el("tr");
+    nhr.appendChild(el("th", "pname", "Ученик"));
+    nHead.appendChild(nhr);
+    names.appendChild(nHead);
+    var nBody = el("tbody");
+    rows.forEach(function (r) {
+      var tr = el("tr", "crow");
+      tr.appendChild(nameCell("td", "pname", r));
+      nBody.appendChild(tr);
+    });
+    names.appendChild(nBody);
+    split.appendChild(names);
+
+    var scroll = el("div", "conduit-scroll");
+    var cells = el("table", "conduit cells");
+    var thead = el("thead");
+    var hr = el("tr");
+    g.columns.forEach(function (c) {
+      var th = el("th", "phead-cell");
+      var box = el("div", "phead");
+      var id = el("div", "phead-id", c.code);
+      if (c.title) id.title = c.title;
+      box.appendChild(id);
+      th.appendChild(box);
+      hr.appendChild(th);
+    });
+    if (hasTotal) hr.appendChild(el("th", "pcount", g.total || "итог"));
+    thead.appendChild(hr);
+    cells.appendChild(thead);
+
+    var tbody = el("tbody");
+    rows.forEach(function (r) {
+      var tr = el("tr", "crow");
+      var marks = Array.isArray(r.src.marks) ? r.src.marks : [];
+      g.columns.forEach(function (c, i) {
+        var td = el("td", "cell");
+        td.appendChild(gradeMark(marks[i]));
+        tr.appendChild(td);
+      });
+      if (hasTotal) {
+        var t = r.src.total;
+        tr.appendChild(el("td", "pcount total", t === undefined || t === null ? "" : t));
+      }
+      tbody.appendChild(tr);
+    });
+    cells.appendChild(tbody);
+
+    scroll.appendChild(cells);
+    split.appendChild(scroll);
+    return split;
+  }
+
+  // ── вид: архив ──────────────────────────────────────────
+
+  /* Архив — стопка прошлого: сначала задачники, за ними зачёт. Задачник —
+     файл, его строка сразу скачивает. Зачёт — не файл, а целый раздел, поэтому
+     его строка раскрывается: под ней встают вопросы с ответами и оценки.
+     Раскрытым держится один раздел за раз. */
+  var ZACHET = "zachet";
+
+  function zachetNote() {
+    var z = DATA.zachet || {};
+    var qn = 0;
+    zachetParts().forEach(function (p) {
+      p.topics.forEach(function (t) { qn += t.questions.length; });
+    });
+    var out = [];
+    if (z.date) out.push(fullDate(z.date));
+    out.push(qn + " " + plural(qn, "вопрос", "вопроса", "вопросов"));
+    if (zachetGrades()) out.push("оценки");
+    return out.join(" · ");
+  }
+
+  function archToggle(key, title, note) {
+    var open = state.openArchive === key;
+    var row = el("button", "lik-row lik-arch arch-toggle");
+    row.type = "button";
+    row.setAttribute("aria-expanded", open ? "true" : "false");
+    var main = el("span", "lik-main");
+    main.appendChild(el("span", "lik-title", title));
+    main.appendChild(el("span", "lik-meta", note));
+    row.appendChild(main);
+    row.appendChild(el("span", "lik-get arch-chev"));
+    row.addEventListener("click", function () {
+      state.openArchive = open ? null : key;
+      render();
+    });
+    return row;
+  }
+
+  function viewArchive(host) {
     var items = zadachniki();
-    if (!items.length) {
+    var hasZachet = zachetParts().length > 0;
+    if (!items.length && !hasZachet) {
       var none = el("div", "card");
       none.appendChild(el("div", "section-title", "Пока пусто"));
       host.appendChild(none);
@@ -1257,7 +1398,17 @@
 
     var card = el("div", "card");
     items.forEach(function (it) { card.appendChild(fileRow("zadachniki", it, "lik-arch")); });
+    if (hasZachet) {
+      card.appendChild(archToggle(ZACHET,
+        (DATA.zachet && DATA.zachet.title) || "Зачёт", zachetNote()));
+    }
     host.appendChild(card);
+
+    if (hasZachet && state.openArchive === ZACHET) {
+      var body = el("div", "arch-body");
+      zachetBody(body);
+      host.appendChild(body);
+    }
   }
 
   // ── вид: ученики ────────────────────────────────────────
@@ -1704,8 +1855,7 @@
       if (state.openStudent) viewStudentCard(main, state.openStudent);
       else viewRating(main);
     } else if (state.view === "series") viewSeries(main);
-    else if (state.view === "zachet") viewZachet(main);
-    else if (state.view === "zadachniki") viewZadachniki(main);
+    else if (state.view === "archive") viewArchive(main);
 
   }
 
@@ -1774,6 +1924,7 @@
     DATA.zachet.parts = DATA.zachet.parts || [];
     DATA.zadachniki = DATA.zadachniki || { items: [] };
     DATA.zadachniki.items = DATA.zadachniki.items || [];
+    DATA.zachetGrades = DATA.zachetGrades || null;
     /* Выбывшего помечают, а не стирают: в общем списке и в рейтинге его больше
        нет, но имя нужно — оно стоит в кондуитах тех серий, где он занимался. */
     NAME = {};
@@ -1810,10 +1961,12 @@
     var zach = get("zachet.json").catch(function () { return { parts: [] }; });
     // задачников тоже может не быть — это не повод не открыть сайт
     var zad = get("zadachniki.json").catch(function () { return { items: [] }; });
+    // оценок за зачёт нет, пока их не выставили, — тогда нет и таблицы
+    var marks = get("zachet-ocenki.json").catch(function () { return null; });
 
     return Promise.all([
       get("config.json"), get("types.json"), get("students.json"), days, soft,
-      zach, zad
+      zach, zad, marks
     ]).then(function (res) {
       var files = res[3] && Array.isArray(res[3].series) ? res[3].series : [];
       /* Пропавший файл серии не должен ронять страницу целиком: раз в списке
@@ -1825,7 +1978,7 @@
         return {
           config: res[0], types: res[1], students: res[2],
           series: series.filter(Boolean), graves: res[4], zachet: res[5],
-          zadachniki: res[6]
+          zadachniki: res[6], zachetGrades: res[7]
         };
       });
     });
