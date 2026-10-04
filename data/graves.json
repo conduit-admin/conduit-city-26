@@ -63,6 +63,11 @@
       "bonus": 24
     },
     {
+      "student": "karev-denis",
+      "problem": "Г4",
+      "bonus": 12
+    },
+    {
       "student": "titov-viktor",
       "problem": "Г7",
       "bonus": 0
@@ -70,7 +75,7 @@
   ],
   "pdf": {
     "file": "grobariy.pdf",
-    "size": 131943,
-    "at": "2026-09-11"
+    "size": 151402,
+    "at": "2026-10-04"
   }
 }
