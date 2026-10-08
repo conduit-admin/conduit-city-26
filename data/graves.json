@@ -54,6 +54,21 @@
       "id": "Г11",
       "type": "comb",
       "sub": "graphs"
+    },
+    {
+      "id": "Г12",
+      "type": "geometry",
+      "sub": "planimetry"
+    },
+    {
+      "id": "Г13",
+      "type": "algebra",
+      "sub": "mnogochleny"
+    },
+    {
+      "id": "Г14",
+      "type": "numbers",
+      "sub": "klassika-2"
     }
   ],
   "solutions": [
@@ -70,6 +85,26 @@
     {
       "student": "titov-viktor",
       "problem": "Г7",
+      "bonus": 0
+    },
+    {
+      "student": "pogorelov-denis",
+      "problem": "Г12",
+      "bonus": 0
+    },
+    {
+      "student": "titov-viktor",
+      "problem": "Г12",
+      "bonus": 0
+    },
+    {
+      "student": "titov-dmitriy",
+      "problem": "Г12",
+      "bonus": 0
+    },
+    {
+      "student": "zhuchkov-saveliy",
+      "problem": "Г14",
       "bonus": 0
     }
   ],
