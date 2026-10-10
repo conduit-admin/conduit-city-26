@@ -2403,6 +2403,51 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   color: var(--ink-muted);
 }
 
+/* Группа решений одного гроба: строка с гробом и счётом, под ней — те же
+   блоки решений, сдвинутые вправо. Галочка — как у подтем зачёта на сайте. */
+.sol-group-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 0 4px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sol-group-head::-webkit-details-marker { display: none; }
+
+.sol-group-head::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -4px;
+  border-right: 1.6px solid var(--ink-muted);
+  border-bottom: 1.6px solid var(--ink-muted);
+  transform: rotate(-45deg);
+  transition: transform .16s ease;
+}
+
+.sol-group[open] > .sol-group-head::before { transform: rotate(45deg); }
+.sol-group[open] > .sol-group-head { margin-bottom: 4px; }
+
+.sol-group-meta {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sol-group > .tblock { padding-left: 16px; }
+.sol-group > .tblock:last-child { padding-bottom: 0; }
+
 /* ── гробарий на сайте ─────────────────────────────────── */
 
 /* Гроб и под ним те, кто его взял. Номер отбит от темы, как в кондуите номер
@@ -2452,6 +2497,44 @@ table.conduit .pcount.total { color: var(--ink); font-weight: 600; }
   font-size: 12.5px;
   color: var(--ink-muted);
 }
+
+/* Свёрнутый гроб: строка того же склада, что строка с именем, — число
+   решивших слева, цена справа, — и галочка в отступе, где у имени пусто.
+   Галочка та же, что у подтем зачёта. Раскрытые имена сдвинуты глубже:
+   видно, что они под этой строкой, а не сами по себе. */
+.grave-fold-head {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 0 4px 14px;
+  cursor: pointer;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.grave-fold-head::-webkit-details-marker { display: none; }
+
+.grave-fold-head::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -4px;
+  border-right: 1.6px solid var(--ink-muted);
+  border-bottom: 1.6px solid var(--ink-muted);
+  transform: rotate(-45deg);
+  transition: transform .16s ease;
+}
+
+.grave-fold[open] > .grave-fold-head::before { transform: rotate(45deg); }
+
+.grave-fold-head .grave-who { color: var(--ink-2); }
+
+.grave-fold > .grave-line { padding-left: 26px; }
 
 /* «пока никто», «ни одной» — держим отступ строки с именем, чтобы пустой блок
    не выглядел короче взятого и список не рвался. */

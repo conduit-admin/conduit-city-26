@@ -1071,7 +1071,10 @@
       head.appendChild(theme);
       block.appendChild(head);
 
-      if (u.solvers.length) {
+      if (u.solvers.length >= GRAVE_FOLD) {
+        block.appendChild(graveFold(
+          byName(u.solvers.map(function (sid) { return student[sid]; })), u));
+      } else if (u.solvers.length) {
         byName(u.solvers.map(function (sid) { return student[sid]; }))
           .forEach(function (st) { block.appendChild(graveLine(st, u)); });
       } else {
@@ -1082,6 +1085,33 @@
       card.appendChild(block);
     });
     host.appendChild(card);
+  }
+
+  /* Гроб, который взяли разом — как Г12 всей группой после подсказки, —
+     строкой на каждого растянул бы гробарий на экран. Такой гроб стоит одной
+     строкой: сколько решивших и сколько это принесло каждому, а фамилии
+     раскрываются по нажатию. Сворачивает число решивших, а не флаг в данных:
+     следующий такой гроб свернётся сам. Родной <details>, как у подтем
+     зачёта, — без скрипта и без состояния. */
+  var GRAVE_FOLD = 4;
+
+  function graveFold(list, u) {
+    var box = el("details", "grave-fold");
+    var head = el("summary", "grave-fold-head");
+    head.appendChild(el("span", "grave-who",
+      list.length + " " + plural(list.length, "решивший", "решивших", "решивших")));
+
+    // с надбавкой у кого-то одна цифра на всех была бы неправдой: «от»
+    var extra = list.some(function (st) { return (u.bonus && u.bonus[st.id]) > 0; });
+    var val = el("span", "grave-val");
+    if (extra) val.appendChild(el("i", "grave-sum", "от "));
+    val.appendChild(document.createTextNode("+" + num(u.weight)));
+    if (!extra) val.appendChild(el("i", "grave-sum", " каждому"));
+    head.appendChild(val);
+    box.appendChild(head);
+
+    list.forEach(function (st) { box.appendChild(graveLine(st, u)); });
+    return box;
   }
 
   /* Строка решения: кто взял и сколько это принесло. Надбавку показываем

@@ -48,7 +48,8 @@
     pickDate: null,   // какая из двух дат правится: given | date
     pickSolver: null,   // номер гроборешения, у которого открыт выбор ученика
     pickGrave: null,    // то же для выбора гроба
-    confirmSolution: null   // гроборешение, у которого спрошено удаление
+    confirmSolution: null,  // гроборешение, у которого спрошено удаление
+    openSolutions: {}   // гроб -> раскрыта ли группа его решений
   };
 
   /* Что уже отправлено. Нужен потому, что сайт переразворачивается не сразу:
@@ -1544,7 +1545,19 @@
     }
 
     var scard = el("div", "card");
-    g.solutions.forEach(function (s, i) { scard.appendChild(solutionBlock(s, i)); });
+    var many = {};
+    g.solutions.forEach(function (s) {
+      if (s.problem) many[s.problem] = (many[s.problem] || 0) + 1;
+    });
+    var grouped = {};
+    g.solutions.forEach(function (s, i) {
+      if (!s.problem || many[s.problem] < GRAVE_FOLD) {
+        return scard.appendChild(solutionBlock(s, i));
+      }
+      if (grouped[s.problem]) return;
+      grouped[s.problem] = true;
+      scard.appendChild(solutionGroup(s.problem, g.solutions));
+    });
 
     var sact = el("div", "frow gap");
     sact.appendChild(button("гроборешение", "ghost-btn add", function () {
@@ -1560,6 +1573,47 @@
         withNum(g.solutions.length, "решение", "решения", "решений") +
         ", " + withNum(total, "очко", "очка", "очков")));
     }
+  }
+
+  /* Гроб, который взяли разом — как Г12 всей группой после подсказки, — шёл
+     бы здесь полутора десятками одинаковых блоков, и до кнопки «гроборешение»
+     пришлось бы листать. Его решения собраны в одну свёрнутую группу: гроб,
+     сколько решений, цена; блоки раскрываются по нажатию. Сворачивает число
+     решений, как на сайте, — флага в данных нет, в файле решения по-прежнему
+     по одному на человека. Пока внутри открыт выбор или спрошено удаление,
+     группа не сворачивается: правка не должна пропадать из виду. */
+  var GRAVE_FOLD = 4;
+
+  function solutionGroup(pid, list) {
+    var idx = [];
+    list.forEach(function (s, i) { if (s.problem === pid) idx.push(i); });
+    var busy = idx.some(function (i) {
+      return state.pickSolver === i || state.pickGrave === i ||
+        state.confirmSolution === i;
+    });
+
+    var box = el("details", "tblock sol-group");
+    box.open = busy || !!state.openSolutions[pid];
+    box.addEventListener("toggle", function () {
+      state.openSolutions[pid] = box.open;
+    });
+
+    var head = el("summary", "sol-group-head");
+    var p = graveById(pid);
+    var t = p ? typeById(p.type) : null;
+    var sub = p ? subOf(t, p) : null;
+    var title = el("span", "picker-label");
+    if (p) title.appendChild(themeMark(p));
+    title.appendChild(document.createTextNode(
+      pid + (sub ? " · " + sub.name : (t ? " · " + t.name : ""))));
+    head.appendChild(title);
+    head.appendChild(el("span", "sol-group-meta",
+      withNum(idx.length, "решение", "решения", "решений") +
+      " · цена " + gravePrice(pid)));
+    box.appendChild(head);
+
+    idx.forEach(function (i) { box.appendChild(solutionBlock(list[i], i)); });
+    return box;
   }
 
   /* Блок гроборешения: кто, какой гроб и надбавка за него. Всё выбирается
@@ -1663,6 +1717,9 @@
       b.addEventListener("click", function () {
         s.problem = p.id;
         state.pickGrave = null;
+        /* Решение могло уйти в свёрнутую группу этого гроба — раскрываем её,
+           иначе только что заполненный блок исчез бы со страницы. */
+        state.openSolutions[p.id] = true;
         touchGraves();
         render();
       });
