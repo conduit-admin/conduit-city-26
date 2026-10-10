@@ -3,11 +3,10 @@
   "series": 9,
   "given": "2026-10-07",
   "date": "2026-10-10",
-  "held": false,
+  "held": true,
   "title": "Серия 9",
   "roster": [
     "aksenova-elizaveta",
-    "andrienko-igor",
     "arhipov-aleksandr",
     "afanasev-igor",
     "babain-yuriy",
@@ -47,15 +46,10 @@
   ],
   "present": [
     "aksenova-elizaveta",
-    "andrienko-igor",
-    "arhipov-aleksandr",
-    "afanasev-igor",
     "babain-yuriy",
-    "boyko-gleb",
     "budyanskiy-mihail",
     "burovik-nelli",
     "velichko-platon",
-    "gavrilov-aleksandr",
     "gulev-maksim",
     "zhuchkov-saveliy",
     "zarechnyuk-georgiy",
@@ -79,7 +73,6 @@
     "strelkov-sergey",
     "titov-viktor",
     "titov-dmitriy",
-    "tulenceva-marina",
     "ushakov-sevastyan",
     "celikov-aleksandr",
     "shipilov-andrey",
@@ -136,44 +129,173 @@
     }
   ],
   "solved": {
-    "aksenova-elizaveta": [],
-    "andrienko-igor": [],
+    "aksenova-elizaveta": [
+      "2",
+      "3а",
+      "3б",
+      "4",
+      "5",
+      "6"
+    ],
     "arhipov-aleksandr": [],
-    "afanasev-igor": [],
-    "babain-yuriy": [],
+    "afanasev-igor": [
+      "1",
+      "2",
+      "3а",
+      "3б",
+      "4",
+      "6"
+    ],
+    "babain-yuriy": [
+      "4"
+    ],
     "boyko-gleb": [],
-    "budyanskiy-mihail": [],
-    "burovik-nelli": [],
-    "velichko-platon": [],
+    "budyanskiy-mihail": [
+      "1",
+      "2",
+      "3а",
+      "3б",
+      "4",
+      "6"
+    ],
+    "burovik-nelli": [
+      "1",
+      "2",
+      "3а",
+      "3б",
+      "4",
+      "7"
+    ],
+    "velichko-platon": [
+      "2",
+      "4"
+    ],
     "gavrilov-aleksandr": [],
-    "gulev-maksim": [],
-    "zhuchkov-saveliy": [],
-    "zarechnyuk-georgiy": [],
-    "karonov-mihail": [],
-    "karev-denis": [],
-    "kovalev-artem": [],
+    "gulev-maksim": [
+      "2",
+      "4",
+      "6"
+    ],
+    "zhuchkov-saveliy": [
+      "3а",
+      "3б",
+      "4",
+      "5"
+    ],
+    "zarechnyuk-georgiy": [
+      "3а",
+      "3б",
+      "4"
+    ],
+    "karonov-mihail": [
+      "1",
+      "2",
+      "3а",
+      "3б",
+      "4",
+      "6"
+    ],
+    "karev-denis": [
+      "4"
+    ],
+    "kovalev-artem": [
+      "2",
+      "4"
+    ],
     "konstantinov-egor": [],
-    "korsunov-bogdan": [],
-    "kostylev-konstantin": [],
-    "kuchinskaya-ekaterina": [],
-    "larionova-natalya": [],
-    "lyubimov-slaven": [],
-    "malyshev-saveliy": [],
-    "mahrov-aleksandr": [],
-    "novoselov-maksim": [],
-    "osipova-viktoriya": [],
-    "pogorelov-denis": [],
-    "ponomareva-eva": [],
-    "rudakova-vasilisa": [],
+    "korsunov-bogdan": [
+      "4",
+      "5"
+    ],
+    "kostylev-konstantin": [
+      "4"
+    ],
+    "kuchinskaya-ekaterina": [
+      "1",
+      "2",
+      "5"
+    ],
+    "larionova-natalya": [
+      "4",
+      "6"
+    ],
+    "lyubimov-slaven": [
+      "3а",
+      "3б",
+      "4"
+    ],
+    "malyshev-saveliy": [
+      "4"
+    ],
+    "mahrov-aleksandr": [
+      "1",
+      "2",
+      "3а",
+      "3б",
+      "4",
+      "6"
+    ],
+    "novoselov-maksim": [
+      "4"
+    ],
+    "osipova-viktoriya": [
+      "3а",
+      "4"
+    ],
+    "pogorelov-denis": [
+      "1",
+      "2",
+      "4"
+    ],
+    "ponomareva-eva": [
+      "4"
+    ],
+    "rudakova-vasilisa": [
+      "4"
+    ],
     "saharov-kirill": [],
-    "strelkov-sergey": [],
-    "titov-viktor": [],
-    "titov-dmitriy": [],
+    "strelkov-sergey": [
+      "3а",
+      "3б",
+      "4"
+    ],
+    "titov-viktor": [
+      "1",
+      "2",
+      "3а",
+      "3б",
+      "4",
+      "6"
+    ],
+    "titov-dmitriy": [
+      "1",
+      "2",
+      "3а",
+      "3б",
+      "4",
+      "6"
+    ],
     "tulenceva-marina": [],
-    "ushakov-sevastyan": [],
-    "celikov-aleksandr": [],
-    "shipilov-andrey": [],
-    "shirtanova-valeriya": []
+    "ushakov-sevastyan": [
+      "2",
+      "3а",
+      "3б",
+      "4"
+    ],
+    "celikov-aleksandr": [
+      "1",
+      "2",
+      "3а",
+      "3б",
+      "4",
+      "6"
+    ],
+    "shipilov-andrey": [
+      "4"
+    ],
+    "shirtanova-valeriya": [
+      "4"
+    ]
   },
   "pdf": {
     "file": "seriya-09.pdf",
