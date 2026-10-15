@@ -69,6 +69,11 @@
       "id": "Г14",
       "type": "numbers",
       "sub": "klassika-2"
+    },
+    {
+      "id": "Г15",
+      "type": "geometry",
+      "sub": "planimetry"
     }
   ],
   "solutions": [
@@ -170,6 +175,11 @@
     {
       "student": "zhuchkov-saveliy",
       "problem": "Г14",
+      "bonus": 0
+    },
+    {
+      "student": "budyanskiy-mihail",
+      "problem": "Г15",
       "bonus": 0
     }
   ],
