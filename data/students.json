@@ -5,10 +5,6 @@
     "squad": true
   },
   {
-    "id": "andrienko-igor",
-    "name": "Андриенко Игорь"
-  },
-  {
     "id": "arhipov-aleksandr",
     "name": "Архипов Александр"
   },
@@ -67,6 +63,10 @@
     "name": "Ковалёв Артём"
   },
   {
+    "id": "konstantinov-egor",
+    "name": "Константинов Егор"
+  },
+  {
     "id": "korsunov-bogdan",
     "name": "Корсунов Богдан"
   },
@@ -115,10 +115,6 @@
     "name": "Рудакова Василиса"
   },
   {
-    "id": "saharov-kirill",
-    "name": "Сахаров Кирилл"
-  },
-  {
     "id": "strelkov-sergey",
     "name": "Стрелков Сергей",
     "squad": true
@@ -132,6 +128,10 @@
     "id": "titov-dmitriy",
     "name": "Титов Дмитрий",
     "squad": true
+  },
+  {
+    "id": "tulenceva-marina",
+    "name": "Туленцева Марина"
   },
   {
     "id": "ushakov-sevastyan",
@@ -149,13 +149,5 @@
   {
     "id": "shirtanova-valeriya",
     "name": "Ширтанова Валерия"
-  },
-  {
-    "id": "tulenceva-marina",
-    "name": "Туленцева Марина"
-  },
-  {
-    "id": "konstantinov-egor",
-    "name": "Константинов Егор"
   }
 ]
