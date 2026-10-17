@@ -162,6 +162,11 @@
     return /^\d{4}-\d{2}-\d{2}$/.test(String(s.given)) ? s.given : null;
   }
 
+  /* Серия без сборников: они были на сборах, и занятия у них не было. Из списка
+     серии их убирает редактор, когда ставит отметку; здесь отметка нужна
+     рейтингу — отобрать серии, где сборники были, — и подписи серии. */
+  function squadAway(s) { return s.squadAway === true; }
+
   /* Серия без пропусков — та, где был каждый из её списка. Список у серии свой,
      поэтому уехавшие на турнир её не портят: их в этом списке нет. */
   function noMisses(s) {
@@ -696,6 +701,15 @@
         render();
       }));
     }
+    /* Серии, где сборники были. То же правило: кнопка есть, только пока хоть
+       одна серия прошла без них. */
+    var withSquad = days.filter(function (s) { return !squadAway(s); });
+    if (withSquad.length && withSquad.length < days.length) {
+      h2.appendChild(mini("со сборниками", function () {
+        state.series = new Set(withSquad.map(function (s) { return s.n; }));
+        render();
+      }));
+    }
     h2.appendChild(mini("ни одной", function () {
       state.series = new Set();
       render();
@@ -1013,6 +1027,7 @@
     if (held(s) && attended(s)) {
       out.push("был " + s.present.length + " из " + rosterOf(s).length);
     }
+    if (squadAway(s)) out.push("без сборников");
     return out.join(" · ");
   }
 

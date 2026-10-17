@@ -1,7 +1,8 @@
 [
   {
     "id": "aksenova-elizaveta",
-    "name": "Аксенова Елизавета"
+    "name": "Аксенова Елизавета",
+    "squad": true
   },
   {
     "id": "andrienko-igor",
@@ -25,11 +26,13 @@
   },
   {
     "id": "budyanskiy-mihail",
-    "name": "Будянский Михаил"
+    "name": "Будянский Михаил",
+    "squad": true
   },
   {
     "id": "burovik-nelli",
-    "name": "Буровик Нелли"
+    "name": "Буровик Нелли",
+    "squad": true
   },
   {
     "id": "velichko-platon",
@@ -117,19 +120,23 @@
   },
   {
     "id": "strelkov-sergey",
-    "name": "Стрелков Сергей"
+    "name": "Стрелков Сергей",
+    "squad": true
   },
   {
     "id": "titov-viktor",
-    "name": "Титов Виктор"
+    "name": "Титов Виктор",
+    "squad": true
   },
   {
     "id": "titov-dmitriy",
-    "name": "Титов Дмитрий"
+    "name": "Титов Дмитрий",
+    "squad": true
   },
   {
     "id": "ushakov-sevastyan",
-    "name": "Ушаков Севастьян"
+    "name": "Ушаков Севастьян",
+    "squad": true
   },
   {
     "id": "celikov-aleksandr",

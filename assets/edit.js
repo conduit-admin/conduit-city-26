@@ -90,6 +90,7 @@
     return (list || []).map(function (s) {
       var out = { id: s.id, name: s.name };
       if (s.out) out.out = true;
+      if (s.squad) out.squad = true;
       return out;
     });
   }
@@ -446,6 +447,7 @@
     var d = JSON.parse(JSON.stringify({
       n: s.n, series: seriesNo(s), date: s.date,
       given: givenOf(s), held: isHeld(s),
+      squadAway: s.squadAway === true || undefined,
       scoring: scoringOf(s.scoring) || undefined,
       roster: ids, present: presentIds(s),
       problems: s.problems || [], solved: s.solved || {},
@@ -708,6 +710,9 @@
     // способ считать n — только у серии, которая считается не как все прочие
     var sc = scoringOf(d.scoring);
     if (sc) payload.scoring = sc;
+
+    // как и `weight`, поле есть только там, где оно что-то говорит
+    if (d.squadAway === true) payload.squadAway = true;
 
     /* Пишем весь список серии и вдобавок чужие непустые отметки: человека могли
        убрать из списка, и стирать заодно его плюсы — не дело записи одной серии.
@@ -2166,6 +2171,7 @@
     drow.appendChild(field("Занятие", dateField("date")));
     meta.appendChild(drow);
     meta.appendChild(heldToggle(state.series));
+    meta.appendChild(squadToggle(state.series));
     host.appendChild(meta);
 
     var sh = el("div", "section-head");
@@ -2303,6 +2309,58 @@
     });
     row.appendChild(b);
     if (!on) row.appendChild(el("span", "savecard-note", "кондуит на сайте скрыт"));
+    return row;
+  }
+
+  /* Сборники — те, кто время от времени уезжает на сборы всем составом.
+     Отмечаются во вкладке «Ученики» полем `squad`, а не перечислены в коде:
+     состав меняется, и менять его должно быть можно с телефона. */
+  function squadIds() {
+    return roster().filter(function (s) { return s.squad; })
+      .map(function (s) { return s.id; });
+  }
+
+  /* Серия без сборников: занятие у них не пропущено — его у них просто не было.
+     Отметка разом убирает сборников из списка серии, снятие возвращает; дальше
+     список правится как обычно. Сама отметка лежит в файле полем `squadAway`:
+     по ней рейтинг умеет отобрать серии, где сборники были. Список серии
+     пересобирается здесь, а не на сайте, — так он и остаётся тем, кто
+     по серии занимался, как бы потом ни менялся состав сборников. */
+  function setSquadAway(d, away) {
+    var ids = editSeriesRoster(d);
+    squadIds().forEach(function (id) {
+      if ((ids.indexOf(id) !== -1) === away) toggleInSeries(d, id);
+    });
+    /* Вернувшиеся встают на свои места по общему списку, а не в хвост: иначе
+       снятая и тут же поставленная обратно отметка меняла бы файл серии. */
+    if (!away) {
+      var order = fullRoster().map(function (s) { return s.id; });
+      var at = function (id) {
+        var i = order.indexOf(id);
+        return i === -1 ? order.length : i;
+      };
+      ids.sort(function (a, b) { return at(a) - at(b); });
+    }
+    if (away) d.squadAway = true; else delete d.squadAway;
+    touch();
+  }
+
+  function squadToggle(d) {
+    var on = !d.squadAway;
+    var row = el("div", "frow gap");
+    var b = el("button", "chip pick", on ? "сборники на занятии" : "без сборников");
+    b.type = "button";
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.addEventListener("click", function () {
+      setSquadAway(d, on);
+      render();
+    });
+    row.appendChild(b);
+    if (!squadIds().length) {
+      row.appendChild(el("span", "savecard-note", "сборники не отмечены — «Ученики»"));
+    } else if (!on) {
+      row.appendChild(el("span", "savecard-note", "сборники убраны из списка серии"));
+    }
     return row;
   }
 
@@ -3061,6 +3119,13 @@
     }
     host.appendChild(card);
 
+    if (list.length) {
+      var shs = el("div", "section-head");
+      shs.appendChild(el("span", "section-title", "Сборники"));
+      host.appendChild(shs);
+      host.appendChild(squadCard(list));
+    }
+
     var sh = el("div", "section-head");
     sh.appendChild(el("span", "section-title", "Новый ученик"));
     host.appendChild(sh);
@@ -3098,6 +3163,31 @@
     }));
     add.appendChild(row);
     host.appendChild(add);
+  }
+
+  /* Кто уезжает на сборы. Отметка ничего не меняет в уже записанных сериях:
+     она нужна серии, отмеченной «без сборников», — та убирает отмеченных
+     из своего списка. Тем же видом, что список серии: касание ставит
+     и снимает. */
+  function squadCard(list) {
+    var card = el("div", "card");
+    var chips = el("div", "chips");
+    list.forEach(function (st) {
+      var b = el("button", "chip pick", st.name);
+      b.type = "button";
+      b.setAttribute("aria-pressed", st.squad ? "true" : "false");
+      b.addEventListener("click", function () {
+        var mine = editRoster().filter(function (x) { return x.id === st.id; })[0];
+        if (!mine) return;
+        if (mine.squad) delete mine.squad; else mine.squad = true;
+        render();
+      });
+      chips.appendChild(b);
+    });
+    card.appendChild(chips);
+    card.appendChild(el("div", "savecard-note",
+      "у серии «без сборников» они убираются из её списка"));
+    return card;
   }
 
   /* Сколько плюсов у ученика — по данным сайта. Число нужно перед удалением:
