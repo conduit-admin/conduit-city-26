@@ -701,15 +701,6 @@
         render();
       }));
     }
-    /* Серии, где сборники были. То же правило: кнопка есть, только пока хоть
-       одна серия прошла без них. */
-    var withSquad = days.filter(function (s) { return !squadAway(s); });
-    if (withSquad.length && withSquad.length < days.length) {
-      h2.appendChild(mini("со сборниками", function () {
-        state.series = new Set(withSquad.map(function (s) { return s.n; }));
-        render();
-      }));
-    }
     h2.appendChild(mini("ни одной", function () {
       state.series = new Set();
       render();
@@ -725,6 +716,25 @@
       }));
     });
     r2.appendChild(c2);
+
+    /* Серии, где сборники были, — отдельной большой кнопкой под сериями
+       (владелец, 2026-10-17): мелким действием рядом с «все» её было не найти.
+       Нажата, когда отобраны ровно такие серии; повторное нажатие возвращает
+       все. Кнопка есть, только пока хоть одна серия прошла без сборников, —
+       то же правило, что у «где все были». */
+    var withSquad = days.filter(function (s) { return !squadAway(s); });
+    if (withSquad.length && withSquad.length < days.length) {
+      var only = withSquad.length === state.series.size &&
+        withSquad.every(function (s) { return state.series.has(s.n); });
+      var sq = el("button", "chip wide-toggle", "Только серии со сборниками");
+      sq.type = "button";
+      sq.setAttribute("aria-pressed", only ? "true" : "false");
+      sq.addEventListener("click", function () {
+        state.series = new Set((only ? days : withSquad).map(function (s) { return s.n; }));
+        render();
+      });
+      r2.appendChild(sq);
+    }
     card.appendChild(r2);
 
     host.appendChild(card);
