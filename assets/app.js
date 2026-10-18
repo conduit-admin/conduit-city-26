@@ -16,6 +16,7 @@
   var LEAVES = [];    // [{key, catId, catName, subId, subName, slot, label}]
   var LEAF = {};      // key -> лист
   var NAME = {};      // id -> имя; в этой карте есть и выбывшие из списка
+  var GONE = {};      // id -> true у выбывших: их строки в кондуите приглушены
 
   var state = {
     view: "rating",
@@ -158,7 +159,7 @@
 
   function rosterRows(s) {
     return rosterOf(s).map(function (id) {
-      return { id: id, name: NAME[id] || id };
+      return { id: id, name: NAME[id] || id, gone: !!GONE[id] };
     });
   }
 
@@ -295,6 +296,15 @@
     box.appendChild(el("span", "nm", student.name));
     if (isAdmin(student.id)) box.appendChild(el("i", "badge-admin", "◆"));
     if (isHonoured(student.id)) box.appendChild(el("i", "badge-leader"));
+    /* Выбывший стоит в кондуите тех серий, где занимался, на своём месте
+       по алфавиту, — только приглушённым (владелец, 2026-10-18: «ненавязчиво»).
+       Слово рядом с фамилией на телефоне обрезало бы её саму; подсказка
+       и текст для читалки говорят то, чего не видно. */
+    if (student.gone) {
+      node.classList.add("gone");
+      node.title = "уже не в кружке";
+      box.appendChild(el("span", "sr-only", ", уже не в кружке"));
+    }
     node.appendChild(box);
     return node;
   }
@@ -2018,7 +2028,11 @@
     /* Выбывшего помечают, а не стирают: в общем списке и в рейтинге его больше
        нет, но имя нужно — оно стоит в кондуитах тех серий, где он занимался. */
     NAME = {};
-    DATA.students.forEach(function (st) { NAME[st.id] = st.name; });
+    GONE = {};
+    DATA.students.forEach(function (st) {
+      NAME[st.id] = st.name;
+      if (st.out) GONE[st.id] = true;
+    });
     DATA.students = DATA.students.filter(function (st) { return !st.out; });
     DATA.students.sort(function (a, b) { return a.name.localeCompare(b.name, "ru"); });
     /* Порядок ленты — по номеру серии: он и есть её место в череде занятий.

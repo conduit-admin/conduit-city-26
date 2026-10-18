@@ -78,6 +78,10 @@
     return s ? s.name : id;
   }
 
+  function isGone(id) {
+    return fullRoster().some(function (x) { return x.id === id && x.out; });
+  }
+
   function editRoster() {
     if (!state.roster) state.roster = JSON.parse(JSON.stringify(DATA.students));
     return state.roster;
@@ -1056,11 +1060,17 @@
     }).then(function () { SAVED.scoring = sc; });
   }
 
+  /* В файл уходит весь список, вместе с выбывшими: их имена нужны кондуитам
+     прошлых серий. До 2026-10-18 здесь писался только нынешний состав, и
+     выбывшие пропадали из файла целиком — так потерялись Андриенко, Сахаров
+     и Гогин, а сайт показывал вместо их имён id. В подписи коммита — только
+     те, кто в кружке. */
   function putStudentsFile() {
-    var payload = rosterPayload(roster());
+    var payload = rosterPayload(fullRoster());
+    var active = payload.filter(function (s) { return !s.out; }).length;
     return getFile("data/students.json").then(function (cur) {
       return putFile("data/students.json", JSON.stringify(payload, null, 2) + "\n",
-        "Ученики: " + withNum(payload.length, "человек", "человека", "человек"),
+        "Ученики: " + withNum(active, "человек", "человека", "человек"),
         cur && cur.sha);
     }).then(function () { SAVED.roster = JSON.stringify(payload); });
   }
@@ -2826,6 +2836,11 @@
       if (DATA.config.admin === st.id) box.appendChild(el("i", "badge-admin", "◆"));
       // корона: только у неё — так же, как на сайте
       if (st.id === HONOURED) box.appendChild(el("i", "badge-leader"));
+      // выбывший — приглушённым, как на сайте
+      if (isGone(st.id)) {
+        cell.classList.add("gone");
+        cell.title = "уже не в кружке";
+      }
       cell.appendChild(box);
       tr.appendChild(cell);
       nBody.appendChild(tr);

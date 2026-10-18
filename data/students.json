@@ -5,6 +5,11 @@
     "squad": true
   },
   {
+    "id": "andrienko-igor",
+    "name": "Андриенко Игорь",
+    "out": true
+  },
+  {
     "id": "arhipov-aleksandr",
     "name": "Архипов Александр"
   },
@@ -37,6 +42,11 @@
   {
     "id": "gavrilov-aleksandr",
     "name": "Гаврилов Александр"
+  },
+  {
+    "id": "gogin-timofey",
+    "name": "Гогин Тимофей",
+    "out": true
   },
   {
     "id": "gulev-maksim",
@@ -113,6 +123,11 @@
   {
     "id": "rudakova-vasilisa",
     "name": "Рудакова Василиса"
+  },
+  {
+    "id": "saharov-kirill",
+    "name": "Сахаров Кирилл",
+    "out": true
   },
   {
     "id": "strelkov-sergey",
