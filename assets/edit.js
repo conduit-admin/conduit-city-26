@@ -699,6 +699,8 @@
         // поле только у задач со своей ценой: иначе оно висело бы у всех подряд
         var w = customWeight(p);
         if (w !== null) out.weight = w;
+        var b = customBase(p);
+        if (b !== null) out.base = b;
         return out;
       }),
       solved: {}
@@ -1020,7 +1022,16 @@
 
   function priceOf(p, solvers, base) {
     var w = customWeight(p);
-    return w === null ? weightOf(solvers, base) : w;
+    return w === null ? weightOf(solvers, customBase(p) || base) : w;
+  }
+
+  /* Своё n у задачи — когда за ней стояло другое число людей, чем за прочими
+     задачами серии: в сериях 11 и 12 задачи 1–6 сборники решали на сборах,
+     а седьмую нет, и у неё n = 23 вместо общих 30. Формула та же, другое
+     только n; своя цена, если задана, важнее. То же правило на сайте. */
+  function customBase(p) {
+    var n = p && p.base;
+    return typeof n === "number" && isFinite(n) && n >= 1 ? Math.round(n) : null;
   }
 
   function scoringDirty() {
@@ -2580,7 +2591,8 @@
     // панели раскрываются по одной: обе разом заняли бы пол-экрана
     if (open) wrap.appendChild(themeChooser(p, touch));
     else if (state.pickWeight === p.id) {
-      wrap.appendChild(weightChooser(p, solvers, seriesBase(state.series), touch));
+      wrap.appendChild(weightChooser(p, solvers, seriesBase(state.series), touch,
+                                     state.series));
     }
     return wrap;
   }
@@ -2589,8 +2601,8 @@
      когда задана вручную. Касание раскрывает панель под строкой — поля для
      ввода числа здесь, как и везде в редакторе, нет. */
   function weightChip(p, solvers, base) {
-    var b = el("button",
-      "wchip" + (customWeight(p) === null ? "" : " on"), priceOf(p, solvers, base));
+    var manual = customWeight(p) !== null || customBase(p) !== null;
+    var b = el("button", "wchip" + (manual ? " on" : ""), priceOf(p, solvers, base));
     b.type = "button";
     b.setAttribute("data-pid", p.id);
     b.setAttribute("aria-label", "цена задачи " + p.id);
@@ -2606,7 +2618,7 @@
   /* По одному и по десять: от единицы до цены всей группы дотянуться хватает, а
      набирать число на телефоне неудобно. «По формуле» возвращает задачу к
      автоматической цене — иначе из ручной не было бы выхода. */
-  function weightChooser(p, solvers, base, touch) {
+  function weightChooser(p, solvers, base, touch, d) {
     var box = el("div", "chooser");
     var now = priceOf(p, solvers, base);
 
@@ -2633,7 +2645,7 @@
     var foot = el("div", "wfoot");
     var own = customWeight(p) !== null;
     foot.appendChild(el("span", "wnote", own
-      ? "по формуле было бы " + weightOf(solvers, base)
+      ? "по формуле было бы " + weightOf(solvers, customBase(p) || base)
       : "считается по формуле"));
     var back = button("по формуле", "mini-btn", function () {
       delete p.weight;
@@ -2644,7 +2656,62 @@
     foot.appendChild(back);
     box.appendChild(foot);
 
+    if (d) box.appendChild(baseChooser(p, d, touch));
     return box;
+  }
+
+  /* Своё n — второй частью той же панели, только у задач серии: у гробов n
+     общее. Те же шаги по одному и по десять. «Без сборников» ставит n серии
+     за вычетом сборников из её списка — так в сериях 11 и 12 считалась
+     седьмая задача: 30 − 7 = 23. «Как у серии» возвращает общее n. */
+  function baseChooser(p, d, touch) {
+    var part = el("div", "wbase");
+    var serial = seriesBase(d);
+    var own = customBase(p);
+    var now = own || serial;
+
+    function set(v) {
+      p.base = Math.max(1, Math.min(999, v));
+      touch();
+      render();
+    }
+
+    part.appendChild(el("div", "wnote wtitle", "n задачи"));
+    var row = el("div", "wrow");
+    var less10 = button("−10", "step-btn wide", function () { set(now - 10); });
+    var less = button("−", "step-btn", function () { set(now - 1); });
+    less10.disabled = now <= 10;
+    less.disabled = now <= 1;
+    row.appendChild(less10);
+    row.appendChild(less);
+    row.appendChild(el("span", "step-val" + (own ? " on" : ""), now));
+    row.appendChild(button("+", "step-btn", function () { set(now + 1); }));
+    row.appendChild(button("+10", "step-btn wide", function () { set(now + 10); }));
+    part.appendChild(row);
+
+    var foot = el("div", "wfoot");
+    foot.appendChild(el("span", "wnote", customWeight(p) !== null
+      ? "цена задана вручную, n не действует"
+      : own ? "своё, у серии n = " + serial : "как у серии"));
+    var acts = el("span", "wacts");
+    var squad = rosterIds(d).filter(function (id) {
+      return squadIds().indexOf(id) !== -1;
+    }).length;
+    if (squad && serial - squad >= 1) {
+      acts.appendChild(button("без сборников", "mini-btn", function () {
+        set(serial - squad);
+      }));
+    }
+    var back = button("как у серии", "mini-btn", function () {
+      delete p.base;
+      touch();
+      render();
+    });
+    back.disabled = !own;
+    acts.appendChild(back);
+    foot.appendChild(acts);
+    part.appendChild(foot);
+    return part;
   }
 
   /* Сколько человек взяло эту задачу в открытой серии — от этого зависит её

@@ -118,7 +118,17 @@
   function priceOf(p, solvers, base) {
     var w = p && p.weight;
     return typeof w === "number" && isFinite(w) && w >= 0
-      ? Math.round(w) : weightOf(solvers, base);
+      ? Math.round(w) : weightOf(solvers, ownBase(p) || base);
+  }
+
+  /* Своё n у задачи (поле `base`) — когда за ней стояло не столько человек,
+     сколько за остальными задачами серии. Так в сериях 11 и 12: задачи 1–6
+     сборники решали на сборах, в турах, а седьмую — нет, и за неё n = 23
+     вместо общих 30 (владелец, 2026-10-18). Формула та же, меняется только n;
+     своя цена, если задана, важнее. */
+  function ownBase(p) {
+    var n = p && p.base;
+    return typeof n === "number" && isFinite(n) && n >= 1 ? Math.round(n) : null;
   }
 
   /* Номер серии — то, что видно снаружи. В файле рядом лежит служебный слот n:
@@ -716,25 +726,6 @@
       }));
     });
     r2.appendChild(c2);
-
-    /* Серии, где сборники были, — отдельной большой кнопкой под сериями
-       (владелец, 2026-10-17): мелким действием рядом с «все» её было не найти.
-       Нажата, когда отобраны ровно такие серии; повторное нажатие возвращает
-       все. Кнопка есть, только пока хоть одна серия прошла без сборников, —
-       то же правило, что у «где все были». */
-    var withSquad = days.filter(function (s) { return !squadAway(s); });
-    if (withSquad.length && withSquad.length < days.length) {
-      var only = withSquad.length === state.series.size &&
-        withSquad.every(function (s) { return state.series.has(s.n); });
-      var sq = el("button", "chip wide-toggle", "Только серии со сборниками");
-      sq.type = "button";
-      sq.setAttribute("aria-pressed", only ? "true" : "false");
-      sq.addEventListener("click", function () {
-        state.series = new Set((only ? days : withSquad).map(function (s) { return s.n; }));
-        render();
-      });
-      r2.appendChild(sq);
-    }
     card.appendChild(r2);
 
     host.appendChild(card);

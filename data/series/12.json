@@ -6,10 +6,13 @@
   "held": false,
   "title": "Серия 12",
   "roster": [
+    "aksenova-elizaveta",
     "arhipov-aleksandr",
     "afanasev-igor",
     "babain-yuriy",
     "boyko-gleb",
+    "budyanskiy-mihail",
+    "burovik-nelli",
     "velichko-platon",
     "gavrilov-aleksandr",
     "gulev-maksim",
@@ -31,18 +34,25 @@
     "pogorelov-denis",
     "ponomareva-eva",
     "rudakova-vasilisa",
-    "saharov-kirill",
+    "strelkov-sergey",
+    "titov-viktor",
+    "titov-dmitriy",
     "tulenceva-marina",
+    "ushakov-sevastyan",
     "celikov-aleksandr",
     "shipilov-andrey",
     "shirtanova-valeriya",
+    "saharov-kirill",
     "andrienko-igor"
   ],
   "present": [
+    "aksenova-elizaveta",
     "arhipov-aleksandr",
     "afanasev-igor",
     "babain-yuriy",
     "boyko-gleb",
+    "budyanskiy-mihail",
+    "burovik-nelli",
     "velichko-platon",
     "gavrilov-aleksandr",
     "gulev-maksim",
@@ -64,11 +74,15 @@
     "pogorelov-denis",
     "ponomareva-eva",
     "rudakova-vasilisa",
-    "saharov-kirill",
+    "strelkov-sergey",
+    "titov-viktor",
+    "titov-dmitriy",
     "tulenceva-marina",
+    "ushakov-sevastyan",
     "celikov-aleksandr",
     "shipilov-andrey",
     "shirtanova-valeriya",
+    "saharov-kirill",
     "andrienko-igor"
   ],
   "problems": [
@@ -112,14 +126,18 @@
       "id": "7",
       "type": "comb",
       "sub": "graphs",
-      "exercise": false
+      "exercise": false,
+      "base": 23
     }
   ],
   "solved": {
+    "aksenova-elizaveta": [],
     "arhipov-aleksandr": [],
     "afanasev-igor": [],
     "babain-yuriy": [],
     "boyko-gleb": [],
+    "budyanskiy-mihail": [],
+    "burovik-nelli": [],
     "velichko-platon": [],
     "gavrilov-aleksandr": [],
     "gulev-maksim": [],
@@ -141,17 +159,20 @@
     "pogorelov-denis": [],
     "ponomareva-eva": [],
     "rudakova-vasilisa": [],
-    "saharov-kirill": [],
+    "strelkov-sergey": [],
+    "titov-viktor": [],
+    "titov-dmitriy": [],
     "tulenceva-marina": [],
+    "ushakov-sevastyan": [],
     "celikov-aleksandr": [],
     "shipilov-andrey": [],
     "shirtanova-valeriya": [],
+    "saharov-kirill": [],
     "andrienko-igor": []
   },
   "pdf": {
     "file": "seriya-12.pdf",
     "size": 137442,
     "at": "2026-10-17"
-  },
-  "squadAway": true
+  }
 }
