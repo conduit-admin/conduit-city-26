@@ -108,7 +108,14 @@
     }
   ],
   "solved": {
-    "aksenova-elizaveta": [],
+    "aksenova-elizaveta": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
     "arhipov-aleksandr": [],
     "afanasev-igor": [
       "1",
@@ -124,14 +131,30 @@
       "7"
     ],
     "boyko-gleb": [],
-    "budyanskiy-mihail": [],
-    "burovik-nelli": [],
+    "budyanskiy-mihail": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "burovik-nelli": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
     "velichko-platon": [
       "1",
       "2"
     ],
     "gavrilov-aleksandr": [],
-    "gulev-maksim": [],
+    "gulev-maksim": [
+      "1",
+      "6",
+      "7"
+    ],
     "zhuchkov-saveliy": [],
     "zarechnyuk-georgiy": [],
     "karonov-mihail": [
@@ -142,10 +165,15 @@
       "6",
       "7"
     ],
-    "karev-denis": [],
+    "karev-denis": [
+      "1",
+      "4",
+      "6"
+    ],
     "kovalev-artem": [
       "1",
-      "2"
+      "2",
+      "6"
     ],
     "konstantinov-egor": [],
     "korsunov-bogdan": [
@@ -177,7 +205,10 @@
       "6",
       "7"
     ],
-    "osipova-viktoriya": [],
+    "osipova-viktoriya": [
+      "6",
+      "7"
+    ],
     "pogorelov-denis": [
       "1",
       "2"
@@ -190,11 +221,37 @@
       "5",
       "7"
     ],
-    "strelkov-sergey": [],
-    "titov-viktor": [],
-    "titov-dmitriy": [],
+    "strelkov-sergey": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "6"
+    ],
+    "titov-viktor": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "titov-dmitriy": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
     "tulenceva-marina": [],
-    "ushakov-sevastyan": [],
+    "ushakov-sevastyan": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "6"
+    ],
     "celikov-aleksandr": [
       "1",
       "2",
