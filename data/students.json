@@ -74,7 +74,8 @@
   },
   {
     "id": "konstantinov-egor",
-    "name": "Константинов Егор"
+    "name": "Константинов Егор",
+    "out": true
   },
   {
     "id": "korsunov-bogdan",
@@ -146,7 +147,8 @@
   },
   {
     "id": "tulenceva-marina",
-    "name": "Туленцева Марина"
+    "name": "Туленцева Марина",
+    "out": true
   },
   {
     "id": "ushakov-sevastyan",
