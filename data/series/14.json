@@ -142,7 +142,12 @@
       "4",
       "5"
     ],
-    "zhuchkov-saveliy": [],
+    "zhuchkov-saveliy": [
+      "1",
+      "3",
+      "4",
+      "5"
+    ],
     "zarechnyuk-georgiy": [],
     "karonov-mihail": [
       "1",
@@ -163,7 +168,9 @@
       "1",
       "3"
     ],
-    "kostylev-konstantin": [],
+    "kostylev-konstantin": [
+      "4"
+    ],
     "kuchinskaya-ekaterina": [
       "1",
       "5",
@@ -177,13 +184,22 @@
       "1",
       "4"
     ],
-    "malyshev-saveliy": [],
-    "mahrov-aleksandr": [],
+    "malyshev-saveliy": [
+      "1",
+      "3"
+    ],
+    "mahrov-aleksandr": [
+      "1"
+    ],
     "novoselov-maksim": [
       "7"
     ],
-    "osipova-viktoriya": [],
-    "pogorelov-denis": [],
+    "osipova-viktoriya": [
+      "1"
+    ],
+    "pogorelov-denis": [
+      "1"
+    ],
     "ponomareva-eva": [
       "1"
     ],
@@ -195,8 +211,17 @@
       "1",
       "3"
     ],
-    "titov-viktor": [],
-    "titov-dmitriy": [],
+    "titov-viktor": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "titov-dmitriy": [
+      "1",
+      "3",
+      "4"
+    ],
     "ushakov-sevastyan": [
       "1",
       "2",
