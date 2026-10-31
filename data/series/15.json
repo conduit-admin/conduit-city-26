@@ -3,7 +3,7 @@
   "series": 15,
   "given": "2026-10-28",
   "date": "2026-10-31",
-  "held": false,
+  "held": true,
   "title": "Серия 15",
   "roster": [
     "aksenova-elizaveta",
@@ -43,17 +43,9 @@
   ],
   "present": [
     "aksenova-elizaveta",
-    "arhipov-aleksandr",
-    "afanasev-igor",
-    "babain-yuriy",
-    "boyko-gleb",
     "budyanskiy-mihail",
     "burovik-nelli",
-    "velichko-platon",
-    "gavrilov-aleksandr",
     "gulev-maksim",
-    "zhuchkov-saveliy",
-    "zarechnyuk-georgiy",
     "karonov-mihail",
     "karev-denis",
     "kovalev-artem",
@@ -61,17 +53,11 @@
     "kostylev-konstantin",
     "kuchinskaya-ekaterina",
     "larionova-natalya",
-    "lyubimov-slaven",
-    "malyshev-saveliy",
     "mahrov-aleksandr",
     "novoselov-maksim",
     "osipova-viktoriya",
-    "pogorelov-denis",
     "ponomareva-eva",
-    "rudakova-vasilisa",
     "strelkov-sergey",
-    "titov-viktor",
-    "titov-dmitriy",
     "ushakov-sevastyan",
     "celikov-aleksandr",
     "shipilov-andrey",
@@ -134,40 +120,146 @@
     }
   ],
   "solved": {
-    "aksenova-elizaveta": [],
+    "aksenova-elizaveta": [
+      "1",
+      "2",
+      "3",
+      "4а",
+      "4б",
+      "5",
+      "6"
+    ],
     "arhipov-aleksandr": [],
-    "afanasev-igor": [],
+    "afanasev-igor": [
+      "1",
+      "2",
+      "4а",
+      "5",
+      "6"
+    ],
     "babain-yuriy": [],
     "boyko-gleb": [],
-    "budyanskiy-mihail": [],
-    "burovik-nelli": [],
+    "budyanskiy-mihail": [
+      "1",
+      "2",
+      "4а",
+      "4б",
+      "5",
+      "6",
+      "7а"
+    ],
+    "burovik-nelli": [
+      "1",
+      "4а",
+      "5",
+      "6"
+    ],
     "velichko-platon": [],
     "gavrilov-aleksandr": [],
-    "gulev-maksim": [],
+    "gulev-maksim": [
+      "1",
+      "4а",
+      "4б",
+      "5",
+      "6"
+    ],
     "zhuchkov-saveliy": [],
     "zarechnyuk-georgiy": [],
-    "karonov-mihail": [],
-    "karev-denis": [],
-    "kovalev-artem": [],
-    "korsunov-bogdan": [],
-    "kostylev-konstantin": [],
-    "kuchinskaya-ekaterina": [],
-    "larionova-natalya": [],
+    "karonov-mihail": [
+      "1",
+      "2",
+      "4а",
+      "4б",
+      "5",
+      "6"
+    ],
+    "karev-denis": [
+      "1",
+      "5",
+      "7а"
+    ],
+    "kovalev-artem": [
+      "1",
+      "2",
+      "4а"
+    ],
+    "korsunov-bogdan": [
+      "1",
+      "3",
+      "4а",
+      "5",
+      "6",
+      "7а"
+    ],
+    "kostylev-konstantin": [
+      "1",
+      "4а",
+      "6"
+    ],
+    "kuchinskaya-ekaterina": [
+      "1"
+    ],
+    "larionova-natalya": [
+      "1",
+      "4а",
+      "4б",
+      "5",
+      "6"
+    ],
     "lyubimov-slaven": [],
     "malyshev-saveliy": [],
-    "mahrov-aleksandr": [],
-    "novoselov-maksim": [],
-    "osipova-viktoriya": [],
+    "mahrov-aleksandr": [
+      "1",
+      "2",
+      "4а",
+      "4б",
+      "5",
+      "6",
+      "7а"
+    ],
+    "novoselov-maksim": [
+      "4а",
+      "5",
+      "6"
+    ],
+    "osipova-viktoriya": [
+      "1",
+      "6"
+    ],
     "pogorelov-denis": [],
-    "ponomareva-eva": [],
+    "ponomareva-eva": [
+      "1",
+      "4а"
+    ],
     "rudakova-vasilisa": [],
-    "strelkov-sergey": [],
+    "strelkov-sergey": [
+      "1",
+      "2",
+      "4а",
+      "5",
+      "6"
+    ],
     "titov-viktor": [],
     "titov-dmitriy": [],
-    "ushakov-sevastyan": [],
-    "celikov-aleksandr": [],
-    "shipilov-andrey": [],
-    "shirtanova-valeriya": []
+    "ushakov-sevastyan": [
+      "1",
+      "4а",
+      "5"
+    ],
+    "celikov-aleksandr": [
+      "1",
+      "2",
+      "4а",
+      "5"
+    ],
+    "shipilov-andrey": [
+      "1",
+      "4а"
+    ],
+    "shirtanova-valeriya": [
+      "1",
+      "4а"
+    ]
   },
   "pdf": {
     "file": "seriya-15.pdf",
