@@ -179,6 +179,11 @@
     },
     {
       "student": "zhuchkov-saveliy",
+      "problem": "Г13",
+      "bonus": 0
+    },
+    {
+      "student": "zhuchkov-saveliy",
       "problem": "Г14",
       "bonus": 0
     },
@@ -191,16 +196,11 @@
       "student": "pogorelov-denis",
       "problem": "Г15",
       "bonus": 0
-    },
-    {
-      "student": "zhuchkov-saveliy",
-      "problem": "Г13",
-      "bonus": 0
     }
   ],
   "pdf": {
     "file": "grobariy.pdf",
-    "size": 151402,
-    "at": "2026-10-04"
+    "size": 169423,
+    "at": "2026-11-11"
   }
 }
