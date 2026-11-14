@@ -1,0 +1,205 @@
+{
+  "n": 18,
+  "series": 18,
+  "given": "2026-11-11",
+  "date": "2026-11-14",
+  "held": true,
+  "title": "Серия 18",
+  "roster": [
+    "aksenova-elizaveta",
+    "arhipov-aleksandr",
+    "afanasev-igor",
+    "babain-yuriy",
+    "boyko-gleb",
+    "budyanskiy-mihail",
+    "burovik-nelli",
+    "velichko-platon",
+    "gavrilov-aleksandr",
+    "gulev-maksim",
+    "zhuchkov-saveliy",
+    "zarechnyuk-georgiy",
+    "karonov-mihail",
+    "karev-denis",
+    "kovalev-artem",
+    "korsunov-bogdan",
+    "kostylev-konstantin",
+    "kuchinskaya-ekaterina",
+    "larionova-natalya",
+    "lyubimov-slaven",
+    "malyshev-saveliy",
+    "mahrov-aleksandr",
+    "novoselov-maksim",
+    "osipova-viktoriya",
+    "pogorelov-denis",
+    "ponomareva-eva",
+    "rudakova-vasilisa",
+    "strelkov-sergey",
+    "titov-viktor",
+    "titov-dmitriy",
+    "ushakov-sevastyan",
+    "celikov-aleksandr",
+    "shipilov-andrey",
+    "shirtanova-valeriya"
+  ],
+  "present": [
+    "aksenova-elizaveta",
+    "afanasev-igor",
+    "babain-yuriy",
+    "budyanskiy-mihail",
+    "velichko-platon",
+    "gulev-maksim",
+    "zhuchkov-saveliy",
+    "karev-denis",
+    "kovalev-artem",
+    "korsunov-bogdan",
+    "kostylev-konstantin",
+    "larionova-natalya",
+    "malyshev-saveliy",
+    "mahrov-aleksandr",
+    "novoselov-maksim",
+    "osipova-viktoriya",
+    "pogorelov-denis",
+    "ponomareva-eva",
+    "rudakova-vasilisa",
+    "strelkov-sergey",
+    "titov-viktor",
+    "titov-dmitriy",
+    "celikov-aleksandr",
+    "shipilov-andrey",
+    "shirtanova-valeriya"
+  ],
+  "problems": [
+    {
+      "id": "1",
+      "type": "geometry",
+      "sub": "planimetry",
+      "exercise": false
+    },
+    {
+      "id": "2",
+      "type": "geometry",
+      "sub": "planimetry",
+      "exercise": false
+    },
+    {
+      "id": "3",
+      "type": "algebra",
+      "sub": "inequalities",
+      "exercise": false
+    },
+    {
+      "id": "4",
+      "type": "numbers",
+      "sub": "klassika-2",
+      "exercise": false
+    },
+    {
+      "id": "5",
+      "type": "comb",
+      "sub": "podschet",
+      "exercise": false
+    },
+    {
+      "id": "6",
+      "type": "comb",
+      "sub": "podschet",
+      "exercise": false
+    },
+    {
+      "id": "7",
+      "type": "comb",
+      "sub": "graphs",
+      "exercise": false
+    }
+  ],
+  "solved": {
+    "aksenova-elizaveta": [
+      "2",
+      "5",
+      "6",
+      "7"
+    ],
+    "arhipov-aleksandr": [],
+    "afanasev-igor": [
+      "1",
+      "3",
+      "5",
+      "6"
+    ],
+    "babain-yuriy": [
+      "5"
+    ],
+    "boyko-gleb": [],
+    "budyanskiy-mihail": [
+      "1",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "burovik-nelli": [],
+    "velichko-platon": [
+      "1"
+    ],
+    "gavrilov-aleksandr": [],
+    "gulev-maksim": [
+      "5"
+    ],
+    "zhuchkov-saveliy": [
+      "3",
+      "4",
+      "5"
+    ],
+    "zarechnyuk-georgiy": [],
+    "karonov-mihail": [],
+    "karev-denis": [],
+    "kovalev-artem": [
+      "1"
+    ],
+    "korsunov-bogdan": [],
+    "kostylev-konstantin": [],
+    "kuchinskaya-ekaterina": [],
+    "larionova-natalya": [
+      "5",
+      "6",
+      "7"
+    ],
+    "lyubimov-slaven": [],
+    "malyshev-saveliy": [
+      "5"
+    ],
+    "mahrov-aleksandr": [],
+    "novoselov-maksim": [],
+    "osipova-viktoriya": [
+      "5"
+    ],
+    "pogorelov-denis": [
+      "1"
+    ],
+    "ponomareva-eva": [],
+    "rudakova-vasilisa": [],
+    "strelkov-sergey": [],
+    "titov-viktor": [
+      "1",
+      "5",
+      "6",
+      "7"
+    ],
+    "titov-dmitriy": [
+      "1",
+      "5",
+      "6",
+      "7"
+    ],
+    "ushakov-sevastyan": [],
+    "celikov-aleksandr": [
+      "1",
+      "5",
+      "6"
+    ],
+    "shipilov-andrey": [
+      "5"
+    ],
+    "shirtanova-valeriya": []
+  }
+}
