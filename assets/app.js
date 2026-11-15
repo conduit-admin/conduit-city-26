@@ -122,6 +122,18 @@
       ? Math.round(w) : weightOf(solvers, ownBase(p) || base);
   }
 
+  /* Штраф — задача, сданная нечестно (поле `penalty` серии, той же формы, что
+     `solved`). Плюса за неё нет, и в решившие человек не идёт: цена задачи
+     для честно сдавших считается без него. Сверх того у него отнимается
+     очко — одно, а не цена задачи: штраф за поступок, а не обратный плюс.
+     Первый случай — Жучков, 16-3 и 18-3 (владелец, 2026-11-15). */
+  var PENALTY = 1;
+
+  function finedIn(s, id, pid) {
+    var list = s.penalty && s.penalty[id];
+    return Array.isArray(list) && list.indexOf(pid) !== -1;
+  }
+
   /* Своё n у задачи (поле `base`) — когда за ней стояло не столько человек,
      сколько за остальными задачами серии. Так в сериях 11 и 12: задачи 1–6
      сборники решали на сборах, в турах, а седьмую — нет, и за неё n = 23
@@ -411,9 +423,11 @@
         /* Решившие — только из списка серии. Плюс человека, которого в этом
            списке нет, остался от прежнего состава: он лежит в файле, но в счёт
            не идёт, иначе сдвинул бы цену задачи. */
+        var fined = ids.filter(function (id) { return finedIn(s, id, p.id); });
+        // штраф сильнее плюса: если в файле стоят оба, плюса нет
         var solvers = ids.filter(function (id) {
           var list = s.solved[id];
-          return list && list.indexOf(p.id) !== -1;
+          return list && list.indexOf(p.id) !== -1 && fined.indexOf(id) === -1;
         });
         UNITS.push({
           sn: s.n,
@@ -423,6 +437,7 @@
           kind: isExercise(p) ? "exercise" : "problem",
           solvers: solvers,
           solverSet: new Set(solvers),
+          fined: new Set(fined),
           roster: new Set(ids),
           weight: priceOf(p, solvers.length, base)
         });
@@ -453,6 +468,7 @@
         solvers: solvers,
         solverSet: new Set(solvers),
         roster: null,          // гроб доступен всем: он не привязан к занятию
+        fined: new Set(),      // штрафов у гробов нет
         bonus: bonus,
         weight: priceOf(p, solvers.length, gravesBase())
       });
@@ -477,7 +493,7 @@
     kindSet = kindSet || state.kinds;
     var rows = DATA.students.map(function (s) {
       return {
-        id: s.id, name: s.name, score: 0, pluses: 0, bonus: 0,
+        id: s.id, name: s.name, score: 0, pluses: 0, bonus: 0, fines: 0,
         avail: 0, ceil: 0
       };
     });
@@ -505,6 +521,13 @@
         r.score += u.weight + extra;
         r.pluses += 1;
         r.bonus += extra;
+      });
+      // штраф идёт за задачей: отобрана серия или тема — отобран и он
+      u.fined.forEach(function (id) {
+        var r = byId[id];
+        if (!r) return;
+        r.score -= PENALTY;
+        r.fines += 1;
       });
     });
 
@@ -1015,6 +1038,7 @@
     var order = byName(rosterRows(s));
 
     host.appendChild(conduitTables(s.problems, order, function (p, r) {
+      if (byId[p.id].fined.has(r.id)) return fineMark();
       return byId[p.id].solverSet.has(r.id) ? el("div", "mark on", "+") : el("div", "mark");
     }, function (p) {
       return [byId[p.id].solvers.length, byId[p.id].weight];
@@ -1026,6 +1050,14 @@
       was: function (id) { return wasThere(s, id); },
       count: s.present.length
     } : null));
+  }
+
+  /* Клетка штрафа: на месте плюса — «−1». Не пустая, потому что пустая значит
+     «не сдал», а тут другое; и без цвета — список мест для цвета закрыт. */
+  function fineMark() {
+    var m = el("div", "mark fine", "−" + PENALTY);
+    m.appendChild(el("span", "sr-only", " — штраф"));
+    return m;
   }
 
   /* Подпись под номером серии: когда её выдали и когда по ней было занятие.
@@ -1534,7 +1566,8 @@
        входят. С надбавками этого ученика — они начислены за его решения, и без
        них «11 из 6» выглядело бы ошибкой счёта. */
     tiles.appendChild(tile("Очки", num(row.score),
-      "из " + num(row.ceil + row.bonus)));
+      "из " + num(row.ceil + row.bonus) +
+      (row.fines ? " · штраф −" + num(row.fines * PENALTY) : "")));
     tiles.appendChild(tile("Задачи", row.pluses + " / " + row.avail));
 
     // половина задач — рубеж, который стоит отметить
@@ -1644,14 +1677,18 @@
     realSeries().forEach(function (s) {
       // серия, в списке которой его не было, к нему и не относится
       if (rosterOf(s).indexOf(id) === -1) return;
-      var mine = [], total = 0, score = 0, ceiling = 0;
+      var mine = [], chips = [], total = 0, score = 0, ceiling = 0;
       UNITS.forEach(function (u) {
         if (u.sn !== s.n) return;
         total += 1;
         ceiling += u.weight;
         if (u.solverSet.has(id)) {
           mine.push(u);
+          chips.push({ u: u, text: " +" + unitValue(u, id) });
           score += unitValue(u, id);
+        } else if (u.fined.has(id)) {
+          chips.push({ u: u, text: " −" + PENALTY, fine: true });
+          score -= PENALTY;
         }
       });
 
@@ -1669,12 +1706,14 @@
         mine.length + " / " + total + " · " + num(score) + " / " + num(ceiling)));
       block.appendChild(head);
 
-      if (mine.length) {
+      // штраф стоит среди плюсов, на месте своей задачи
+      if (chips.length) {
         var box = el("div", "series-mini");
-        mine.forEach(function (u) {
-          var chip = el("span", "smini");
-          chip.appendChild(el("b", null, u.id));
-          chip.appendChild(document.createTextNode(" +" + unitValue(u, id)));
+        chips.forEach(function (c) {
+          var chip = el("span", "smini" + (c.fine ? " fine" : ""));
+          chip.appendChild(el("b", null, c.u.id));
+          chip.appendChild(document.createTextNode(c.text));
+          if (c.fine) chip.appendChild(el("span", "sr-only", " — штраф"));
           box.appendChild(chip);
         });
         block.appendChild(box);

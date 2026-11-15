@@ -455,6 +455,7 @@
       scoring: scoringOf(s.scoring) || undefined,
       roster: ids, present: presentIds(s),
       problems: s.problems || [], solved: s.solved || {},
+      penalty: s.penalty || undefined,
       pdf: s.pdf || undefined
     }));
     ids.forEach(function (id) { if (!d.solved[id]) d.solved[id] = []; });
@@ -540,18 +541,30 @@
 
   function renameProblem(oldId, newId) {
     state.series.problems.forEach(function (p) { if (p.id === oldId) p.id = newId; });
-    Object.keys(state.series.solved).forEach(function (sid) {
-      var list = state.series.solved[sid];
-      var i = list.indexOf(oldId);
-      if (i !== -1) list[i] = newId;
+    [state.series.solved, state.series.penalty || {}].forEach(function (map) {
+      Object.keys(map).forEach(function (sid) {
+        var list = map[sid];
+        var i = list.indexOf(oldId);
+        if (i !== -1) list[i] = newId;
+      });
     });
   }
 
   function removeProblem(pid) {
     state.series.problems = state.series.problems.filter(function (p) { return p.id !== pid; });
-    Object.keys(state.series.solved).forEach(function (sid) {
-      state.series.solved[sid] = state.series.solved[sid].filter(function (x) { return x !== pid; });
+    [state.series.solved, state.series.penalty || {}].forEach(function (map) {
+      Object.keys(map).forEach(function (sid) {
+        map[sid] = map[sid].filter(function (x) { return x !== pid; });
+      });
     });
+  }
+
+  /* Штраф (поле `penalty`) ставится в файле руками, не здесь: случай редкий, а
+     лишнее касание в кондуите поставило бы его по ошибке. Редактор его
+     показывает, не даёт поверх поставить плюс и при сохранении не теряет. */
+  function fined(d, sid, pid) {
+    var list = d.penalty && d.penalty[sid];
+    return Array.isArray(list) && list.indexOf(pid) !== -1;
   }
 
   function numPrefix(id) {
@@ -730,6 +743,23 @@
       if (payload.solved[sid] || !(d.solved[sid] || []).length) return;
       payload.solved[sid] = d.solved[sid].slice().sort(cmpIds);
     });
+
+    /* Штрафы — сразу за плюсами, как в файле. Только непустые: поле есть лишь
+       у серий, где штраф был. Ключи по алфавиту — чтобы порядок не менял
+       файл. */
+    var pen = {};
+    Object.keys(d.penalty || {}).sort().forEach(function (sid) {
+      var list = (d.penalty[sid] || []).slice().sort(cmpIds);
+      if (list.length) pen[sid] = list;
+    });
+    if (Object.keys(pen).length) {
+      var ordered = {};
+      Object.keys(payload).forEach(function (k) {
+        ordered[k] = payload[k];
+        if (k === "solved") ordered.penalty = pen;
+      });
+      payload = ordered;
+    }
     return payload;
   }
 
@@ -2733,7 +2763,7 @@
     var solved = d.solved || {};
     return rosterIds(d).filter(function (id) {
       var list = solved[id];
-      return list && list.indexOf(pid) !== -1;
+      return list && list.indexOf(pid) !== -1 && !fined(d, id, pid);
     }).length;
   }
 
@@ -2801,12 +2831,15 @@
     var base = seriesBase(d);
     var split = el("div", "conduit-split");
 
+    // штраф сильнее плюса — как на сайте
     function marked(sid, pid) {
       var list = solved[sid];
-      return !!list && list.indexOf(pid) !== -1;
+      return !!list && list.indexOf(pid) !== -1 && !fined(d, sid, pid);
     }
 
-    function rowCount(sid) { return (solved[sid] || []).length; }
+    function rowCount(sid) {
+      return (solved[sid] || []).filter(function (pid) { return !fined(d, sid, pid); }).length;
+    }
 
     function colCount(pid) {
       return rows.filter(function (st) { return marked(st.id, pid); }).length;
@@ -2881,6 +2914,16 @@
       var tr = el("tr", "crow");
       problems.forEach(function (p) {
         var td = el("td", "cell");
+        if (fined(d, st.id, p.id)) {
+          var fb = el("button", "mark fine", "−1");
+          fb.type = "button";
+          fb.disabled = true;
+          fb.title = "штраф — правится в файле серии";
+          fb.setAttribute("aria-label", st.name + ", " + p.id + " — штраф");
+          td.appendChild(fb);
+          tr.appendChild(td);
+          return;
+        }
         var isOn = marked(st.id, p.id);
         var b = el("button", "mark" + (isOn ? " on" : ""), isOn ? "+" : "");
         b.type = "button";

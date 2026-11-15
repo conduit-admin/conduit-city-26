@@ -1481,6 +1481,26 @@ td.cell {
   box-shadow: none;
 }
 
+/* Штраф: на месте плюса «−1». Плюс — залитый квадрат, штраф — пустой с
+   плотной обводкой чернилами: читается как «здесь что-то было и отнято».
+   Без цвета: места для цвета перечислены в README, список закрыт. */
+.mark.fine {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  background: var(--cell-off);
+  box-shadow: inset 0 0 0 1.5px var(--ink-2);
+}
+
+table.conduit.edit .mark.fine { cursor: default; }
+
+.smini.fine {
+  border-style: dashed;
+  border-color: var(--ink-2);
+}
+
 /* Кондуит смотрят, а не трогают: имена не выделяются и не отзываются нигде,
    клетки — везде, кроме редактора. Прокрутка вбок остаётся: касание достаётся
    прокручиваемой обёртке, а не таблице внутри неё. */
