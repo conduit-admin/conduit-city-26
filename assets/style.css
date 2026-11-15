@@ -733,6 +733,46 @@ input[type="number"]::-webkit-inner-spin-button {
 .warn-where { color: var(--ink-2); }
 .warn-ids { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
+/* Объявление (data/notices.json). Та же стеклянная панель, что у всех; от
+   прочих её отличает ярлык — чернилами по светлому, как указатель вкладок.
+   Цвета нет: места для цвета перечислены в README, список закрыт. */
+.card.notice { margin-bottom: 14px; }
+
+.notice-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.notice-tag {
+  background: var(--ink);
+  color: var(--ink-inv);
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+.notice-date { font-size: 12.5px; color: var(--ink-muted); }
+
+.notice-title {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.notice-text {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  max-width: 62ch;
+}
+
+.notice-text .nobr { white-space: nowrap; }
+
 .filters { margin-bottom: 14px; }
 
 .filter-row + .filter-row {

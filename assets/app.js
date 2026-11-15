@@ -767,8 +767,55 @@
 
   // ── вид: рейтинг ────────────────────────────────────────
 
+  /* Объявления — data/notices.json, правится руками: редактор их не знает.
+     Плашка стоит над рейтингом, а объявление про ученика — ещё и в его
+     карточке, под именем. Новые сверху. Убрать плашку — убрать запись. */
+  function notices(studentId) {
+    var items = DATA.notices && DATA.notices.items;
+    if (!Array.isArray(items)) return [];
+    return items.filter(function (n) {
+      return n && (studentId === undefined || n.student === studentId);
+    }).sort(function (a, b) {
+      return String(b.date || "").localeCompare(String(a.date || ""));
+    });
+  }
+
+  // в карточке ученика заголовок плашки не нужен: его имя стоит прямо над ней
+  function noticeCard(n, inCard) {
+    var card = el("div", "card notice");
+    var head = el("div", "notice-head");
+    if (n.tag) head.appendChild(el("span", "notice-tag", n.tag));
+    if (n.date) head.appendChild(el("span", "notice-date", fullDate(n.date)));
+    card.appendChild(head);
+    if (n.title && !inCard) card.appendChild(el("div", "notice-title", n.title));
+    var text = Array.isArray(n.text) ? n.text : n.text ? [n.text] : [];
+    text.forEach(function (p) { card.appendChild(noticePara(p)); });
+    return card;
+  }
+
+  /* Номер задачи через дефис — «15-4б», «Лаг10-2-1» — не рвётся по строкам:
+     «15-» в конце строки и «4б» в начале следующей читаются как две разные
+     вещи. Тире привязано к слову перед ним, чтобы не начинать им строку. */
+  var REF_RE = /[0-9A-Za-zА-Яа-яЁё]+(?:-[0-9A-Za-zА-Яа-яЁё]+)+/g;
+
+  function noticePara(text) {
+    var p = el("p", "notice-text");
+    var s = String(text).replace(/ — /g, " — ");
+    var at = 0, m;
+    REF_RE.lastIndex = 0;
+    while ((m = REF_RE.exec(s))) {
+      if (m.index > at) p.appendChild(document.createTextNode(s.slice(at, m.index)));
+      p.appendChild(el("span", "nobr", m[0]));
+      at = m.index + m[0].length;
+    }
+    if (at < s.length) p.appendChild(document.createTextNode(s.slice(at)));
+    return p;
+  }
+
   function viewRating(host) {
     if (!UNITS.length) return viewEmpty(host);
+
+    notices().forEach(function (n) { host.appendChild(noticeCard(n)); });
 
     var f = renderFilters(host);
 
@@ -1554,6 +1601,8 @@
     sh.appendChild(nameCell("span", "section-title", student));
     host.appendChild(sh);
 
+    notices(id).forEach(function (n) { host.appendChild(noticeCard(n, true)); });
+
     /* Плотные плашки стоят по краям ряда: «Место» — то, ради чего карточку
        открывают, «Самый ценный плюс» — то, ради чего её дочитывают. Четыре
        подробности между ними остаются стеклянными. Температуры разные и не
@@ -2064,6 +2113,7 @@
     DATA.zadachniki = DATA.zadachniki || { items: [] };
     DATA.zadachniki.items = DATA.zadachniki.items || [];
     DATA.zachetGrades = DATA.zachetGrades || null;
+    DATA.notices = DATA.notices || { items: [] };
     /* Выбывшего помечают, а не стирают: в общем списке и в рейтинге его больше
        нет, но имя нужно — оно стоит в кондуитах тех серий, где он занимался. */
     NAME = {};
@@ -2106,10 +2156,12 @@
     var zad = get("zadachniki.json").catch(function () { return { items: [] }; });
     // оценок за зачёт нет, пока их не выставили, — тогда нет и таблицы
     var marks = get("zachet-ocenki.json").catch(function () { return null; });
+    // объявлений обычно нет вовсе — нет файла, нет и плашек
+    var notes = get("notices.json").catch(function () { return { items: [] }; });
 
     return Promise.all([
       get("config.json"), get("types.json"), get("students.json"), days, soft,
-      zach, zad, marks
+      zach, zad, marks, notes
     ]).then(function (res) {
       var files = res[3] && Array.isArray(res[3].series) ? res[3].series : [];
       /* Пропавший файл серии не должен ронять страницу целиком: раз в списке
@@ -2121,7 +2173,7 @@
         return {
           config: res[0], types: res[1], students: res[2],
           series: series.filter(Boolean), graves: res[4], zachet: res[5],
-          zadachniki: res[6], zachetGrades: res[7]
+          zadachniki: res[6], zachetGrades: res[7], notices: res[8]
         };
       });
     });
