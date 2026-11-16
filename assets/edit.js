@@ -1310,10 +1310,21 @@
       state.graves = {
         pdf: (DATA.graves || {}).pdf || undefined,
         problems: JSON.parse(JSON.stringify((DATA.graves || {}).problems || [])),
-        solutions: readSolutions(DATA.graves)
+        solutions: readSolutions(DATA.graves),
+        // штраф ставится в файле руками, здесь его только не теряют
+        penalty: JSON.parse(JSON.stringify((DATA.graves || {}).penalty || {}))
       };
     }
     return state.graves;
+  }
+
+  // штраф идёт за своим гробом: переименование и удаление его не теряют
+  function eachGraveFine(g, fn) {
+    var pen = (g && g.penalty) || {};
+    Object.keys(pen).forEach(function (sid) {
+      pen[sid] = fn(pen[sid] || []);
+      if (!pen[sid].length) delete pen[sid];
+    });
   }
 
   /* У файлов, записанных до разделения, вместо списка решений лежит карта
@@ -1371,6 +1382,9 @@
     var g = ensureGraves();
     g.problems.forEach(function (p) { if (p.id === oldId) p.id = newId; });
     g.solutions.forEach(function (s) { if (s.problem === oldId) s.problem = newId; });
+    eachGraveFine(g, function (list) {
+      return list.map(function (pid) { return pid === oldId ? newId : pid; });
+    });
   }
 
   /* Решения пишем по порядку гробов, внутри гроба — по алфавиту. Порядок в
@@ -1402,6 +1416,14 @@
       }),
       solutions: list
     };
+    /* Штрафы — сразу за решениями, как в файле, и только непустые: поле есть,
+       лишь пока штраф был. Ключи по алфавиту — порядок не меняет файл. */
+    var pen = {};
+    Object.keys((g && g.penalty) || {}).sort().forEach(function (sid) {
+      var fines = (g.penalty[sid] || []).slice().sort(cmpGraves);
+      if (fines.length) pen[sid] = fines;
+    });
+    if (Object.keys(pen).length) out.penalty = pen;
     if (g && g.pdf && g.pdf.file) {
       out.pdf = { file: g.pdf.file, size: g.pdf.size, at: g.pdf.at };
     }
@@ -1487,6 +1509,9 @@
     g.problems = g.problems.filter(function (p) { return p.id !== id; });
     // решения удалённого гроба уходят с ним: без задачи они ничего не значат
     g.solutions = g.solutions.filter(function (s) { return s.problem !== id; });
+    eachGraveFine(g, function (list) {
+      return list.filter(function (pid) { return pid !== id; });
+    });
     touchGraves();
   }
 
@@ -3948,7 +3973,8 @@
               pdf: res[4].pdf,
               problems: res[4].problems || [],
               solutions: res[4].solutions,
-              solved: res[4].solved || {}
+              solved: res[4].solved || {},
+              penalty: res[4].penalty || {}
             }
           };
         });

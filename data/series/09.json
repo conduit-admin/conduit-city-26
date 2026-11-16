@@ -179,8 +179,7 @@
     "zhuchkov-saveliy": [
       "3а",
       "3б",
-      "4",
-      "5"
+      "4"
     ],
     "zarechnyuk-georgiy": [
       "3а",
@@ -295,6 +294,11 @@
     ],
     "shirtanova-valeriya": [
       "4"
+    ]
+  },
+  "penalty": {
+    "zhuchkov-saveliy": [
+      "5"
     ]
   },
   "pdf": {

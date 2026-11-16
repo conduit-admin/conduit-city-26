@@ -450,12 +450,21 @@
     DATA.students.forEach(function (s) { known[s.id] = true; });
     var solutions = graveSolutions();
 
+    /* Штраф у гроба — поле `penalty` гробария, той же формы, что у серии,
+       и считается так же. Первый случай — Жучков, Г13 (владелец, 2026-11-16). */
+    var gfine = (DATA.graves && DATA.graves.penalty) || {};
+
     graves().forEach(function (p) {
+      var fined = Object.keys(gfine).filter(function (id) {
+        return known[id] && finedIn(DATA.graves, id, p.id);
+      });
       var solvers = [];
       var bonus = {};
       solutions.forEach(function (s) {
         if (s.problem !== p.id || !known[s.student]) return;
         if (solvers.indexOf(s.student) !== -1) return;
+        // штраф сильнее плюса: если в файле стоят оба, плюса нет
+        if (fined.indexOf(s.student) !== -1) return;
         solvers.push(s.student);
         bonus[s.student] = solutionBonus(s);
       });
@@ -468,7 +477,7 @@
         solvers: solvers,
         solverSet: new Set(solvers),
         roster: null,          // гроб доступен всем: он не привязан к занятию
-        fined: new Set(),      // штрафов у гробов нет
+        fined: new Set(fined),
         bonus: bonus,
         weight: priceOf(p, solvers.length, gravesBase())
       });
@@ -1182,10 +1191,13 @@
       } else if (u.solvers.length) {
         byName(u.solvers.map(function (sid) { return student[sid]; }))
           .forEach(function (st) { block.appendChild(graveLine(st, u)); });
-      } else {
+      } else if (!u.fined.size) {
         // цену нерешённого не пишем: она сложится, только когда его возьмут
         block.appendChild(el("div", "block-none", "пока никто"));
       }
+      // штраф — строкой под решившими: в кондуите он тоже стоит на виду
+      byName(Array.from(u.fined).map(function (sid) { return student[sid]; }))
+        .forEach(function (st) { block.appendChild(graveFineLine(st)); });
 
       card.appendChild(block);
     });
@@ -1234,6 +1246,17 @@
     } else {
       val.appendChild(document.createTextNode("+" + num(u.weight)));
     }
+    line.appendChild(val);
+    return line;
+  }
+
+  // строка штрафа: кто и сколько отнято — та же «−1», что в кондуите
+  function graveFineLine(st) {
+    var line = el("div", "grave-line");
+    line.appendChild(nameCell("span", "grave-who", st));
+    var val = el("span", "grave-val");
+    val.appendChild(el("i", "grave-sum", "штраф "));
+    val.appendChild(document.createTextNode("−" + PENALTY));
     line.appendChild(val);
     return line;
   }
@@ -1674,13 +1697,17 @@
 
       var box = el("div", "series-mini");
       var mine = UNITS.filter(function (u) {
-        return u.kind === "grave" && u.solverSet.has(id);
+        return u.kind === "grave" && (u.solverSet.has(id) || u.fined.has(id));
       });
       if (mine.length) {
+        // штраф стоит среди плюсов, на месте своего гроба — как в сериях
         mine.forEach(function (u) {
-          var chip = el("span", "smini");
+          var fine = u.fined.has(id);
+          var chip = el("span", "smini" + (fine ? " fine" : ""));
           chip.appendChild(el("b", null, u.id));
-          chip.appendChild(document.createTextNode(" +" + unitValue(u, id)));
+          chip.appendChild(document.createTextNode(
+            fine ? " −" + PENALTY : " +" + unitValue(u, id)));
+          if (fine) chip.appendChild(el("span", "sr-only", " — штраф"));
           box.appendChild(chip);
         });
       } else {
